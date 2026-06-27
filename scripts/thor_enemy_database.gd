@@ -174,14 +174,14 @@ const ENEMIES: Dictionary = {
 		"intents": [
 			{
 				"type": IntentType.ATTACK,
-				"damage_min": 14,
-				"damage_max": 18,
+				"damage_min": 10,
+				"damage_max": 14,
 				"hits": 1,
 				"weight": 2,
 			},
 			{
 				"type": IntentType.BUFF,
-				"heal": 12,
+				"heal": 8,
 				"weight": 2,
 			},
 			{
@@ -205,19 +205,19 @@ const ENEMIES: Dictionary = {
 		"intents": [
 			{
 				"type": IntentType.ATTACK,
-				"damage_min": 16,
-				"damage_max": 22,
+				"damage_min": 12,
+				"damage_max": 16,
 				"hits": 1,
 				"weight": 2,
 			},
 			{
 				"type": IntentType.BUFF,
-				"strength": 4,
+				"strength": 2,
 				"weight": 2,
 			},
 			{
 				"type": IntentType.ATTACK,
-				"damage": 26,
+				"damage": 18,
 				"hits": 1,
 				"weight": 1,
 			},

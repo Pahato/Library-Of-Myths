@@ -318,10 +318,10 @@ func _build_ui():
 	add_child(info_label)
 
 func _build_player_area():
-	# Container do jogador (lado esquerdo) - Posicionado de forma absoluta sobre a cabeça
+	# Container do jogador (lado esquerdo) - Posicionado de forma absoluta sobre a cabeça (estilo HSR)
 	player_container = VBoxContainer.new()
 	player_container.layout_mode = 0
-	player_container.position = Vector2(170, 135)
+	player_container.position = Vector2(170, 240) # Baixado de 135 para 240 para ficar mais próximo da cabeça
 	player_container.size = Vector2(200, 100)
 	player_container.add_theme_constant_override("separation", 2)
 	player_container.alignment = BoxContainer.ALIGNMENT_BEGIN
@@ -431,11 +431,36 @@ func _build_enemy_area():
 		anim_sprite.scale = Vector2(3.5, 3.5)
 		anim_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	
-	# Container do inimigo (lado direito) - Posicionado de forma absoluta sobre a cabeça
+	# Painel visual do inimigo — posicionado sobre a plataforma (Y=370)
+	enemy_panel = Panel.new()
+	enemy_panel.custom_minimum_size = Vector2(140, 140)
+	enemy_panel.position = Vector2(812, 230)
+	enemy_panel.size = Vector2(140, 140)
+	add_child(enemy_panel)
+	
+	# Sprite de textura (carregado dinamicamente)
+	enemy_texture_rect = TextureRect.new()
+	enemy_texture_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	enemy_texture_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	enemy_texture_rect.custom_minimum_size = Vector2(130, 130)
+	enemy_texture_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	enemy_panel.add_child(enemy_texture_rect)
+	
+	# Ícone do inimigo (emoji grande - fallback se não houver textura)
+	enemy_icon_label = Label.new()
+	enemy_icon_label.set_anchors_preset(Control.PRESET_CENTER)
+	enemy_icon_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	enemy_icon_label.grow_vertical = Control.GROW_DIRECTION_BOTH
+	enemy_icon_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	enemy_icon_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	enemy_icon_label.add_theme_font_size_override("font_size", 48)
+	enemy_panel.add_child(enemy_icon_label)
+	
+	# Container do inimigo (topo da tela - estilo Boss de Honkai Star Rail)
 	enemy_container = VBoxContainer.new()
 	enemy_container.layout_mode = 0
-	enemy_container.position = Vector2(792, 135)
-	enemy_container.size = Vector2(200, 100)
+	enemy_container.position = Vector2(312, 25) # Centralizado horizontalmente no topo da tela (X=512)
+	enemy_container.size = Vector2(400, 120)
 	enemy_container.add_theme_constant_override("separation", 2)
 	enemy_container.alignment = BoxContainer.ALIGNMENT_BEGIN
 	add_child(enemy_container)
@@ -451,19 +476,9 @@ func _build_enemy_area():
 	enemy_name_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	enemy_container.add_child(enemy_name_label)
 	
-	# Intent (o que o inimigo vai fazer) - Criado aqui, mas adicionado ao fim da VBoxContainer
-	enemy_intent_label = Label.new()
-	enemy_intent_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	if font_bold:
-		enemy_intent_label.add_theme_font_override("font", font_bold)
-	enemy_intent_label.add_theme_font_size_override("font_size", 13)
-	enemy_intent_label.add_theme_color_override("font_color", Color(1.0, 0.6, 0.3, 1.0))
-	enemy_intent_label.add_theme_constant_override("outline_size", 2)
-	enemy_intent_label.add_theme_color_override("font_outline_color", Color.BLACK)
-	
-	# HP Bar do inimigo
+	# HP Bar do inimigo (estilo boss HSR: larga no topo da tela)
 	enemy_hp_bar = ProgressBar.new()
-	enemy_hp_bar.custom_minimum_size = Vector2(140, 16)
+	enemy_hp_bar.custom_minimum_size = Vector2(320, 16)
 	enemy_hp_bar.max_value = enemy_max_hp
 	enemy_hp_bar.value = enemy_hp
 	enemy_hp_bar.show_percentage = false
@@ -518,37 +533,6 @@ func _build_enemy_area():
 	enemy_status_label.add_theme_font_size_override("font_size", 10)
 	enemy_status_label.add_theme_color_override("font_color", GOLD_COLOR)
 	enemy_container.add_child(enemy_status_label)
-	
-	# Intent adicionado após todos os outros dados para ficar mais próximo da cabeça do inimigo
-	enemy_container.add_child(enemy_intent_label)
-	
-	# Painel visual do inimigo — posição fixa alinhada com a plataforma
-	enemy_panel = Panel.new()
-	enemy_panel.custom_minimum_size = Vector2(160, 160)
-	enemy_panel.position = Vector2(812, 210)
-	enemy_panel.size = Vector2(160, 160)
-	add_child(enemy_panel)
-	
-	# Sprite de textura (carregado dinamicamente)
-	enemy_texture_rect = TextureRect.new()
-	enemy_texture_rect.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	enemy_texture_rect.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	enemy_texture_rect.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	enemy_texture_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	enemy_texture_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	enemy_texture_rect.custom_minimum_size = Vector2(150, 150)
-	enemy_texture_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	enemy_panel.add_child(enemy_texture_rect)
-	
-	# Ícone do inimigo (emoji grande - fallback se não houver textura)
-	enemy_icon_label = Label.new()
-	enemy_icon_label.set_anchors_preset(Control.PRESET_CENTER)
-	enemy_icon_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	enemy_icon_label.grow_vertical = Control.GROW_DIRECTION_BOTH
-	enemy_icon_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	enemy_icon_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	enemy_icon_label.add_theme_font_size_override("font_size", 48)
-	enemy_panel.add_child(enemy_icon_label)
 
 func _build_bottom_bar():
 	# Painel inferior escuro
@@ -2038,41 +2022,6 @@ func _update_all_ui():
 			parts.append("⚠️ Vuln. " + str(enemy_vulnerable))
 		enemy_status_label.text = " | ".join(parts) if parts.size() > 0 else ""
 	
-	# Intent do inimigo
-	if enemy_intent_label and not enemy_intent.is_empty():
-		var intent_text = ""
-		match enemy_intent.get("type", -1):
-			ThorEnemyDatabase.IntentType.ATTACK:
-				var dmg = enemy_intent.get("damage", 0) + enemy_strength
-				if GameGlobals:
-					match GameGlobals.current_difficulty:
-						GameGlobals.Difficulty.EASY: dmg = int(dmg * 0.8)
-						GameGlobals.Difficulty.HARD: dmg = int(dmg * 1.25)
-				var hits = enemy_intent.get("hits", 1)
-				if hits > 1:
-					intent_text = "⚔️ " + str(dmg) + " × " + str(hits)
-				else:
-					intent_text = "⚔️ " + str(dmg)
-			ThorEnemyDatabase.IntentType.DEFEND:
-				intent_text = "🛡 " + str(enemy_intent.get("block", 0))
-			ThorEnemyDatabase.IntentType.BUFF:
-				if enemy_intent.has("strength"):
-					intent_text = "💪 +" + str(enemy_intent.strength)
-				elif enemy_intent.has("heal"):
-					intent_text = "❤️ +" + str(enemy_intent.heal)
-				else:
-					intent_text = "✨ Buff"
-			ThorEnemyDatabase.IntentType.ATTACK_DEFEND:
-				var dmg = enemy_intent.get("damage", 0) + enemy_strength
-				if GameGlobals:
-					match GameGlobals.current_difficulty:
-						GameGlobals.Difficulty.EASY: dmg = int(dmg * 0.8)
-						GameGlobals.Difficulty.HARD: dmg = int(dmg * 1.25)
-				intent_text = "⚔️ " + str(dmg) + " + 🛡 " + str(enemy_intent.get("block", 0))
-			ThorEnemyDatabase.IntentType.DEBUFF:
-				intent_text = "👎 Debuff"
-		enemy_intent_label.text = intent_text
-	
 	# Painel do inimigo (cor, borda e textura)
 	if enemy_panel:
 		var panel_sb = StyleBoxFlat.new()
@@ -2155,6 +2104,8 @@ func _update_all_ui():
 					enemy_texture_rect.custom_minimum_size = Vector2(new_w, new_h)
 					enemy_texture_rect.size = Vector2(new_w, new_h)
 					enemy_texture_rect.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+					# Centralizar horizontalmente e colocar exatamente no fundo do painel (Y=140) para não flutuar
+					enemy_texture_rect.position = Vector2((140 - new_w) / 2, 140 - new_h)
 				if enemy_icon_label:
 					enemy_icon_label.visible = false
 			else:
