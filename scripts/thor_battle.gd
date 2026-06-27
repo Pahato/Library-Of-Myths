@@ -310,17 +310,12 @@ func _build_ui():
 	add_child(info_label)
 
 func _build_player_area():
-	# Container do jogador (lado esquerdo)
+	# Container do jogador (lado esquerdo) - Posicionado de forma absoluta sobre a cabeça
 	player_container = VBoxContainer.new()
-	player_container.layout_mode = 1
-	player_container.anchor_left = 0.12
-	player_container.anchor_top = 0.0
-	player_container.anchor_right = 0.35
-	player_container.anchor_bottom = 1.0
-	player_container.offset_top = 210
-	player_container.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	player_container.grow_vertical = Control.GROW_DIRECTION_BOTH
-	player_container.add_theme_constant_override("separation", 6)
+	player_container.layout_mode = 0
+	player_container.position = Vector2(170, 135)
+	player_container.size = Vector2(200, 100)
+	player_container.add_theme_constant_override("separation", 2)
 	player_container.alignment = BoxContainer.ALIGNMENT_BEGIN
 	add_child(player_container)
 	
@@ -336,11 +331,7 @@ func _build_player_area():
 	name_lbl.add_theme_color_override("font_outline_color", Color.BLACK)
 	player_container.add_child(name_lbl)
 	
-	# Sprite do Pato (Thor) - Placeholder invisível reduzido para trazer HP perto da cabeça
-	player_sprite = TextureRect.new()
-	player_sprite.custom_minimum_size = Vector2(40, 40)
-	player_sprite.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	player_container.add_child(player_sprite)
+	player_sprite = TextureRect.new() # Mantido apenas para compatibilidade
 	
 	# HP Bar
 	player_hp_bar = ProgressBar.new()
@@ -432,17 +423,12 @@ func _build_enemy_area():
 		anim_sprite.scale = Vector2(3.5, 3.5)
 		anim_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	
-	# Container do inimigo (lado direito)
+	# Container do inimigo (lado direito) - Posicionado de forma absoluta sobre a cabeça
 	enemy_container = VBoxContainer.new()
-	enemy_container.layout_mode = 1
-	enemy_container.anchor_left = 0.65
-	enemy_container.anchor_top = 0.0
-	enemy_container.anchor_right = 0.88
-	enemy_container.anchor_bottom = 1.0
-	enemy_container.offset_top = 60
-	enemy_container.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	enemy_container.grow_vertical = Control.GROW_DIRECTION_BOTH
-	enemy_container.add_theme_constant_override("separation", 6)
+	enemy_container.layout_mode = 0
+	enemy_container.position = Vector2(792, 135)
+	enemy_container.size = Vector2(200, 100)
+	enemy_container.add_theme_constant_override("separation", 2)
 	enemy_container.alignment = BoxContainer.ALIGNMENT_BEGIN
 	add_child(enemy_container)
 	
@@ -457,7 +443,7 @@ func _build_enemy_area():
 	enemy_name_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	enemy_container.add_child(enemy_name_label)
 	
-	# Intent (o que o inimigo vai fazer)
+	# Intent (o que o inimigo vai fazer) - Criado aqui, mas adicionado ao fim da VBoxContainer
 	enemy_intent_label = Label.new()
 	enemy_intent_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if font_bold:
@@ -466,7 +452,6 @@ func _build_enemy_area():
 	enemy_intent_label.add_theme_color_override("font_color", Color(1.0, 0.6, 0.3, 1.0))
 	enemy_intent_label.add_theme_constant_override("outline_size", 2)
 	enemy_intent_label.add_theme_color_override("font_outline_color", Color.BLACK)
-	enemy_container.add_child(enemy_intent_label)
 	
 	# HP Bar do inimigo
 	enemy_hp_bar = ProgressBar.new()
@@ -525,6 +510,9 @@ func _build_enemy_area():
 	enemy_status_label.add_theme_font_size_override("font_size", 10)
 	enemy_status_label.add_theme_color_override("font_color", GOLD_COLOR)
 	enemy_container.add_child(enemy_status_label)
+	
+	# Intent adicionado após todos os outros dados para ficar mais próximo da cabeça do inimigo
+	enemy_container.add_child(enemy_intent_label)
 	
 	# Painel visual do inimigo — posição fixa alinhada com a plataforma
 	enemy_panel = Panel.new()
@@ -1239,6 +1227,30 @@ func _get_card_icon(card_id: String) -> String:
 		"escudo_yggdrasil": return "🌳"
 		_: return "🃏"
 
+func _get_card_img_name(card_id: String) -> String:
+	match card_id:
+		"golpe_mjolnir": return "card_strike"
+		"escudo_asgard": return "card_defend"
+		"trovao": return "card_thunder"
+		"muralha_gelo": return "card_ice_wall"
+		"rugido_trovao": return "card_thunder_roar"
+		"golpe_duplo": return "card_double_strike"
+		"relampago_bifrost": return "card_bifrost_lightning"
+		"martelo_giratorio": return "card_spinning_hammer"
+		"bencao_odin": return "card_odins_blessing"
+		"armadura_divina": return "card_divine_armor"
+		"cadeia_fenrir": return "card_fenrirs_chain"
+		"investida_thor": return "card_thors_charge"
+		"cura_runas": return "card_rune_healing"
+		"furia_berserker": return "card_berserker_fury"
+		"tempestade_raios": return "card_lightning_storm"
+		"sacrificio_valquiria": return "card_valkyrie_sacrifice"
+		"valhalla": return "card_valhalla"
+		"frenesi_nordico": return "card_nordic_frenzy"
+		"escudo_yggdrasil": return "card_yggdrasil_shield"
+		"ira_mjolnir": return "card_mjolnir_wrath"
+	return ""
+
 func _create_reward_card_button(card: Dictionary) -> Panel:
 	var r_width = CARD_WIDTH * 1.2
 	var r_height = CARD_HEIGHT * 1.2
@@ -1380,13 +1392,7 @@ func _create_reward_card_button(card: Dictionary) -> Panel:
 	vbox.add_child(ill_panel)
 	
 	# Tenta carregar imagem da carta, se não existir usa emoji
-	var card_img_name = ""
-	match card.id:
-		"golpe_mjolnir": card_img_name = "card_strike"
-		"escudo_asgard": card_img_name = "card_defend"
-		"trovao": card_img_name = "card_thunder"
-		"muralha_gelo": card_img_name = "card_ice_wall"
-		
+	var card_img_name = _get_card_img_name(card.id)
 	var card_img_path = "res://assets/sprites/Sprites Thor/Cartas/" + card_img_name + ".png" if card_img_name != "" else ""
 	var has_illustration = false
 	if card_img_path != "" and ResourceLoader.exists(card_img_path):
@@ -1770,13 +1776,7 @@ func _create_card_button(card: Dictionary, index: int) -> Panel:
 	vbox.add_child(ill_panel)
 	
 	# Tenta carregar imagem da carta, se não existir usa emoji
-	var card_img_name = ""
-	match card.id:
-		"golpe_mjolnir": card_img_name = "card_strike"
-		"escudo_asgard": card_img_name = "card_defend"
-		"trovao": card_img_name = "card_thunder"
-		"muralha_gelo": card_img_name = "card_ice_wall"
-		
+	var card_img_name = _get_card_img_name(card.id)
 	var card_img_path = "res://assets/sprites/Sprites Thor/Cartas/" + card_img_name + ".png" if card_img_name != "" else ""
 	var has_illustration = false
 	if card_img_path != "" and ResourceLoader.exists(card_img_path):
