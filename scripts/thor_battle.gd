@@ -1603,10 +1603,6 @@ func _show_defeat_screen():
 	title.add_theme_color_override("font_outline_color", Color.BLACK)
 	vbox.add_child(title)
 	
-	var is_pt = true
-	if GameGlobals:
-		is_pt = GameGlobals.current_language == GameGlobals.Language.PT
-	
 	# Botão Tentar Novamente
 	var retry_btn = Button.new()
 	retry_btn.text = "Tentar Novamente" if is_pt else "Try Again"
