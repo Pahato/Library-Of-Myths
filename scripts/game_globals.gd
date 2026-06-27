@@ -695,16 +695,27 @@ func _ensure_action(action_name: String, bindings: Array):
 			if event:
 				InputMap.action_add_event(action_name, event)
 
-func play_menu_music():
+func play_music(stream_path: String, volume: float = -10.0):
 	if not music_player:
 		return
-	if music_player.stream == null or music_player.stream.resource_path != "res://assets/music/menu_theme.mp3":
-		music_player.stream = load("res://assets/music/menu_theme.mp3")
-		music_player.volume_db = -12.0
-		music_player.bus = "Music"
-		music_player.play()
-		if not music_player.finished.is_connected(music_player.play):
-			music_player.finished.connect(music_player.play)
+	# Don't restart if same track is already playing
+	if music_player.stream != null and music_player.stream.resource_path == stream_path and music_player.playing:
+		return
+	var stream = load(stream_path)
+	if stream == null:
+		print("[MUSIC] Falha ao carregar: ", stream_path)
+		return
+	music_player.stream = stream
+	music_player.volume_db = volume
+	music_player.bus = "Music"
+	music_player.play()
+	# Reconnect loop signal
+	if music_player.finished.is_connected(music_player.play):
+		music_player.finished.disconnect(music_player.play)
+	music_player.finished.connect(music_player.play)
+
+func play_menu_music():
+	play_music("res://assets/music/menu_theme.mp3", -12.0)
 
 func stop_music():
 	if music_player:

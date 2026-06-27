@@ -38,6 +38,9 @@ func _ready():
 		_generate_map()
 		
 	_build_ui()
+	
+	# Música temática do Thor
+	GameGlobals.play_music("res://assets/music/time_for_adventure.mp3", -8.0)
 
 func _generate_map():
 	var rng = RandomNumberGenerator.new()
@@ -214,11 +217,19 @@ func _build_ui():
 					base_color = Color(0.8, 0.2, 0.8)
 					
 			var icon_path = "res://assets/sprites/Sprites Thor/Icones/" + icon_file + ".png"
+			btn.text = ""
 			if ResourceLoader.exists(icon_path):
-				btn.icon = load(icon_path)
-				btn.expand_icon = true
-				btn.add_theme_constant_override("icon_max_width", 38)
-				btn.text = ""
+				var icon_tex = TextureRect.new()
+				icon_tex.texture = load(icon_path)
+				icon_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+				icon_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+				icon_tex.set_anchors_preset(Control.PRESET_FULL_RECT)
+				icon_tex.offset_left = 13
+				icon_tex.offset_top = 13
+				icon_tex.offset_right = -13
+				icon_tex.offset_bottom = -13
+				icon_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				btn.add_child(icon_tex)
 			else:
 				btn.text = icon_text
 			var btn_size = 64

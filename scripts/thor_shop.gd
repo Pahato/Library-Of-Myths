@@ -23,8 +23,8 @@ func _ready():
 	_generate_shop_items()
 	_build_ui()
 	
-	if GameGlobals and GameGlobals.has_method("play_music"):
-		pass # Tocar música de loja
+	if GameGlobals:
+		GameGlobals.play_music("res://assets/music/time_for_adventure.mp3", -8.0)
 
 func _load_font(bold: bool = false) -> FontFile:
 	var path = "res://assets/fonts/Cinzel-Bold.ttf" if bold else "res://assets/fonts/Cinzel-Regular.ttf"

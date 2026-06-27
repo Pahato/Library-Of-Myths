@@ -103,6 +103,10 @@ func _ready():
 	_build_ui()
 	_update_all_ui()
 	
+	# Música temática do Thor
+	if GameGlobals:
+		GameGlobals.play_music("res://assets/music/time_for_adventure.mp3", -8.0)
+	
 	# Começar com a animação de entrada e história
 	_play_intro_animation()
 
@@ -208,15 +212,32 @@ func _build_ui():
 	bg_color.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg_color)
 	
-	# Tentar carregar o fundo do Thor
-	var bg_tex = load("res://assets/sprites/ThorJormungandr_bg.png")
+	# Tentar carregar o fundo dinâmico por inimigo (Cenários folder) ou fallback geral
+	var enemy_bg_map = {
+		"draugr": "draugr_bg",
+		"lobo_fenrir": "loboFenrir_bg",
+		"gigante_gelo": "giganteGelo_bg",
+		"corvos_hel": "corvosHel_bg",
+		"esqueleto_viking": "esqueletoViking_bg",
+		"hel_rainha": "helRainhaBoss_bg",
+		"fenrir_gigante": "fenrirGignateBoss_bg",
+		"jormungandr": "fenrirGignateBoss_bg"
+	}
+	var bg_file = enemy_bg_map.get(enemy_data.get("id", ""), "")
+	var bg_tex = null
+	if bg_file != "":
+		var cenario_path = "res://assets/sprites/Sprites Thor/Cenários/" + bg_file + ".png"
+		if ResourceLoader.exists(cenario_path):
+			bg_tex = load(cenario_path)
+	if bg_tex == null:
+		bg_tex = load("res://assets/sprites/ThorJormungandr_bg.png")
 	if bg_tex:
 		bg_rect = TextureRect.new()
 		bg_rect.texture = bg_tex
 		bg_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		bg_rect.stretch_mode = TextureRect.STRETCH_SCALE
 		bg_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
-		bg_rect.modulate = Color(1, 1, 1, 0.45) # Mais visível/vibrante
+		bg_rect.modulate = Color(1, 1, 1, 0.45)
 		bg_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(bg_rect)
 		
@@ -238,15 +259,15 @@ func _build_ui():
 	vignette.texture = grad_tex
 	add_child(vignette)
 	
-	# Plataformas de Pedra (Premium Style)
+	# Plataformas Nórdicas de Basalto com brilho elétrico
 	var sb_platform = StyleBoxFlat.new()
-	sb_platform.bg_color = Color(0.12, 0.10, 0.08, 1.0)
-	sb_platform.border_width_top = 2
-	sb_platform.border_color = Color(0.85, 0.65, 0.25, 0.7) # Ancient Gold
+	sb_platform.bg_color = Color(0.08, 0.1, 0.14, 1.0) # Basalto azul-escuro nórdico
+	sb_platform.border_width_top = 3
+	sb_platform.border_color = Color(0.3, 0.75, 1.0, 0.85) # Carga elétrica/relâmpago
 	sb_platform.corner_radius_top_left = 6
 	sb_platform.corner_radius_top_right = 6
-	sb_platform.shadow_size = 8
-	sb_platform.shadow_color = Color(0, 0, 0, 0.5)
+	sb_platform.shadow_size = 12
+	sb_platform.shadow_color = Color(0.2, 0.6, 0.9, 0.35) # Glow ciano
 	
 	var player_platform = Panel.new()
 	player_platform.size = Vector2(180, 20)
@@ -296,7 +317,7 @@ func _build_player_area():
 	player_container.anchor_top = 0.0
 	player_container.anchor_right = 0.35
 	player_container.anchor_bottom = 1.0
-	player_container.offset_top = 130
+	player_container.offset_top = 210
 	player_container.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	player_container.grow_vertical = Control.GROW_DIRECTION_BOTH
 	player_container.add_theme_constant_override("separation", 6)
@@ -315,9 +336,9 @@ func _build_player_area():
 	name_lbl.add_theme_color_override("font_outline_color", Color.BLACK)
 	player_container.add_child(name_lbl)
 	
-	# Sprite do Pato (Thor) - Placeholder invisível de 96px para empurrar o HP bar acima do pato
+	# Sprite do Pato (Thor) - Placeholder invisível reduzido para trazer HP perto da cabeça
 	player_sprite = TextureRect.new()
-	player_sprite.custom_minimum_size = Vector2(96, 96)
+	player_sprite.custom_minimum_size = Vector2(40, 40)
 	player_sprite.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	player_container.add_child(player_sprite)
 	
@@ -389,7 +410,7 @@ func _build_enemy_area():
 	player_node.name = "Player"
 	player_node.is_cutscene = true
 	player_node.current_god_mode = 2 # GodMode.THOR = 2
-	player_node.position = Vector2(270, 335) # Alinhado com a plataforma (levantado de 350 para 335)
+	player_node.position = Vector2(270, 328) # Alinhado com a plataforma (pés assentam no rebordo)
 	
 	# Desativar física, inputs da cena e UI padrão do jogador
 	player_node.set_physics_process(false)
@@ -418,7 +439,7 @@ func _build_enemy_area():
 	enemy_container.anchor_top = 0.0
 	enemy_container.anchor_right = 0.88
 	enemy_container.anchor_bottom = 1.0
-	enemy_container.offset_top = 90
+	enemy_container.offset_top = 60
 	enemy_container.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	enemy_container.grow_vertical = Control.GROW_DIRECTION_BOTH
 	enemy_container.add_theme_constant_override("separation", 6)
@@ -505,17 +526,21 @@ func _build_enemy_area():
 	enemy_status_label.add_theme_color_override("font_color", GOLD_COLOR)
 	enemy_container.add_child(enemy_status_label)
 	
-	# Painel visual do inimigo (retângulo colorido com ícone) - AGORA NO FIM para o HP ficar no topo!
+	# Painel visual do inimigo — posição fixa alinhada com a plataforma
 	enemy_panel = Panel.new()
-	enemy_panel.custom_minimum_size = Vector2(140, 140)
-	enemy_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	enemy_container.add_child(enemy_panel)
+	enemy_panel.custom_minimum_size = Vector2(160, 160)
+	enemy_panel.position = Vector2(812, 210)
+	enemy_panel.size = Vector2(160, 160)
+	add_child(enemy_panel)
 	
 	# Sprite de textura (carregado dinamicamente)
 	enemy_texture_rect = TextureRect.new()
-	enemy_texture_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	enemy_texture_rect.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	enemy_texture_rect.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	enemy_texture_rect.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	enemy_texture_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	enemy_texture_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	enemy_texture_rect.custom_minimum_size = Vector2(150, 150)
 	enemy_texture_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	enemy_panel.add_child(enemy_texture_rect)
 	
@@ -754,7 +779,7 @@ func _apply_card_effects(card: Dictionary):
 		var is_lightning = card.id.contains("trovao") or card.id.contains("relampago") or card.id.contains("tempestade") or card.id.contains("mjolnir")
 		if is_lightning:
 			_play_sfx("explosion", 0.95, -6.0) # Som de trovão
-			_play_lightning_vfx() # Clarão elétrico
+			# _play_lightning_vfx() # Clarão removido para conforto visual
 		else:
 			_play_sfx("shoot", 1.25, -4.0) # Som de golpe normal
 		
@@ -2035,8 +2060,23 @@ func _update_all_ui():
 		
 		if enemy_texture_rect:
 			if has_texture:
-				enemy_texture_rect.texture = load(tex_path)
+				var tex = load(tex_path)
+				enemy_texture_rect.texture = tex
 				enemy_texture_rect.visible = true
+				if tex:
+					var tex_w = tex.get_width()
+					var tex_h = tex.get_height()
+					var max_size = 150.0
+					var aspect = float(tex_w) / float(tex_h)
+					var new_w = max_size
+					var new_h = max_size
+					if aspect > 1.0:
+						new_h = max_size / aspect
+					else:
+						new_w = max_size * aspect
+					enemy_texture_rect.custom_minimum_size = Vector2(new_w, new_h)
+					enemy_texture_rect.size = Vector2(new_w, new_h)
+					enemy_texture_rect.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 				if enemy_icon_label:
 					enemy_icon_label.visible = false
 			else:
@@ -2127,6 +2167,8 @@ func _play_intro_animation():
 		player_container.modulate.a = 0.0
 	if enemy_container:
 		enemy_container.modulate.a = 0.0
+	if enemy_panel:
+		enemy_panel.modulate.a = 0.0
 		
 	# Iniciar narrativa do Livro III
 	_run_intro_step_1()
@@ -2144,7 +2186,7 @@ func _run_intro_step_2_thor_fall():
 	# Thor cai do céu!
 	if player_node:
 		var tw = create_tween()
-		tw.tween_property(player_node, "position:y", 335.0, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		tw.tween_property(player_node, "position:y", 328.0, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 		tw.tween_callback(func():
 			# Tremor de ecrã e som
 			_shake_node(player_node)
@@ -2158,6 +2200,12 @@ func _run_intro_step_2_thor_fall():
 			# Revelar inimigo deslizando a opacidade
 			var tw_enemy = create_tween()
 			tw_enemy.tween_property(enemy_container, "modulate:a", 1.0, 0.5)
+			
+			# Revelar o painel do inimigo (agora é um nó separado)
+			if enemy_panel:
+				var tw_panel = create_tween()
+				tw_panel.tween_property(enemy_panel, "modulate:a", 1.0, 0.5)
+			
 			tw_enemy.tween_callback(func():
 				_run_intro_step_3_confrontation()
 			)
