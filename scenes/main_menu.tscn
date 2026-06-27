@@ -1,0 +1,207 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/main_menu.gd" id="1_main_menu_gd"]
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_main_menu_gd")
+
+[node name="BG" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.247059, 0.164706, 0.0980392, 1)
+
+[node name="TitleLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -250.0
+offset_top = 40.0
+offset_right = 250.0
+offset_bottom = 90.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.960784, 0.870588, 0.701961, 1)
+theme_override_font_sizes/font_size = 28
+text = "A Biblioteca de Mitos"
+horizontal_alignment = 1
+
+[node name="SubtitleLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -250.0
+offset_top = 95.0
+offset_right = 250.0
+offset_bottom = 125.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.701961, 0.611765, 0.470588, 1)
+theme_override_font_sizes/font_size = 12
+text = "Escolhe um livro para ler e reviver a lenda"
+horizontal_alignment = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -250.0
+offset_top = -90.0
+offset_right = 250.0
+offset_bottom = 90.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 40
+alignment = 1
+
+[node name="VBoxApolo" type="VBoxContainer" parent="HBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="BookApolo" type="Button" parent="HBoxContainer/VBoxApolo"]
+custom_minimum_size = Vector2(130, 180)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+
+[node name="LabelApolo" type="Label" parent="HBoxContainer/VBoxApolo"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 1
+
+[node name="VBoxShiva" type="VBoxContainer" parent="HBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="BookShiva" type="Button" parent="HBoxContainer/VBoxShiva"]
+custom_minimum_size = Vector2(130, 180)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+
+[node name="LabelShiva" type="Label" parent="HBoxContainer/VBoxShiva"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 1
+
+[node name="VBoxThor" type="VBoxContainer" parent="HBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="BookThor" type="Button" parent="HBoxContainer/VBoxThor"]
+custom_minimum_size = Vector2(130, 180)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+
+[node name="LabelThor" type="Label" parent="HBoxContainer/VBoxThor"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 1
+
+[node name="VBoxSusanoo" type="VBoxContainer" parent="HBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="BookSusanoo" type="Button" parent="HBoxContainer/VBoxSusanoo"]
+custom_minimum_size = Vector2(130, 180)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+
+[node name="LabelSusanoo" type="Label" parent="HBoxContainer/VBoxSusanoo"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 1
+
+[node name="StatusLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = -60.0
+offset_right = 300.0
+offset_bottom = -30.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.901961, 0.8, 0.4, 1)
+theme_override_font_sizes/font_size = 12
+text = "Estado..."
+horizontal_alignment = 1
+
+[node name="DifficultyLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 30.0
+offset_top = -95.0
+offset_right = 230.0
+offset_bottom = -70.0
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.701961, 0.611765, 0.470588, 1)
+theme_override_font_sizes/font_size = 13
+text = "Dificuldade: Normal"
+vertical_alignment = 1
+
+[node name="DiffHBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 30.0
+offset_top = -55.0
+offset_right = 280.0
+offset_bottom = -25.0
+grow_vertical = 0
+theme_override_constants/separation = 10
+
+[node name="DiffEasyButton" type="Button" parent="DiffHBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Fácil"
+
+[node name="DiffNormalButton" type="Button" parent="DiffHBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Normal"
+
+[node name="DiffHardButton" type="Button" parent="DiffHBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Difícil"
+
+[node name="CreditsButton" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -150.0
+offset_top = -55.0
+offset_right = -30.0
+offset_bottom = -25.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 12
+text = "Créditos"
