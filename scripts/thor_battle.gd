@@ -107,6 +107,12 @@ func _ready():
 	# Começar com a animação de entrada e história
 	_play_intro_animation()
 
+func _get_trans(pt: String, en: String) -> String:
+	var is_pt = true
+	if GameGlobals:
+		is_pt = GameGlobals.current_language == GameGlobals.Language.PT
+	return pt if is_pt else en
+
 func _process(delta):
 	anim_time += delta
 	if enemy_panel and enemy_panel.visible:
@@ -423,6 +429,7 @@ func _build_enemy_area():
 	enemy_panel.custom_minimum_size = Vector2(140, 140)
 	enemy_panel.position = Vector2(812, 230)
 	enemy_panel.size = Vector2(140, 140)
+	enemy_panel.visible = false # Oculto por padrão até a animação de entrada iniciar
 	add_child(enemy_panel)
 	
 	# Sprite de textura (carregado dinamicamente)
@@ -445,9 +452,17 @@ func _build_enemy_area():
 	
 	# Container do inimigo (topo da tela - estilo Boss de Honkai Star Rail, perfeitamente centralizado)
 	enemy_container = VBoxContainer.new()
-	enemy_container.layout_mode = 0
-	enemy_container.position = Vector2(352, 25) # Centralizado horizontalmente no topo (X=512, largura=320)
+	enemy_container.layout_mode = 1 # Usar âncoras para alinhamento robusto
+	enemy_container.anchor_left = 0.5
+	enemy_container.anchor_right = 0.5
+	enemy_container.anchor_top = 0.0
+	enemy_container.anchor_bottom = 0.0
+	enemy_container.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	enemy_container.size = Vector2(320, 120)
+	enemy_container.offset_left = -160
+	enemy_container.offset_right = 160
+	enemy_container.offset_top = 25
+	enemy_container.offset_bottom = 145
 	enemy_container.add_theme_constant_override("separation", 2)
 	enemy_container.alignment = BoxContainer.ALIGNMENT_BEGIN
 	add_child(enemy_container)
@@ -549,7 +564,7 @@ func _build_bottom_bar():
 	energy_container.add_child(energy_label)
 	
 	var energy_title = Label.new()
-	energy_title.text = "ENERGIA"
+	energy_title.text = _get_trans("ENERGIA", "ENERGY")
 	energy_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if font_reg:
 		energy_title.add_theme_font_override("font", font_reg)
@@ -590,7 +605,7 @@ func _build_bottom_bar():
 	bottom_panel.add_child(btn_container)
 	
 	end_turn_btn = Button.new()
-	end_turn_btn.text = "Terminar\nTurno"
+	end_turn_btn.text = _get_trans("Terminar\nTurno", "End\nTurn")
 	end_turn_btn.custom_minimum_size = Vector2(100, 50)
 	if font_bold:
 		end_turn_btn.add_theme_font_override("font", font_bold)
@@ -651,7 +666,7 @@ func _start_player_turn():
 		_draw_card()
 	
 	_update_all_ui()
-	_show_info("Teu Turno!", ACCENT_COLOR)
+	_show_info(_get_trans("Teu Turno!", "Your Turn!"), ACCENT_COLOR)
 	
 	# Ativar botão
 	end_turn_btn.disabled = false
@@ -683,7 +698,7 @@ func _play_card(index: int):
 	
 	# Verificar energia
 	if card.cost > player_energy:
-		_show_info("Sem Energia!", DAMAGE_COLOR)
+		_show_info(_get_trans("Sem Energia!", "No Energy!"), DAMAGE_COLOR)
 		return
 	
 	# Gastar energia
@@ -753,13 +768,13 @@ func _apply_card_effects(card: Dictionary):
 	# --- Força ---
 	if effect.has("strength"):
 		player_strength += effect.strength
-		_show_info("💪 +" + str(effect.strength) + " Força", GOLD_COLOR)
+		_show_info("💪 +" + str(effect.strength) + _get_trans(" Força", " Strength"), GOLD_COLOR)
 		_play_sfx("power_up", 1.2, -6.0)
 	
 	# --- Vulnerável (ao inimigo) ---
 	if effect.has("vulnerable"):
 		enemy_vulnerable += effect.vulnerable
-		_show_info("Vulnerável! (" + str(effect.vulnerable) + " turnos)", DAMAGE_COLOR)
+		_show_info(_get_trans("Vulnerável! (", "Vulnerable! (") + str(effect.vulnerable) + _get_trans(" turnos)", " turns)"), DAMAGE_COLOR)
 		_play_sfx("shoot", 0.8, -6.0)
 	
 	# --- Comprar cartas ---
@@ -782,7 +797,7 @@ func _apply_card_effects(card: Dictionary):
 	# --- Ganhar energia ---
 	if effect.has("energy"):
 		player_energy += effect.energy
-		_show_info("⚡ +" + str(effect.energy) + " Energia", ENERGY_COLOR)
+		_show_info("⚡ +" + str(effect.energy) + _get_trans(" Energia", " Energy"), ENERGY_COLOR)
 		_play_sfx("power_up", 1.3, -6.0)
 	
 	# --- Perder escudo ---
@@ -792,17 +807,17 @@ func _apply_card_effects(card: Dictionary):
 	# --- Enfraquecer inimigo ---
 	if effect.has("weaken"):
 		enemy_strength = maxi(0, enemy_strength - effect.weaken)
-		_show_info("👎 Inimigo -" + str(effect.weaken) + " Força", ACCENT_COLOR)
+		_show_info(_get_trans("👎 Inimigo -", "👎 Enemy -") + str(effect.weaken) + _get_trans(" Força", " Strength"), ACCENT_COLOR)
 		_play_sfx("clink", 0.75, -6.0)
 	
 	# --- Poderes (efeitos permanentes) ---
 	if card.type == ThorCardDatabase.CardType.POWER:
 		if effect.has("block_per_turn"):
 			player_block_per_turn += effect.block_per_turn
-			_show_info("🛡 +" + str(effect.block_per_turn) + " Escudo/Turno", BLOCK_COLOR)
+			_show_info("🛡 +" + str(effect.block_per_turn) + _get_trans(" Escudo/Turno", " Block/Turn"), BLOCK_COLOR)
 		if effect.has("draw_per_turn"):
 			player_draw_bonus += effect.draw_per_turn
-			_show_info("🃏 +1 Carta/Turno", GOLD_COLOR)
+			_show_info(_get_trans("🃏 +1 Carta/Turno", "🃏 +1 Card/Turn"), GOLD_COLOR)
 		powers_active.append(card.id)
 
 func _deal_damage_to_enemy(damage: int):
@@ -822,7 +837,7 @@ func _deal_damage_to_enemy(damage: int):
 	enemy_hp = maxi(0, enemy_hp - actual_dmg)
 	
 	if actual_dmg > 0:
-		_show_info("⚔️ " + str(actual_dmg) + " dano!", DAMAGE_COLOR)
+		_show_info("⚔️ " + str(actual_dmg) + _get_trans(" dano!", " damage!"), DAMAGE_COLOR)
 		_shake_node(enemy_panel)
 		_play_spark_vfx(enemy_panel.global_position + enemy_panel.size / 2) # Partículas!
 
@@ -877,7 +892,7 @@ func _start_enemy_turn():
 	# Reset block do inimigo
 	enemy_block = 0
 	
-	_show_info("Turno do Inimigo...", DAMAGE_COLOR)
+	_show_info(_get_trans("Turno do Inimigo...", "Enemy Turn..."), DAMAGE_COLOR)
 	_update_all_ui()
 	
 	# Pequena pausa para feedback visual
@@ -905,20 +920,20 @@ func _execute_enemy_intent():
 				_deal_damage_to_player(dmg)
 			if intent.has("vulnerable") and intent.vulnerable > 0:
 				player_vulnerable += intent.vulnerable
-				_show_info("Vulnerável! (" + str(intent.vulnerable) + " turnos)", DAMAGE_COLOR)
+				_show_info(_get_trans("Vulnerável! (", "Vulnerable! (") + str(intent.vulnerable) + _get_trans(" turnos)", " turns)"), DAMAGE_COLOR)
 		
 		ThorEnemyDatabase.IntentType.DEFEND:
 			var block_val: int = intent.get("block", 0)
 			enemy_block += block_val
-			_show_info("🛡 Inimigo +" + str(block_val) + " Escudo", BLOCK_COLOR)
+			_show_info(_get_trans("🛡 Inimigo +", "🛡 Enemy +") + str(block_val) + _get_trans(" Escudo", " Block"), BLOCK_COLOR)
 		
 		ThorEnemyDatabase.IntentType.BUFF:
 			if intent.has("strength") and intent.strength > 0:
 				enemy_strength += intent.strength
-				_show_info("💪 Inimigo +" + str(intent.strength) + " Força!", DAMAGE_COLOR)
+				_show_info(_get_trans("💪 Inimigo +", "💪 Enemy +") + str(intent.strength) + _get_trans(" Força!", " Strength!"), DAMAGE_COLOR)
 			if intent.has("heal") and intent.heal > 0:
 				enemy_hp = mini(enemy_hp + intent.heal, enemy_max_hp)
-				_show_info("❤️ Inimigo curou " + str(intent.heal) + " HP!", HEAL_COLOR)
+				_show_info(_get_trans("❤️ Inimigo curou ", "❤️ Enemy healed ") + str(intent.heal) + " HP!", HEAL_COLOR)
 		
 		ThorEnemyDatabase.IntentType.ATTACK_DEFEND:
 			var dmg: int = intent.get("damage", 0) + enemy_strength
@@ -932,12 +947,12 @@ func _execute_enemy_intent():
 			_deal_damage_to_player(dmg)
 			var block_val: int = intent.get("block", 0)
 			enemy_block += block_val
-			_show_info("🛡 Inimigo +" + str(block_val) + " Escudo", BLOCK_COLOR)
+			_show_info(_get_trans("🛡 Inimigo +", "🛡 Enemy +") + str(block_val) + _get_trans(" Escudo", " Block"), BLOCK_COLOR)
 		
 		ThorEnemyDatabase.IntentType.DEBUFF:
 			if intent.has("vulnerable") and intent.vulnerable > 0:
 				player_vulnerable += intent.vulnerable
-				_show_info("Vulnerável! (" + str(intent.vulnerable) + " turnos)", DAMAGE_COLOR)
+				_show_info(_get_trans("Vulnerável! (", "Vulnerable! (") + str(intent.vulnerable) + _get_trans(" turnos)", " turns)"), DAMAGE_COLOR)
 	
 	# Reduzir vulnerável do inimigo
 	if enemy_vulnerable > 0:
@@ -964,7 +979,7 @@ func _execute_enemy_intent():
 
 func _on_enemy_defeated():
 	state = BattleState.VICTORY
-	_show_info("VITÓRIA!", GOLD_COLOR)
+	_show_info(_get_trans("VITÓRIA!", "VICTORY!"), GOLD_COLOR)
 	_update_all_ui()
 	
 	# Pausa e depois mostrar ecrã de vitória (ou diálogo final se for Boss)
@@ -1029,7 +1044,7 @@ func _show_victory_screen():
 		desc.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
 		vbox.add_child(desc)
 	else:
-		title.text = "⚡ VITÓRIA! ⚡"
+		title.text = "⚡ VITÓRIA! ⚡" if is_pt else "⚡ VICTORY! ⚡"
 		
 		# Determinar Recompensas (Rebalanceado: mais ouro para run mais curta)
 		var reward_gold = randi_range(35, 55)
@@ -1221,7 +1236,7 @@ func _spawn_next_wave():
 		
 	# Som de spawn
 	_play_sfx("power_up", 0.8, -4.0)
-	_show_info("REFORÇOS INIMIGOS!", DAMAGE_COLOR)
+	_show_info(_get_trans("REFORÇOS INIMIGOS!", "ENEMY REINFORCEMENTS!"), DAMAGE_COLOR)
 	
 	_update_all_ui()
 	_rebuild_hand_ui()
@@ -1545,7 +1560,7 @@ func _create_reward_card_button(card: Dictionary) -> Panel:
 
 func _on_player_defeated():
 	state = BattleState.DEFEAT
-	_show_info("DERROTA...", DAMAGE_COLOR)
+	_show_info(_get_trans("DERROTA...", "DEFEAT..."), DAMAGE_COLOR)
 	_update_all_ui()
 	
 	var timer = get_tree().create_timer(1.5)
@@ -1573,8 +1588,12 @@ func _show_defeat_screen():
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	overlay.add_child(vbox)
 	
+	var is_pt = true
+	if GameGlobals:
+		is_pt = GameGlobals.current_language == GameGlobals.Language.PT
+		
 	var title = Label.new()
-	title.text = "💀 DERROTA 💀"
+	title.text = "💀 DERROTA 💀" if is_pt else "💀 DEFEAT 💀"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if font_bold:
 		title.add_theme_font_override("font", font_bold)
@@ -2147,8 +2166,9 @@ func _play_intro_animation():
 	if enemy_container:
 		enemy_container.modulate.a = 0.0
 	if enemy_panel:
-		# Posicionar o inimigo fora do ecrã à direita para deslizar para dentro na entrada
-		enemy_panel.position.x = 1100
+		# Posicionar o inimigo completamente fora do ecrã à direita de forma dinâmica e mantê-lo invisível
+		enemy_panel.visible = false
+		enemy_panel.position.x = get_viewport_rect().size.x + 200
 		enemy_panel.modulate.a = 1.0
 		
 	# Iniciar narrativa do Livro III
@@ -2182,8 +2202,9 @@ func _run_intro_step_2_thor_fall():
 			var tw_enemy = create_tween()
 			tw_enemy.tween_property(enemy_container, "modulate:a", 1.0, 0.5)
 			
-			# Revelar o inimigo com animação de entrada: desliza suavemente da direita para a plataforma!
+			# Revelar o inimigo com animação de entrada: torna-se visível e desliza suavemente da direita para a plataforma!
 			if enemy_panel:
+				enemy_panel.visible = true
 				var tw_panel = create_tween()
 				tw_panel.tween_property(enemy_panel, "position:x", 812.0, 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 			

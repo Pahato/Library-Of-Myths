@@ -11,6 +11,7 @@ var current_line: int = 0
 var is_typing: bool = false
 
 var input_cooldown: float = 0.25
+var is_finished: bool = false
 
 var sound_type: AudioStreamPlayer
 var sound_advance: AudioStreamPlayer
@@ -108,6 +109,9 @@ func _on_timer_timeout():
 		timer.stop()
 
 func _finish_dialogue():
+	if is_finished:
+		return
+	is_finished = true
 	# Despausa o jogo
 	get_tree().paused = false
 	dialogue_finished.emit()

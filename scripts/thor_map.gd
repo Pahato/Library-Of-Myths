@@ -324,13 +324,17 @@ func _build_ui():
 	hbox.add_theme_constant_override("separation", 60)
 	top_bar.add_child(hbox)
 	
+	var is_pt = true
+	if GameGlobals:
+		is_pt = GameGlobals.current_language == GameGlobals.Language.PT
+		
 	var hp_label = Label.new()
 	hp_label.text = "❤️ HP: %d/%d" % [GameGlobals.thor_hp, GameGlobals.thor_max_hp]
 	hp_label.add_theme_font_size_override("font_size", 22)
 	hbox.add_child(hp_label)
 	
 	var gold_label = Label.new()
-	gold_label.text = "💰 Ouro: %d" % GameGlobals.thor_gold
+	gold_label.text = ("💰 Ouro: %d" if is_pt else "💰 Gold: %d") % GameGlobals.thor_gold
 	gold_label.add_theme_font_size_override("font_size", 22)
 	hbox.add_child(gold_label)
 	
@@ -339,10 +343,6 @@ func _build_ui():
 	deck_label.text = "🃏 Deck: %d" % deck_size
 	deck_label.add_theme_font_size_override("font_size", 22)
 	hbox.add_child(deck_label)
-	
-	var is_pt = true
-	if GameGlobals:
-		is_pt = GameGlobals.current_language == GameGlobals.Language.PT
 		
 	# Title Banner (Fixo abaixo da Top Bar)
 	var title_banner = Panel.new()
