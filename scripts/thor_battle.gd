@@ -56,21 +56,17 @@ var enemy_icon_label: Label = null
 var player_hp_bar: ProgressBar = null
 var player_hp_label: Label = null
 var player_block_label: Label = null
-var player_status_label: Label = null
-
 var enemy_hp_bar: ProgressBar = null
 var enemy_hp_label: Label = null
-var enemy_name_label: Label = null
 var enemy_block_label: Label = null
+var enemy_name_label: Label = null
 var enemy_intent_label: Label = null
-var enemy_status_label: Label = null
 
 var energy_label: Label = null
 var end_turn_btn: Button = null
 var card_container: HBoxContainer = null
 var info_label: Label = null        # Feedback de ação (ex: "PERFEITO!", "-12 HP")
 var deck_count_label: Label = null
-var discard_count_label: Label = null
 
 # --- Configuração ---
 var font_bold: FontFile = null
@@ -321,7 +317,7 @@ func _build_player_area():
 	# Container do jogador (lado esquerdo) - Posicionado de forma absoluta sobre a cabeça (estilo HSR)
 	player_container = VBoxContainer.new()
 	player_container.layout_mode = 0
-	player_container.position = Vector2(170, 240) # Baixado de 135 para 240 para ficar mais próximo da cabeça
+	player_container.position = Vector2(170, 195) # Posicionado 15px mais alto (Y=195) para ficar perfeitamente acima da cabeça sem sobrepor
 	player_container.size = Vector2(200, 100)
 	player_container.add_theme_constant_override("separation", 2)
 	player_container.alignment = BoxContainer.ALIGNMENT_BEGIN
@@ -392,15 +388,6 @@ func _build_player_area():
 	player_block_label.add_theme_font_size_override("font_size", 11)
 	player_block_label.add_theme_color_override("font_color", BLOCK_COLOR)
 	player_container.add_child(player_block_label)
-	
-	# Status Label (Força, etc.)
-	player_status_label = Label.new()
-	player_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	if font_reg:
-		player_status_label.add_theme_font_override("font", font_reg)
-	player_status_label.add_theme_font_size_override("font_size", 10)
-	player_status_label.add_theme_color_override("font_color", GOLD_COLOR)
-	player_container.add_child(player_status_label)
 
 func _build_enemy_area():
 	# Jogador Visível (Pato - player.tscn)
@@ -456,11 +443,11 @@ func _build_enemy_area():
 	enemy_icon_label.add_theme_font_size_override("font_size", 48)
 	enemy_panel.add_child(enemy_icon_label)
 	
-	# Container do inimigo (topo da tela - estilo Boss de Honkai Star Rail)
+	# Container do inimigo (topo da tela - estilo Boss de Honkai Star Rail, perfeitamente centralizado)
 	enemy_container = VBoxContainer.new()
 	enemy_container.layout_mode = 0
-	enemy_container.position = Vector2(312, 25) # Centralizado horizontalmente no topo da tela (X=512)
-	enemy_container.size = Vector2(400, 120)
+	enemy_container.position = Vector2(352, 25) # Centralizado horizontalmente no topo (X=512, largura=320)
+	enemy_container.size = Vector2(320, 120)
 	enemy_container.add_theme_constant_override("separation", 2)
 	enemy_container.alignment = BoxContainer.ALIGNMENT_BEGIN
 	add_child(enemy_container)
@@ -476,7 +463,7 @@ func _build_enemy_area():
 	enemy_name_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	enemy_container.add_child(enemy_name_label)
 	
-	# HP Bar do inimigo (estilo boss HSR: larga no topo da tela)
+	# HP Bar do inimigo (estilo boss HSR: larga no topo da tela, preenche os 320px do container)
 	enemy_hp_bar = ProgressBar.new()
 	enemy_hp_bar.custom_minimum_size = Vector2(320, 16)
 	enemy_hp_bar.max_value = enemy_max_hp
@@ -524,15 +511,6 @@ func _build_enemy_area():
 	enemy_block_label.add_theme_font_size_override("font_size", 11)
 	enemy_block_label.add_theme_color_override("font_color", BLOCK_COLOR)
 	enemy_container.add_child(enemy_block_label)
-	
-	# Status Label do inimigo
-	enemy_status_label = Label.new()
-	enemy_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	if font_reg:
-		enemy_status_label.add_theme_font_override("font", font_reg)
-	enemy_status_label.add_theme_font_size_override("font_size", 10)
-	enemy_status_label.add_theme_color_override("font_color", GOLD_COLOR)
-	enemy_container.add_child(enemy_status_label)
 
 func _build_bottom_bar():
 	# Painel inferior escuro
@@ -636,14 +614,7 @@ func _build_bottom_bar():
 	end_turn_btn.pressed.connect(_on_end_turn_pressed)
 	btn_container.add_child(end_turn_btn)
 	
-	# Discard count
-	discard_count_label = Label.new()
-	discard_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	if font_reg:
-		discard_count_label.add_theme_font_override("font", font_reg)
-	discard_count_label.add_theme_font_size_override("font_size", 9)
-	discard_count_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
-	btn_container.add_child(discard_count_label)
+	# Discard count removido a pedido do usuário
 
 # =============================================================================
 # LÓGICA DE COMBATE
@@ -1988,18 +1959,6 @@ func _update_all_ui():
 		player_hp_label.text = "❤️ " + str(player_hp) + " / " + str(player_max_hp)
 	if player_block_label:
 		player_block_label.text = "🛡 " + str(player_block) if player_block > 0 else ""
-	if player_status_label:
-		var status_parts: Array = []
-		if player_strength > 0:
-			status_parts.append("💪 " + str(player_strength))
-		if player_block_per_turn > 0:
-			status_parts.append("🛡/T " + str(player_block_per_turn))
-		if player_draw_bonus > 0:
-			status_parts.append("🃏+" + str(player_draw_bonus))
-		if player_vulnerable > 0:
-			status_parts.append("⚠️ Vuln. " + str(player_vulnerable))
-		player_status_label.text = " | ".join(status_parts) if status_parts.size() > 0 else ""
-	
 	# Inimigo
 	var is_pt = true
 	if GameGlobals:
@@ -2014,13 +1973,6 @@ func _update_all_ui():
 		enemy_hp_label.text = "❤️ " + str(enemy_hp) + " / " + str(enemy_max_hp)
 	if enemy_block_label:
 		enemy_block_label.text = "🛡 " + str(enemy_block) if enemy_block > 0 else ""
-	if enemy_status_label:
-		var parts: Array = []
-		if enemy_strength > 0:
-			parts.append("💪 " + str(enemy_strength))
-		if enemy_vulnerable > 0:
-			parts.append("⚠️ Vuln. " + str(enemy_vulnerable))
-		enemy_status_label.text = " | ".join(parts) if parts.size() > 0 else ""
 	
 	# Painel do inimigo (cor, borda e textura)
 	if enemy_panel:
@@ -2124,8 +2076,6 @@ func _update_all_ui():
 	# Contadores de deck
 	if deck_count_label:
 		deck_count_label.text = "📚 Deck: " + str(draw_pile.size())
-	if discard_count_label:
-		discard_count_label.text = "♻️ Desc: " + str(discard_pile.size())
 	
 	# Rebuild cartas se estamos no turno do jogador
 	if state == BattleState.PLAYER_TURN:
@@ -2197,7 +2147,9 @@ func _play_intro_animation():
 	if enemy_container:
 		enemy_container.modulate.a = 0.0
 	if enemy_panel:
-		enemy_panel.modulate.a = 0.0
+		# Posicionar o inimigo fora do ecrã à direita para deslizar para dentro na entrada
+		enemy_panel.position.x = 1100
+		enemy_panel.modulate.a = 1.0
 		
 	# Iniciar narrativa do Livro III
 	_run_intro_step_1()
@@ -2226,14 +2178,14 @@ func _run_intro_step_2_thor_fall():
 			var tw_player_hud = create_tween()
 			tw_player_hud.tween_property(player_container, "modulate:a", 1.0, 0.45)
 			
-			# Revelar inimigo deslizando a opacidade
+			# Revelar inimigo deslizando a opacidade do HUD
 			var tw_enemy = create_tween()
 			tw_enemy.tween_property(enemy_container, "modulate:a", 1.0, 0.5)
 			
-			# Revelar o painel do inimigo (agora é um nó separado)
+			# Revelar o inimigo com animação de entrada: desliza suavemente da direita para a plataforma!
 			if enemy_panel:
 				var tw_panel = create_tween()
-				tw_panel.tween_property(enemy_panel, "modulate:a", 1.0, 0.5)
+				tw_panel.tween_property(enemy_panel, "position:x", 812.0, 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 			
 			tw_enemy.tween_callback(func():
 				_run_intro_step_3_confrontation()
