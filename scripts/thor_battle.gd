@@ -29,6 +29,7 @@ var draw_pile: Array = []     # Pilha de compra
 var hand: Array = []          # Mão do jogador
 var discard_pile: Array = []  # Pilha de descarte
 var powers_active: Array = [] # Poderes ativos (permanentes)
+var combat_waves: Array = []  # Reforços / inimigos adicionais nesta fase
 
 # --- Dados do Inimigo ---
 var enemy_data: Dictionary = {}
@@ -152,12 +153,14 @@ func _init_enemy(enemy_id: String = ""):
 	var id_to_spawn = enemy_id
 	var is_elite = false
 	var is_boss = false
+	combat_waves.clear()
 	
 	if id_to_spawn == "" and GameGlobals and GameGlobals.thor_run_active:
-		# Encontrar o nó atual no mapa
+		# Encontrar o nó atual no mapa (corrigindo a leitura direta do dicionário de layers)
 		var current_node = null
-		if GameGlobals.thor_map_data.has("layers"):
-			for layer in GameGlobals.thor_map_data["layers"]:
+		if not GameGlobals.thor_map_data.is_empty():
+			for layer_idx in GameGlobals.thor_map_data:
+				var layer = GameGlobals.thor_map_data[layer_idx]
 				for node in layer:
 					if node.id == GameGlobals.thor_node_id:
 						current_node = node
@@ -169,16 +172,21 @@ func _init_enemy(enemy_id: String = ""):
 			var act = GameGlobals.thor_act
 			if current_node.type == 4: # BOSS
 				is_boss = true
-				var bosses = ThorEnemyDatabase.get_enemies_for_act(act) # We need a custom get_boss function, or hardcode Jormungandr
 				id_to_spawn = "jormungandr"
 			elif current_node.type == 1: # ELITE
 				is_elite = true
 				var elites = ["hel_rainha", "fenrir_gigante"]
 				id_to_spawn = elites.pick_random()
 			else:
+				# COMBAT normal — Spawna inimigo aleatório e tem 40% de chance de ter um segundo inimigo (onda de reforço)
 				var normals = ThorEnemyDatabase.get_enemies_for_act(act)
 				if normals.size() > 0:
-					id_to_spawn = normals.pick_random()
+					normals.shuffle()
+					id_to_spawn = normals[0]
+					
+					# 40% de chance de spawnar um segundo inimigo como reforço (fase com múltiplos inimigos em ondas)
+					if randf() < 0.4 and normals.size() > 1:
+						combat_waves = [normals[1]]
 				else:
 					id_to_spawn = "draugr"
 		else:
@@ -680,9 +688,11 @@ func _start_player_turn():
 	# Restaurar energia
 	player_energy = player_max_energy
 	
-	# Comprar cartas
-	var draw_amount = player_draw_count + player_draw_bonus
-	for i in range(draw_amount):
+	# Comprar cartas até atingir o limite da mão (draw_amount)
+	var draw_limit = player_draw_count + player_draw_bonus
+	while hand.size() < draw_limit:
+		if draw_pile.is_empty() and discard_pile.is_empty():
+			break
 		_draw_card()
 	
 	_update_all_ui()
@@ -732,9 +742,12 @@ func _play_card(index: int):
 	if card.type != ThorCardDatabase.CardType.POWER:
 		discard_pile.append(card_id)
 	
-	# Verificar se inimigo morreu
+	# Verificar se inimigo morreu (ou se há reforços/ondas)
 	if enemy_hp <= 0:
-		_on_enemy_defeated()
+		if combat_waves.size() > 0:
+			_spawn_next_wave()
+		else:
+			_on_enemy_defeated()
 		return
 	
 	# Atualizar UI
@@ -896,10 +909,8 @@ func _on_end_turn_pressed():
 	
 	end_turn_btn.disabled = true
 	
-	# Descartar mão
-	for card_id in hand:
-		discard_pile.append(card_id)
-	hand.clear()
+	# NÃO descartar a mão! O jogador mantém as cartas que não jogou para o próximo turno.
+	# Apenas atualiza a UI
 	_rebuild_hand_ui()
 	
 	# Iniciar turno do inimigo
@@ -1018,15 +1029,11 @@ func _on_enemy_defeated():
 		timer.timeout.connect(_show_victory_screen)
 
 func _show_victory_screen():
-	# Determinar Recompensas
-	var reward_gold = randi_range(15, 25)
-	if enemy_data.get("type", 0) == ThorEnemyDatabase.EnemyType.ELITE:
-		reward_gold = randi_range(30, 45)
-	elif enemy_data.get("type", 0) == ThorEnemyDatabase.EnemyType.BOSS:
-		reward_gold = randi_range(100, 150)
+	var is_boss = (enemy_data.get("type", 0) == ThorEnemyDatabase.EnemyType.BOSS)
+	var is_pt = true
+	if GameGlobals:
+		is_pt = GameGlobals.current_language == GameGlobals.Language.PT
 		
-	var reward_cards = _generate_card_rewards()
-	
 	# Overlay escuro
 	var overlay = ColorRect.new()
 	overlay.color = Color(0, 0, 0, 0.85)
@@ -1046,7 +1053,6 @@ func _show_victory_screen():
 	overlay.add_child(vbox)
 	
 	var title = Label.new()
-	title.text = "⚡ VITÓRIA! ⚡"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if font_bold:
 		title.add_theme_font_override("font", font_bold)
@@ -1056,94 +1062,109 @@ func _show_victory_screen():
 	title.add_theme_color_override("font_outline_color", Color.BLACK)
 	vbox.add_child(title)
 	
-	# Recompensas Label
-	var is_pt = true
-	if GameGlobals:
-		is_pt = GameGlobals.current_language == GameGlobals.Language.PT
-	
-	var rewards_title = Label.new()
-	rewards_title.text = "Recompensas:" if is_pt else "Rewards:"
-	rewards_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	if font_reg:
-		rewards_title.add_theme_font_override("font", font_reg)
-	rewards_title.add_theme_font_size_override("font_size", 16)
-	rewards_title.add_theme_color_override("font_color", Color.WHITE)
-	vbox.add_child(rewards_title)
-	
-	# Ouro
-	var gold_btn = Button.new()
-	gold_btn.text = "+ " + str(reward_gold) + " Ouro" if is_pt else "+ " + str(reward_gold) + " Gold"
-	gold_btn.custom_minimum_size = Vector2(250, 40)
-	gold_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	if font_bold:
-		gold_btn.add_theme_font_override("font", font_bold)
-	gold_btn.add_theme_font_size_override("font_size", 14)
-	gold_btn.add_theme_color_override("font_color", GOLD_COLOR)
-	var sb = StyleBoxFlat.new()
-	sb.bg_color = Color(0.2, 0.15, 0.05, 0.9)
-	sb.border_width_left = 2
-	sb.border_width_top = 2
-	sb.border_width_right = 2
-	sb.border_width_bottom = 2
-	sb.border_color = GOLD_COLOR
-	sb.corner_radius_top_left = 6
-	sb.corner_radius_top_right = 6
-	sb.corner_radius_bottom_left = 6
-	sb.corner_radius_bottom_right = 6
-	gold_btn.add_theme_stylebox_override("normal", sb)
-	var sb_h = sb.duplicate()
-	sb_h.bg_color = Color(0.3, 0.25, 0.1, 0.9)
-	gold_btn.add_theme_stylebox_override("hover", sb_h)
-	
-	gold_btn.pressed.connect(func():
-		player_gold += reward_gold
-		gold_btn.disabled = true
-		gold_btn.text = "Recebido" if is_pt else "Claimed"
-		gold_btn.add_theme_color_override("font_disabled_color", Color(0.5, 0.5, 0.5))
-		if GameGlobals:
-			GameGlobals.play_click_sound()
-	)
-	vbox.add_child(gold_btn)
-	
-	# Container das cartas
-	var card_title = Label.new()
-	card_title.text = "Escolhe 1 carta:" if is_pt else "Choose 1 card:"
-	card_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	if font_reg:
-		card_title.add_theme_font_override("font", font_reg)
-	card_title.add_theme_font_size_override("font_size", 14)
-	card_title.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
-	vbox.add_child(card_title)
-	
-	var cards_hbox = HBoxContainer.new()
-	cards_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	cards_hbox.add_theme_constant_override("separation", 20)
-	vbox.add_child(cards_hbox)
-	
-	var card_buttons = []
-	for card_id in reward_cards:
-		var card = ThorCardDatabase.get_card(card_id)
-		var c_btn = _create_reward_card_button(card)
-		cards_hbox.add_child(c_btn)
-		card_buttons.append(c_btn)
+	if is_boss:
+		title.text = "🏆 VITÓRIA DE THOR! 🏆" if is_pt else "🏆 THOR'S VICTORY! 🏆"
 		
-		# Conectar clique para escolher
-		c_btn.get_child(c_btn.get_child_count() - 1).pressed.connect(func():
-			deck.append(card_id)
+		var desc = Label.new()
+		desc.text = "Concluíste a lenda de Thor e salvaste Midgard do Ragnarök!" if is_pt else "You have completed the legend of Thor and saved Midgard from Ragnarök!"
+		desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		if font_reg:
+			desc.add_theme_font_override("font", font_reg)
+		desc.add_theme_font_size_override("font_size", 16)
+		desc.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
+		vbox.add_child(desc)
+	else:
+		title.text = "⚡ VITÓRIA! ⚡"
+		
+		# Determinar Recompensas (Rebalanceado: mais ouro para run mais curta)
+		var reward_gold = randi_range(35, 55)
+		if enemy_data.get("type", 0) == ThorEnemyDatabase.EnemyType.ELITE:
+			reward_gold = randi_range(70, 95)
+			
+		var reward_cards = _generate_card_rewards()
+		
+		# Recompensas Label
+		var rewards_title = Label.new()
+		rewards_title.text = "Recompensas:" if is_pt else "Rewards:"
+		rewards_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		if font_reg:
+			rewards_title.add_theme_font_override("font", font_reg)
+		rewards_title.add_theme_font_size_override("font_size", 16)
+		rewards_title.add_theme_color_override("font_color", Color.WHITE)
+		vbox.add_child(rewards_title)
+		
+		# Ouro
+		var gold_btn = Button.new()
+		gold_btn.text = "+ " + str(reward_gold) + " Ouro" if is_pt else "+ " + str(reward_gold) + " Gold"
+		gold_btn.custom_minimum_size = Vector2(250, 40)
+		gold_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		if font_bold:
+			gold_btn.add_theme_font_override("font", font_bold)
+		gold_btn.add_theme_font_size_override("font_size", 14)
+		gold_btn.add_theme_color_override("font_color", GOLD_COLOR)
+		var sb = StyleBoxFlat.new()
+		sb.bg_color = Color(0.2, 0.15, 0.05, 0.9)
+		sb.border_width_left = 2
+		sb.border_width_top = 2
+		sb.border_width_right = 2
+		sb.border_width_bottom = 2
+		sb.border_color = GOLD_COLOR
+		sb.corner_radius_top_left = 6
+		sb.corner_radius_top_right = 6
+		sb.corner_radius_bottom_left = 6
+		sb.corner_radius_bottom_right = 6
+		gold_btn.add_theme_stylebox_override("normal", sb)
+		var sb_h = sb.duplicate()
+		sb_h.bg_color = Color(0.3, 0.25, 0.1, 0.9)
+		gold_btn.add_theme_stylebox_override("hover", sb_h)
+		
+		gold_btn.pressed.connect(func():
+			player_gold += reward_gold
+			gold_btn.disabled = true
+			gold_btn.text = "Recebido" if is_pt else "Claimed"
+			gold_btn.add_theme_color_override("font_disabled_color", Color(0.5, 0.5, 0.5))
 			if GameGlobals:
 				GameGlobals.play_click_sound()
-			# Desabilitar todas
-			for b in card_buttons:
-				b.modulate = Color(0.3, 0.3, 0.3, 0.5)
-				var btn_node = b.get_child(b.get_child_count() - 1)
-				btn_node.disabled = true
-			c_btn.modulate = Color(1.0, 1.0, 1.0, 1.0)
-			card_title.text = ("Adicionado: " + card.name_pt) if is_pt else ("Added: " + card.name_en)
-			card_title.add_theme_color_override("font_color", HEAL_COLOR)
 		)
-	
-	var is_boss = (enemy_data.get("type", 0) == ThorEnemyDatabase.EnemyType.BOSS)
-	
+		vbox.add_child(gold_btn)
+		
+		# Container das cartas
+		var card_title = Label.new()
+		card_title.text = "Escolhe 1 carta:" if is_pt else "Choose 1 card:"
+		card_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		if font_reg:
+			card_title.add_theme_font_override("font", font_reg)
+		card_title.add_theme_font_size_override("font_size", 14)
+		card_title.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
+		vbox.add_child(card_title)
+		
+		var cards_hbox = HBoxContainer.new()
+		cards_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+		cards_hbox.add_theme_constant_override("separation", 20)
+		vbox.add_child(cards_hbox)
+		
+		var card_buttons = []
+		for card_id in reward_cards:
+			var card = ThorCardDatabase.get_card(card_id)
+			var c_btn = _create_reward_card_button(card)
+			cards_hbox.add_child(c_btn)
+			card_buttons.append(c_btn)
+			
+			# Conectar clique para escolher
+			c_btn.get_child(c_btn.get_child_count() - 1).pressed.connect(func():
+				deck.append(card_id)
+				if GameGlobals:
+					GameGlobals.play_click_sound()
+				# Desabilitar todas
+				for b in card_buttons:
+					b.modulate = Color(0.3, 0.3, 0.3, 0.5)
+					var btn_node = b.get_child(b.get_child_count() - 1)
+					btn_node.disabled = true
+				c_btn.modulate = Color(1.0, 1.0, 1.0, 1.0)
+				card_title.text = ("Adicionado: " + card.name_pt) if is_pt else ("Added: " + card.name_en)
+				card_title.add_theme_color_override("font_color", HEAL_COLOR)
+			)
+			
 	# Skip/Continue Button
 	var spacer = Control.new()
 	spacer.custom_minimum_size = Vector2(0, 20)
@@ -1193,6 +1214,62 @@ func _show_victory_screen():
 			else: get_tree().change_scene_to_file("res://scenes/thor_map.tscn")
 	)
 	vbox.add_child(menu_btn)
+
+func _spawn_next_wave():
+	if combat_waves.is_empty():
+		return
+		
+	var next_enemy_id = combat_waves.pop_front()
+	
+	# Reset status do inimigo
+	enemy_block = 0
+	enemy_vulnerable = 0
+	enemy_strength = 0
+	
+	# Carregar novo inimigo
+	enemy_data = ThorEnemyDatabase.get_enemy(next_enemy_id)
+	
+	var diff_mult = 1.0
+	if GameGlobals:
+		match GameGlobals.current_difficulty:
+			GameGlobals.Difficulty.EASY: diff_mult = 0.8
+			GameGlobals.Difficulty.HARD: diff_mult = 1.25
+			
+	var hp = int(randi_range(enemy_data.hp_min, enemy_data.hp_max) * diff_mult)
+	enemy_hp = hp
+	enemy_max_hp = hp
+	
+	# Novo intent
+	enemy_intent = ThorEnemyDatabase.get_random_intent(next_enemy_id)
+	
+	# Atualizar fundo dinamicamente
+	if bg_rect:
+		var enemy_bg_map = {
+			"draugr": "draugr_bg",
+			"lobo_fenrir": "loboFenrir_bg",
+			"gigante_gelo": "giganteGelo_bg",
+			"corvos_hel": "corvosHel_bg",
+			"esqueleto_viking": "esqueletoViking_bg",
+			"hel_rainha": "helRainhaBoss_bg",
+			"fenrir_gigante": "fenrirGignateBoss_bg",
+			"jormungandr": "fenrirGignateBoss_bg"
+		}
+		var bg_file = enemy_bg_map.get(next_enemy_id, "")
+		var bg_tex = null
+		if bg_file != "":
+			var cenario_path = "res://assets/sprites/Sprites Thor/Cenários/" + bg_file + ".png"
+			if ResourceLoader.exists(cenario_path):
+				bg_tex = load(cenario_path)
+		if bg_tex == null:
+			bg_tex = load("res://assets/sprites/ThorJormungandr_bg.png")
+		bg_rect.texture = bg_tex
+		
+	# Som de spawn
+	_play_sfx("power_up", 0.8, -4.0)
+	_show_info("REFORÇOS INIMIGOS!", DAMAGE_COLOR)
+	
+	_update_all_ui()
+	_rebuild_hand_ui()
 
 func _generate_card_rewards() -> Array:
 	var possible_cards = ThorCardDatabase.get_reward_pool(-1)
@@ -1620,8 +1697,9 @@ func _show_defeat_screen():
 # =============================================================================
 
 func _rebuild_hand_ui():
-	# Limpar cartas anteriores
+	# Limpar cartas anteriores removendo-as do layout de imediato para evitar glitches de desenho no Godot
 	for child in card_container.get_children():
+		card_container.remove_child(child)
 		child.queue_free()
 	
 	# Criar carta visual para cada carta na mão
@@ -2066,7 +2144,7 @@ func _update_all_ui():
 				if tex:
 					var tex_w = tex.get_width()
 					var tex_h = tex.get_height()
-					var max_size = 150.0
+					var max_size = 130.0
 					var aspect = float(tex_w) / float(tex_h)
 					var new_w = max_size
 					var new_h = max_size

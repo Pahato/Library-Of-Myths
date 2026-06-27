@@ -42,12 +42,12 @@ func _generate_shop_items():
 			var c_id = possible_cards[i]
 			cards_for_sale.append(c_id)
 			var c_data = ThorCardDatabase.get_card(c_id)
-			var base_price = 40
+			var base_price = 25
 			if c_data.rarity == ThorCardDatabase.CardRarity.UNCOMMON:
-				base_price = 70
+				base_price = 45
 			elif c_data.rarity == ThorCardDatabase.CardRarity.RARE:
-				base_price = 120
-			card_prices.append(randi_range(base_price - 10, base_price + 20))
+				base_price = 75
+			card_prices.append(randi_range(base_price - 5, base_price + 10))
 
 func _build_ui():
 	var bg_color = ColorRect.new()
@@ -171,7 +171,7 @@ func _build_ui():
 	vbox.add_child(services_hbox)
 	
 	# Heal Service
-	var heal_price = 30
+	var heal_price = 15
 	var heal_btn = Button.new()
 	heal_btn.text = ("Curar 20 HP (💰 %d)" % heal_price) if is_pt else ("Heal 20 HP (💰 %d)" % heal_price)
 	heal_btn.custom_minimum_size = Vector2(200, 45)
@@ -188,7 +188,7 @@ func _build_ui():
 	services_hbox.add_child(heal_btn)
 	
 	# Max HP Service
-	var maxhp_price = 75
+	var maxhp_price = 35
 	var maxhp_btn = Button.new()
 	maxhp_btn.text = ("+10 Max HP (💰 %d)" % maxhp_price) if is_pt else ("+10 Max HP (💰 %d)" % maxhp_price)
 	maxhp_btn.custom_minimum_size = Vector2(200, 45)
