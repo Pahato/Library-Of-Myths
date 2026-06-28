@@ -10,7 +10,7 @@ var current_health: int = 15
 @export var speed: float = 40.0
 @export var ai_cooldown: float = 1.8
 
-@export var venom_scene: PackedScene = preload("res://scenes/venom_projectile.tscn")
+@export var venom_scene: PackedScene = preload("res://scenes/apolo_python/venom_projectile.tscn")
 
 # --- Estado ---
 enum State { IDLE, PATROL, BITE, SPIT, RAIN, FRENZY, ARENA_DASH, PHASE2_TRANSITION }

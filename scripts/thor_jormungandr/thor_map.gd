@@ -48,11 +48,11 @@ func _ready():
 			if active_node:
 				break
 		if active_node:
-			var scene_path = "res://scenes/thor_battle.tscn"
+			var scene_path = "res://scenes/thor_jormungandr/thor_battle.tscn"
 			if active_node.type == NodeType.REST:
-				scene_path = "res://scenes/thor_rest.tscn"
+				scene_path = "res://scenes/thor_jormungandr/thor_rest.tscn"
 			elif active_node.type == NodeType.SHOP:
-				scene_path = "res://scenes/thor_shop.tscn"
+				scene_path = "res://scenes/thor_jormungandr/thor_shop.tscn"
 				
 			if ResourceLoader.exists(scene_path):
 				get_tree().change_scene_to_file(scene_path)
@@ -607,12 +607,12 @@ func _on_node_clicked(node_data: Dictionary):
 	GameGlobals.thor_node_id = node_data.id
 	
 	# Determina qual cena carregar com base no tipo de nó
-	var scene_path = "res://scenes/thor_battle.tscn" # COMBAT, ELITE, BOSS
+	var scene_path = "res://scenes/thor_jormungandr/thor_battle.tscn" # COMBAT, ELITE, BOSS
 	
 	if node_data.type == NodeType.REST:
-		scene_path = "res://scenes/thor_rest.tscn"
+		scene_path = "res://scenes/thor_jormungandr/thor_rest.tscn"
 	elif node_data.type == NodeType.SHOP:
-		scene_path = "res://scenes/thor_shop.tscn"
+		scene_path = "res://scenes/thor_jormungandr/thor_shop.tscn"
 		
 	if not ResourceLoader.exists(scene_path):
 		# Fallback na pasta raiz, caso movido

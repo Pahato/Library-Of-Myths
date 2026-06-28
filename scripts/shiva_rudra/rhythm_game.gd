@@ -1,7 +1,7 @@
 extends Node2D
 
 # --- Preloads ---
-var arrow_scene = preload("res://scenes/rhythm_arrow.tscn")
+var arrow_scene = preload("res://scenes/shiva_rudra/rhythm_arrow.tscn")
 var dialogue_scene = preload("res://scenes/dialogue_box.tscn")
 var pause_menu_scene = preload("res://scenes/pause_menu.tscn")
 
@@ -222,7 +222,7 @@ func _setup_environment():
 	rudra_boss_tex = load("res://assets/sprites/rudra_boss.png")
 	
 	# Carregar frames do jogador para Shiva
-	var temp_player = load("res://scenes/player.tscn").instantiate()
+	var temp_player = load("res://scenes/apolo_python/player.tscn").instantiate()
 	var player_sprite = temp_player.get_node("AnimatedSprite2D")
 	var sprite_frames = player_sprite.sprite_frames
 	

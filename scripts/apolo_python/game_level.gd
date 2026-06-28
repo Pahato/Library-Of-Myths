@@ -350,7 +350,7 @@ func _build_arena_map():
 
 func _setup_arena_hazards():
 	# Instanciar Altares Solares
-	var AltarScript = load("res://scripts/solar_altar.gd")
+	var AltarScript = load("res://scripts/apolo_python/solar_altar.gd")
 	
 	# Pilar esquerdo está centrado em X = -464 (bloco -29 * 16), e topo está em Y = -48 (-3 * 16)
 	left_altar = Area2D.new()
@@ -375,7 +375,7 @@ func _setup_arena_hazards():
 	right_altar.altar_activated.connect(_on_altar_activated)
 	
 	# Instanciar Chão Venenoso
-	var PoisonFloorScript = load("res://scripts/poison_floor.gd")
+	var PoisonFloorScript = load("res://scripts/apolo_python/poison_floor.gd")
 	poison_floor = Area2D.new()
 	poison_floor.set_script(PoisonFloorScript)
 	poison_floor.name = "PoisonFloor"
@@ -445,7 +445,7 @@ func _spawn_falling_rock():
 	if not is_instance_valid(player):
 		return
 		
-	var RockScript = load("res://scripts/falling_rock.gd")
+	var RockScript = load("res://scripts/apolo_python/falling_rock.gd")
 	var rock = Area2D.new()
 	rock.set_script(RockScript)
 	

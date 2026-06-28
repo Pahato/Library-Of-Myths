@@ -237,8 +237,8 @@ func _build_ui():
 				var layer = int(GameGlobals.thor_node_id.split("_")[0])
 				GameGlobals.thor_current_layer = layer + 1
 		var transition = get_node_or_null("/root/SceneTransition")
-		if transition: transition.fade_to("res://scenes/thor_map.tscn")
-		else: get_tree().change_scene_to_file("res://scenes/thor_map.tscn")
+		if transition: transition.fade_to("res://scenes/thor_jormungandr/thor_map.tscn")
+		else: get_tree().change_scene_to_file("res://scenes/thor_jormungandr/thor_map.tscn")
 	)
 	vbox.add_child(leave_btn)
 

@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3]
 
-[ext_resource type="Script" path="res://scripts/python_boss.gd" id="1_python_gd"]
+[ext_resource type="Script" path="res://scripts/apolo_python/python_boss.gd" id="1_python_gd"]
 [ext_resource type="Texture2D" path="res://assets/sprites/Python.png" id="2_python_tex"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_1"]

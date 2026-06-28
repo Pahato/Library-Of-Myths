@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://c885u5x0o4u4c"]
 
-[ext_resource type="Script" path="res://scripts/rhythm_arrow.gd" id="1_rhyar"]
+[ext_resource type="Script" path="res://scripts/shiva_rudra/rhythm_arrow.gd" id="1_rhyar"]
 
 [node name="RhythmArrow" type="Node2D"]
 script = ExtResource("1_rhyar")

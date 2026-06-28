@@ -231,7 +231,7 @@ func _setup_intro_scene():
 	print("[INTRO DEBUG] Cadeira adicionada ao menu principal. Posição: ", chair.position, " Visível: ", chair.visible)
 	
 	# 2. Instancia o jogador Apolo (Pato)
-	var player_scene = load("res://scenes/player.tscn")
+	var player_scene = load("res://scenes/apolo_python/player.tscn")
 	if player_scene:
 		player_instance = player_scene.instantiate()
 		player_instance.is_cutscene = true
@@ -360,13 +360,13 @@ func _setup_hover_events(button: Button):
 	)
 
 func _on_book_apolo_pressed():
-	_show_tutorial(1, "res://scenes/game.tscn")
+	_show_tutorial(1, "res://scenes/apolo_python/game.tscn")
 
 func _on_book_shiva_pressed():
-	_show_tutorial(2, "res://scenes/rhythm_game.tscn")
+	_show_tutorial(2, "res://scenes/shiva_rudra/rhythm_game.tscn")
 
 func _on_book_thor_pressed():
-	_show_tutorial(3, "res://scenes/thor_map.tscn")
+	_show_tutorial(3, "res://scenes/thor_jormungandr/thor_map.tscn")
 
 func _show_tutorial(book: int, scene: String):
 	var tutorial_scene = load("res://scenes/tutorial_screen.tscn")

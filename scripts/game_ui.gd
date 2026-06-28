@@ -285,9 +285,9 @@ func _on_retry_pressed():
 	get_tree().paused = false
 	var current_scene = get_tree().current_scene
 	if current_scene and current_scene.name == "RhythmGame":
-		SceneTransition.fade_to("res://scenes/rhythm_game.tscn")
+		SceneTransition.fade_to("res://scenes/shiva_rudra/rhythm_game.tscn")
 	else:
-		SceneTransition.fade_to("res://scenes/game.tscn")
+		SceneTransition.fade_to("res://scenes/apolo_python/game.tscn")
 
 func _on_menu_pressed():
 	if GameGlobals:

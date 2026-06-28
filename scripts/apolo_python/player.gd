@@ -12,7 +12,7 @@ enum GodMode {
 }
 
 @export var current_god_mode: GodMode = GodMode.APOLLO
-@export var arrow_scene: PackedScene = preload("res://scenes/arrow.tscn")
+@export var arrow_scene: PackedScene = preload("res://scenes/apolo_python/arrow.tscn")
 @export var dialogue_scene: PackedScene = preload("res://scenes/dialogue_box.tscn")
 @export var game_ui_scene: PackedScene = preload("res://scenes/game_ui.tscn")
 @export var pause_menu_scene: PackedScene = preload("res://scenes/pause_menu.tscn")

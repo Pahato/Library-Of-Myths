@@ -416,7 +416,7 @@ func _build_player_area():
 
 func _build_enemy_area():
 	# Jogador Visível (Pato - player.tscn)
-	var player_scene = preload("res://scenes/player.tscn")
+	var player_scene = preload("res://scenes/apolo_python/player.tscn")
 	player_node = player_scene.instantiate()
 	player_node.name = "Player"
 	player_node.is_cutscene = true
@@ -1228,8 +1228,8 @@ func _show_victory_screen():
 					GameGlobals.thor_map_path.append(GameGlobals.thor_node_id)
 					var layer = int(GameGlobals.thor_node_id.split("_")[0])
 					GameGlobals.thor_current_layer = layer + 1
-			if transition: transition.fade_to("res://scenes/thor_map.tscn")
-			else: get_tree().change_scene_to_file("res://scenes/thor_map.tscn")
+			if transition: transition.fade_to("res://scenes/thor_jormungandr/thor_map.tscn")
+			else: get_tree().change_scene_to_file("res://scenes/thor_jormungandr/thor_map.tscn")
 	)
 	vbox.add_child(menu_btn)
 
@@ -1675,7 +1675,7 @@ func _show_defeat_screen():
 	retry_btn.add_theme_stylebox_override("hover", sb_h)
 	retry_btn.add_theme_color_override("font_color", Color.WHITE)
 	retry_btn.pressed.connect(func():
-		get_tree().change_scene_to_file("res://scenes/thor_battle.tscn")
+		get_tree().change_scene_to_file("res://scenes/thor_jormungandr/thor_battle.tscn")
 	)
 	vbox.add_child(retry_btn)
 	

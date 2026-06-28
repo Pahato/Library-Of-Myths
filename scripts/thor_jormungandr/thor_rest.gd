@@ -193,6 +193,6 @@ func _return_to_map():
 			
 	var transition = get_node_or_null("/root/SceneTransition")
 	if transition:
-		transition.fade_to("res://scenes/thor_map.tscn")
+		transition.fade_to("res://scenes/thor_jormungandr/thor_map.tscn")
 	else:
-		get_tree().change_scene_to_file("res://scenes/thor_map.tscn")
+		get_tree().change_scene_to_file("res://scenes/thor_jormungandr/thor_map.tscn")
