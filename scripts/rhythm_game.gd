@@ -413,13 +413,13 @@ func _update_hud_layout():
 			shiva_receptors[i].position.y = TARGET_Y
 			shiva_receptors[i].queue_redraw()
 	
-	# Atualizar posições das etiquetas de pista
+	# Atualizar posições das etiquetas de pista (para não ficarem na frente das setas)
 	if is_instance_valid(boss_lane_label) and is_instance_valid(player_lane_label):
 		var label_y: float
 		if rhythm_scroll_down:
-			label_y = TARGET_Y - 28.0
+			label_y = TARGET_Y + 36.0 # Abaixo das setas (notas vêm de cima)
 		else:
-			label_y = TARGET_Y + 40.0
+			label_y = TARGET_Y - 36.0 # Acima das setas (notas vêm de baixo)
 		boss_lane_label.position = Vector2(320 + (65.0 * 1.5) - 125.0, label_y)
 		player_lane_label.position = Vector2(630 + (65.0 * 1.5) - 125.0, label_y)
 	

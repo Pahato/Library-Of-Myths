@@ -83,9 +83,9 @@ func _build_ui():
 	panel.anchor_right = 0.5
 	panel.anchor_bottom = 0.5
 	panel.offset_left = -310.0
-	panel.offset_top = -230.0
+	panel.offset_top = -250.0
 	panel.offset_right = 310.0
-	panel.offset_bottom = 230.0
+	panel.offset_bottom = 250.0
 	panel.grow_horizontal = 2
 	panel.grow_vertical = 2
 	
@@ -161,14 +161,6 @@ func _build_ui():
 	hbox.add_child(ctrl_panel)
 	
 	var ctrl_vbox = VBoxContainer.new()
-	ctrl_vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
-	ctrl_vbox.layout_mode = 1
-	ctrl_vbox.anchor_right = 1.0
-	ctrl_vbox.anchor_bottom = 1.0
-	ctrl_vbox.offset_left = 10.0
-	ctrl_vbox.offset_top = 8.0
-	ctrl_vbox.offset_right = -10.0
-	ctrl_vbox.offset_bottom = -8.0
 	ctrl_vbox.add_theme_constant_override("separation", 6)
 	ctrl_panel.add_child(ctrl_vbox)
 	
@@ -193,14 +185,6 @@ func _build_ui():
 	hbox.add_child(obj_panel)
 	
 	var obj_vbox = VBoxContainer.new()
-	obj_vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
-	obj_vbox.layout_mode = 1
-	obj_vbox.anchor_right = 1.0
-	obj_vbox.anchor_bottom = 1.0
-	obj_vbox.offset_left = 10.0
-	obj_vbox.offset_top = 8.0
-	obj_vbox.offset_right = -10.0
-	obj_vbox.offset_bottom = -8.0
 	obj_vbox.add_theme_constant_override("separation", 6)
 	obj_panel.add_child(obj_vbox)
 	
@@ -222,12 +206,13 @@ func _build_ui():
 	# Separador
 	vbox.add_child(_make_separator(border_color))
 	
-	# Dica destacada
+	# Dica destacada (com autowrap ativo para evitar overflow da caixa)
 	var tip_lbl = Label.new()
 	tip_lbl.text = GameGlobals.get_text(tip_key)
 	tip_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tip_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	tip_lbl.add_theme_font_override("font", font_reg)
-	tip_lbl.add_theme_font_size_override("font_size", 11)
+	tip_lbl.add_theme_font_size_override("font_size", 10)
 	tip_lbl.add_theme_color_override("font_color", Color(1.0, 0.95, 0.55, 1.0))
 	tip_lbl.add_theme_constant_override("outline_size", 3)
 	tip_lbl.add_theme_color_override("font_outline_color", Color.BLACK)
@@ -296,20 +281,27 @@ func _make_separator(color: Color) -> HSeparator:
 	sep.add_theme_constant_override("separation", 2)
 	return sep
 
-func _make_sub_panel(bg: Color, border: Color) -> Panel:
-	var p = Panel.new()
+func _make_sub_panel(bg: Color, border: Color) -> PanelContainer:
+	var p = PanelContainer.new()
 	p.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	var sb = StyleBoxFlat.new()
-	sb.bg_color = bg.lightened(0.05)
+	sb.bg_color = bg.lightened(0.04)
 	sb.border_width_left = 1
 	sb.border_width_top = 1
 	sb.border_width_right = 1
 	sb.border_width_bottom = 1
 	sb.border_color = border
-	sb.corner_radius_top_left = 4
-	sb.corner_radius_top_right = 4
-	sb.corner_radius_bottom_left = 4
-	sb.corner_radius_bottom_right = 4
+	sb.corner_radius_top_left = 6
+	sb.corner_radius_top_right = 6
+	sb.corner_radius_bottom_left = 6
+	sb.corner_radius_bottom_right = 6
+	
+	# Configurar margens internas para que o conteúdo não toque nos limites
+	sb.content_margin_left = 12
+	sb.content_margin_right = 12
+	sb.content_margin_top = 12
+	sb.content_margin_bottom = 12
+	
 	p.add_theme_stylebox_override("panel", sb)
 	return p
 

@@ -117,6 +117,8 @@ func _ready():
 		InputMap.action_add_event("dash", ev_joy)
 	
 	camera = get_node_or_null("Camera2D")
+	if camera and not is_cutscene:
+		camera.limit_bottom = 55
 	
 	# Instanciar a UI do jogo automaticamente (apenas na fase de jogo, não no menu principal)
 	if not is_cutscene:

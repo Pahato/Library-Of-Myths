@@ -212,7 +212,7 @@ var translations: Dictionary = {
 		"boss_name_rudra": "RUDRA, O SENHOR DAS TEMPESTADES",
 		"gameover_title_shiva": "A tempestade consumiu o cosmos...",
 		"ui_rhythm_title": "DUELO CÓSMICO DE RITMO",
-		"ui_rhythm_player_lane": "TU (A S W D / ◀ ▼ ▲ ▶)",
+		"ui_rhythm_player_lane": "PLAYER (A S W D / ◀ ▼ ▲ ▶)",
 		"ui_rhythm_boss_lane": "RUDRA (OPONENTE)",
 		"options_audio": "Controlo de Áudio",
 		"audio_title": "Definições de Áudio",
@@ -400,7 +400,7 @@ var translations: Dictionary = {
 		"boss_name_rudra": "RUDRA, THE LORD OF STORMS",
 		"gameover_title_shiva": "The storm consumed the cosmos...",
 		"ui_rhythm_title": "COSMIC RHYTHM DUEL",
-		"ui_rhythm_player_lane": "YOU (A S W D / ◀ ▼ ▲ ▶)",
+		"ui_rhythm_player_lane": "PLAYER (A S W D / ◀ ▼ ▲ ▶)",
 		"ui_rhythm_boss_lane": "RUDRA (OPPONENT)",
 		"options_audio": "Audio Control",
 		"audio_title": "Audio Settings",
@@ -494,7 +494,7 @@ func get_boss_ai_cooldown() -> float:
 	match current_difficulty:
 		Difficulty.EASY:   return 2.8
 		Difficulty.NORMAL: return 1.8
-		Difficulty.HARD:   return 1.0
+		Difficulty.HARD:   return 1.4
 	return 1.8
 
 func get_boss_shield_shoot_cooldown() -> float:

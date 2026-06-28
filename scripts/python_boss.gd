@@ -588,9 +588,9 @@ func _activate_phase_2():
 	if tex:
 		sprite.texture = tex
 
-	# Melhora as estatísticas para a Fase 2 (mais forte e agressiva)
+	# Melhora as estatísticas para a Fase 2 (mais forte e agressiva com mini-cooldown justo)
 	speed = GameGlobals.get_boss_speed() * 1.5
-	ai_cooldown = max(0.5, GameGlobals.get_boss_ai_cooldown() * 0.6)
+	ai_cooldown = max(1.1, GameGlobals.get_boss_ai_cooldown() * 0.75)
 
 	if sprite:
 		sprite.modulate = base_color
