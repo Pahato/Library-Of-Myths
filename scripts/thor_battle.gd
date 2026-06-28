@@ -549,6 +549,7 @@ func _build_enemy_area():
 	# Intent Label — Próxima ação do inimigo (ex: "⚔️ Vai atacar por 12")
 	enemy_intent_label = Label.new()
 	enemy_intent_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	enemy_intent_label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	if font_bold:
 		enemy_intent_label.add_theme_font_override("font", font_bold)
 	enemy_intent_label.add_theme_font_size_override("font_size", 11)
@@ -557,10 +558,14 @@ func _build_enemy_area():
 	# Fundo semi-transparente para destacar
 	var intent_bg = StyleBoxFlat.new()
 	intent_bg.bg_color = Color(0.0, 0.0, 0.0, 0.55)
-	intent_bg.corner_radius_top_left = 4
-	intent_bg.corner_radius_top_right = 4
-	intent_bg.corner_radius_bottom_left = 4
-	intent_bg.corner_radius_bottom_right = 4
+	intent_bg.corner_radius_top_left = 6
+	intent_bg.corner_radius_top_right = 6
+	intent_bg.corner_radius_bottom_left = 6
+	intent_bg.corner_radius_bottom_right = 6
+	intent_bg.content_margin_left = 12
+	intent_bg.content_margin_right = 12
+	intent_bg.content_margin_top = 4
+	intent_bg.content_margin_bottom = 4
 	enemy_intent_label.add_theme_stylebox_override("normal", intent_bg)
 	enemy_container.add_child(enemy_intent_label)
 
@@ -2035,27 +2040,34 @@ func _update_all_ui():
 				var dmg = enemy_intent.get("damage", 0) + enemy_strength
 				var hits = enemy_intent.get("hits", 1)
 				if hits > 1:
-					intent_text = ("⚔️ %dx%d=%d" % [hits, dmg, hits * dmg]) if is_pt else ("⚔️ %dx%d=%d" % [hits, dmg, hits * dmg])
+					intent_text = ("Próxima Ação: ⚔️ %dx%d (%d)" % [hits, dmg, hits * dmg]) if is_pt else ("Next Action: ⚔️ %dx%d (%d)" % [hits, dmg, hits * dmg])
 				else:
-					intent_text = ("⚔️ Ataque: %d" % dmg) if is_pt else ("⚔️ Attack: %d" % dmg)
+					intent_text = ("Próxima Ação: ⚔️ %d" % dmg) if is_pt else ("Next Action: ⚔️ %d" % dmg)
 				intent_color = DAMAGE_COLOR
 			ThorEnemyDatabase.IntentType.DEFEND:
-				intent_text = ("🛡 Defende: %d" % enemy_intent.get("block", 0)) if is_pt else ("🛡 Defend: %d" % enemy_intent.get("block", 0))
+				intent_text = ("Próxima Ação: 🛡️ %d" % enemy_intent.get("block", 0)) if is_pt else ("Next Action: 🛡️ %d" % enemy_intent.get("block", 0))
 				intent_color = BLOCK_COLOR
 			ThorEnemyDatabase.IntentType.BUFF:
 				if enemy_intent.get("strength", 0) > 0:
-					intent_text = ("💪 +Força: %d" % enemy_intent.strength) if is_pt else ("💪 +Strength: %d" % enemy_intent.strength)
+					intent_text = ("Próxima Ação: 💪 Força +%d" % enemy_intent.strength) if is_pt else ("Next Action: 💪 Strength +%d" % enemy_intent.strength)
 				elif enemy_intent.get("heal", 0) > 0:
-					intent_text = ("❤️ Cura: %d" % enemy_intent.heal) if is_pt else ("❤️ Heals: %d" % enemy_intent.heal)
+					intent_text = ("Próxima Ação: ❤️ Cura %d" % enemy_intent.heal) if is_pt else ("Next Action: ❤️ Heal %d" % enemy_intent.heal)
 				else:
-					intent_text = "💪 Buff" if is_pt else "💪 Buff"
+					intent_text = "Próxima Ação: 💪 Melhoria" if is_pt else "Next Action: 💪 Buff"
 				intent_color = GOLD_COLOR
 			ThorEnemyDatabase.IntentType.ATTACK_DEFEND:
 				var dmg = enemy_intent.get("damage", 0) + enemy_strength
-				intent_text = ("⚔️🛡 %d + Defesa" % dmg) if is_pt else ("⚔️🛡 %d + Block" % dmg)
+				var block_val = enemy_intent.get("block", 0)
+				intent_text = ("Próxima Ação: ⚔️ %d + 🛡️ %d" % [dmg, block_val]) if is_pt else ("Next Action: ⚔️ %d + 🛡️ %d" % [dmg, block_val])
 				intent_color = DAMAGE_COLOR
+			ThorEnemyDatabase.IntentType.DEBUFF:
+				if enemy_intent.get("vulnerable", 0) > 0:
+					intent_text = ("Próxima Ação: 💀 Vulnerável %d t." % enemy_intent.vulnerable) if is_pt else ("Next Action: 💀 Vulnerable %d t." % enemy_intent.vulnerable)
+				else:
+					intent_text = "Próxima Ação: 💀 Debuff" if is_pt else "Next Action: 💀 Debuff"
+				intent_color = Color(0.8, 0.4, 0.9)
 			_:
-				intent_text = "❓"
+				intent_text = "Próxima Ação: ❓" if is_pt else "Next Action: ❓"
 				intent_color = GOLD_COLOR
 		enemy_intent_label.text = intent_text
 		enemy_intent_label.add_theme_color_override("font_color", intent_color)

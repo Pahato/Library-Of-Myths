@@ -95,21 +95,17 @@ func _process(delta):
 			
 		# Atualiza valores do HUD da Píton estilo Elden Ring
 		if boss_hud_container and is_instance_valid(boss):
-			# Se o boss morreu, ocultar imediatamente o HUD
-			if boss.current_health <= 0:
-				boss_hud_container.hide()
-				return
 			boss_hud_container.show()
 			
-			# Sincroniza valores máximos e atuais de vida
+			# Sincroniza valores máximos e atuais de vida (clamped a 0)
 			boss_health_bar.max_value = boss.max_health
-			boss_health_bar.value = boss.current_health
+			boss_health_bar.value = max(0, boss.current_health)
 			
 			if is_instance_valid(boss_health_lag_bar):
 				boss_health_lag_bar.max_value = boss.max_health
-				boss_health_lag_bar.value = lerp(boss_health_lag_bar.value, float(boss.current_health), 2.5 * delta)
-				if abs(boss_health_lag_bar.value - boss.current_health) < 0.1:
-					boss_health_lag_bar.value = boss.current_health
+				boss_health_lag_bar.value = lerp(boss_health_lag_bar.value, float(max(0, boss.current_health)), 2.5 * delta)
+				if abs(boss_health_lag_bar.value - max(0, boss.current_health)) < 0.1:
+					boss_health_lag_bar.value = max(0, boss.current_health)
 			
 			# Atualiza o nome do boss dinamicamente com suporte a traduções
 			if is_instance_valid(boss):

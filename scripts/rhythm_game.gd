@@ -35,6 +35,7 @@ var cutscene_active: bool = true
 # --- Estatísticas ---
 var player_score: int = 0
 var player_combo: int = 0
+var last_displayed_combo: int = 0
 var player_max_combo: int = 0
 var notes_hit: int = 0
 var total_chart_notes: int = 0
@@ -983,6 +984,15 @@ func _update_hud_labels():
 	score_label.text = GameGlobals.get_text("ui_rhythm_score") + str(player_score)
 	combo_label.text = GameGlobals.get_text("ui_rhythm_combo") + str(player_combo)
 	accuracy_label.text = GameGlobals.get_text("ui_rhythm_accuracy") + "%.1f" % accuracy + "%"
+	
+	if player_combo != last_displayed_combo:
+		last_displayed_combo = player_combo
+		if player_combo > 0:
+			combo_label.pivot_offset = combo_label.size / 2
+			combo_label.scale = Vector2(1.25, 1.25)
+			var tw = create_tween()
+			tw.tween_property(combo_label, "scale", Vector2(1.0, 1.0), 0.1).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			
 	hud_node.queue_redraw()
 
 func _toggle_pause():
