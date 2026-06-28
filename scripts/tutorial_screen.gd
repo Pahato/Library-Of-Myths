@@ -1,4 +1,5 @@
 extends CanvasLayer
+class_name TutorialScreen
 
 # book_type: 1 = Apollo vs Python, 2 = Shiva vs Rudra, 3 = Thor vs Jörmungandr
 var book_type: int = 1

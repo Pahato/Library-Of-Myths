@@ -1,4 +1,5 @@
 extends CanvasLayer
+class_name DialogueBox
 
 signal dialogue_finished
 

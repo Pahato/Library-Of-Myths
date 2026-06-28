@@ -1,4 +1,5 @@
 extends Control
+class_name MainMenu
 
 @onready var book_apolo      = $HBoxContainer/VBoxApolo/BookApolo
 @onready var book_shiva      = $HBoxContainer/VBoxShiva/BookShiva

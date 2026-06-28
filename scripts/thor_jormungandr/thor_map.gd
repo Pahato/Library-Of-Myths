@@ -1,4 +1,5 @@
 extends Control
+class_name ThorMap
 
 enum NodeType { COMBAT, ELITE, REST, SHOP, BOSS }
 

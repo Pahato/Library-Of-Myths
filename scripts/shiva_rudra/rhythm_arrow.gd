@@ -1,4 +1,5 @@
 extends Node2D
+class_name RhythmArrow
 
 var lane: int = 0
 var target_time: float = 0.0

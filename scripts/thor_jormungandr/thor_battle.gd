@@ -1,4 +1,5 @@
 extends Control
+class_name ThorBattle
 
 # =============================================================================
 # THOR BATTLE — Motor de Combate RPG por Turnos (Slay the Spire)

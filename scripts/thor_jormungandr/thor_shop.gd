@@ -1,4 +1,5 @@
 extends Control
+class_name ThorShop
 
 # =============================================================================
 # THOR SHOP — Loja do Mercador

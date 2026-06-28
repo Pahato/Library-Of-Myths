@@ -1,4 +1,5 @@
 extends Control
+class_name Credits
 
 @onready var back_button = $VBoxContainer/BackButton
 

@@ -1,4 +1,5 @@
 extends CharacterBody2D
+class_name PythonBoss
 
 # --- Sinais ---
 signal boss_died

@@ -1,4 +1,5 @@
 extends Node2D
+class_name RhythmGame
 
 # --- Preloads ---
 var arrow_scene = preload("res://scenes/shiva_rudra/rhythm_arrow.tscn")

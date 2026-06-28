@@ -1,4 +1,5 @@
 extends CharacterBody2D
+class_name ApoloPlayer
 
 # --- Sinais ---
 signal health_changed(new_health)
