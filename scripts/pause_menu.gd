@@ -214,9 +214,167 @@ func _on_resume():
 	queue_free()
 
 func _on_menu():
-	get_tree().paused = false
-	SceneTransition.fade_to("res://scenes/main_menu.tscn")
-	queue_free()
+	if GameGlobals and GameGlobals.thor_run_active:
+		_show_thor_quit_confirmation()
+	else:
+		get_tree().paused = false
+		SceneTransition.fade_to("res://scenes/main_menu.tscn")
+		queue_free()
+
+func _show_thor_quit_confirmation():
+	var is_pt = (GameGlobals.current_language == GameGlobals.Language.PT) if GameGlobals else true
+	
+	var quit_overlay = ColorRect.new()
+	quit_overlay.name = "ThorQuitOverlay"
+	quit_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	quit_overlay.color = Color(0, 0, 0, 0.6)
+	quit_overlay.z_index = 30
+	quit_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(quit_overlay)
+	
+	var c_size = Vector2(400, 280)
+	var c_panel = Panel.new()
+	c_panel.name = "ConfirmationPanel"
+	c_panel.size = c_size
+	c_panel.set_anchors_preset(Control.PRESET_CENTER)
+	c_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	c_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
+	var vp = get_viewport().get_visible_rect().size
+	c_panel.position = (vp - c_size) / 2
+	
+	var c_style = StyleBoxFlat.new()
+	c_style.bg_color = Color(0.08, 0.05, 0.03, 0.98) # Castanho escuro rústico
+	c_style.border_width_left   = 2
+	c_style.border_width_top    = 3
+	c_style.border_width_right  = 2
+	c_style.border_width_bottom = 2
+	c_style.border_color = Color(0.85, 0.65, 0.25, 1.0) # Dourado
+	c_style.corner_radius_top_left     = 6
+	c_style.corner_radius_top_right    = 6
+	c_style.corner_radius_bottom_left  = 6
+	c_style.corner_radius_bottom_right = 6
+	c_style.shadow_size = 20
+	c_style.shadow_color = Color(0, 0, 0, 0.8)
+	c_panel.add_theme_stylebox_override("panel", c_style)
+	quit_overlay.add_child(c_panel)
+	
+	# Adiciona textura de pedra
+	_add_stone_texture(c_panel)
+	
+	var content_vbox = VBoxContainer.new()
+	content_vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	content_vbox.offset_left = 20
+	content_vbox.offset_top = 20
+	content_vbox.offset_right = -20
+	content_vbox.offset_bottom = -20
+	content_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	content_vbox.add_theme_constant_override("separation", 14)
+	c_panel.add_child(content_vbox)
+	
+	var f_bold = _load_font(true)
+	var f_reg = _load_font(false)
+	
+	# Título
+	var t_lbl = Label.new()
+	t_lbl.text = "SAIR DA JORNADA" if is_pt else "LEAVE JOURNEY"
+	t_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if f_bold: t_lbl.add_theme_font_override("font", f_bold)
+	t_lbl.add_theme_font_size_override("font_size", 16)
+	t_lbl.add_theme_color_override("font_color", Color(0.96, 0.80, 0.35, 1.0))
+	content_vbox.add_child(t_lbl)
+	
+	# Descrição
+	var d_lbl = Label.new()
+	d_lbl.text = "Como deseja sair da lenda de Thor?" if is_pt else "How do you want to leave Thor's legend?"
+	d_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	d_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if f_reg: d_lbl.add_theme_font_override("font", f_reg)
+	d_lbl.add_theme_font_size_override("font_size", 11)
+	d_lbl.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85))
+	content_vbox.add_child(d_lbl)
+	
+	# Botão 1: Salvar e Sair
+	var btn_save = Button.new()
+	btn_save.text = "Salvar e Sair" if is_pt else "Save and Exit"
+	_style_quit_button(btn_save, Color(0.3, 0.8, 0.4), f_bold)
+	btn_save.pressed.connect(func():
+		if GameGlobals:
+			GameGlobals.play_click_sound()
+			GameGlobals.save_settings()
+		get_tree().paused = false
+		SceneTransition.fade_to("res://scenes/main_menu.tscn")
+		queue_free()
+	)
+	content_vbox.add_child(btn_save)
+	
+	# Botão 2: Abandonar Run (Resetar)
+	var btn_reset = Button.new()
+	btn_reset.text = "Abandonar Run (Resetar)" if is_pt else "Abandon Run (Reset)"
+	_style_quit_button(btn_reset, Color(0.9, 0.3, 0.3), f_bold)
+	btn_reset.pressed.connect(func():
+		if GameGlobals:
+			GameGlobals.play_click_sound()
+			GameGlobals.thor_run_active = false
+			GameGlobals.thor_hp = 80
+			GameGlobals.thor_max_hp = 80
+			GameGlobals.thor_gold = 0
+			GameGlobals.thor_deck = []
+			GameGlobals.thor_relics = []
+			GameGlobals.thor_act = 1
+			GameGlobals.thor_current_layer = 1
+			GameGlobals.thor_map_path = []
+			GameGlobals.thor_map_data = {}
+			GameGlobals.thor_node_id = ""
+			GameGlobals.thor_intro_played = false
+		get_tree().paused = false
+		SceneTransition.fade_to("res://scenes/main_menu.tscn")
+		queue_free()
+	)
+	content_vbox.add_child(btn_reset)
+	
+	# Botão 3: Cancelar
+	var btn_cancel = Button.new()
+	btn_cancel.text = "Cancelar" if is_pt else "Cancel"
+	_style_quit_button(btn_cancel, Color(0.6, 0.6, 0.6), f_bold)
+	btn_cancel.pressed.connect(func():
+		if GameGlobals:
+			GameGlobals.play_click_sound()
+		quit_overlay.queue_free()
+	)
+	content_vbox.add_child(btn_cancel)
+	
+	btn_save.grab_focus()
+	_connect_button_sounds(quit_overlay)
+
+func _style_quit_button(btn: Button, color: Color, font: FontFile):
+	btn.custom_minimum_size = Vector2(280, 36)
+	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	if font:
+		btn.add_theme_font_override("font", font)
+	btn.add_theme_font_size_override("font_size", 11)
+	
+	var sb = StyleBoxFlat.new()
+	sb.bg_color = Color(0.1, 0.08, 0.06, 0.95)
+	sb.border_width_left   = 1
+	sb.border_width_top    = 1
+	sb.border_width_right  = 1
+	sb.border_width_bottom = 1
+	sb.border_color = color.darkened(0.3)
+	sb.corner_radius_top_left     = 5
+	sb.corner_radius_top_right    = 5
+	sb.corner_radius_bottom_left  = 5
+	sb.corner_radius_bottom_right = 5
+	btn.add_theme_stylebox_override("normal", sb)
+	
+	var sb_h = sb.duplicate()
+	sb_h.bg_color = Color(0.15, 0.12, 0.1, 0.95)
+	sb_h.border_color = color
+	btn.add_theme_stylebox_override("hover", sb_h)
+	
+	var sb_p = sb.duplicate()
+	sb_p.bg_color = Color(0.06, 0.04, 0.03, 0.95)
+	sb_p.border_color = color.darkened(0.5)
+	btn.add_theme_stylebox_override("pressed", sb_p)
 
 # ── Lógica de Opções (espelho do main_menu.gd) ────────────────────────────────
 

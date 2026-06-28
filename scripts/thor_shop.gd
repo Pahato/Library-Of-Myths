@@ -230,7 +230,12 @@ func _build_ui():
 	leave_btn.add_theme_stylebox_override("normal", c_sb)
 	
 	leave_btn.pressed.connect(func():
-		if GameGlobals: GameGlobals.play_click_sound()
+		if GameGlobals:
+			GameGlobals.play_click_sound()
+			if GameGlobals.thor_node_id != "" and not GameGlobals.thor_node_id in GameGlobals.thor_map_path:
+				GameGlobals.thor_map_path.append(GameGlobals.thor_node_id)
+				var layer = int(GameGlobals.thor_node_id.split("_")[0])
+				GameGlobals.thor_current_layer = layer + 1
 		var transition = get_node_or_null("/root/SceneTransition")
 		if transition: transition.fade_to("res://scenes/thor_map.tscn")
 		else: get_tree().change_scene_to_file("res://scenes/thor_map.tscn")

@@ -1222,6 +1222,12 @@ func _show_victory_screen():
 				GameGlobals.thor_hp = player_hp
 				GameGlobals.thor_gold = player_gold
 				GameGlobals.thor_deck = deck.duplicate()
+				
+				# Regista o nó como concluído e avança para a próxima layer
+				if GameGlobals.thor_node_id != "" and not GameGlobals.thor_node_id in GameGlobals.thor_map_path:
+					GameGlobals.thor_map_path.append(GameGlobals.thor_node_id)
+					var layer = int(GameGlobals.thor_node_id.split("_")[0])
+					GameGlobals.thor_current_layer = layer + 1
 			if transition: transition.fade_to("res://scenes/thor_map.tscn")
 			else: get_tree().change_scene_to_file("res://scenes/thor_map.tscn")
 	)

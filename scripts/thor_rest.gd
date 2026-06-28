@@ -185,6 +185,12 @@ func _create_option_button(title_text: String, effect_text: String, desc_text: S
 	return btn
 
 func _return_to_map():
+	if GameGlobals:
+		if GameGlobals.thor_node_id != "" and not GameGlobals.thor_node_id in GameGlobals.thor_map_path:
+			GameGlobals.thor_map_path.append(GameGlobals.thor_node_id)
+			var layer = int(GameGlobals.thor_node_id.split("_")[0])
+			GameGlobals.thor_current_layer = layer + 1
+			
 	var transition = get_node_or_null("/root/SceneTransition")
 	if transition:
 		transition.fade_to("res://scenes/thor_map.tscn")

@@ -581,8 +581,6 @@ func _on_node_clicked(node_data: Dictionary):
 	if GameGlobals and GameGlobals.has_method("play_click_sound"):
 		GameGlobals.play_click_sound()
 		
-	GameGlobals.thor_map_path.append(node_data.id)
-	GameGlobals.thor_current_layer = node_data.layer + 1
 	GameGlobals.thor_node_id = node_data.id
 	
 	# Determina qual cena carregar com base no tipo de nó
