@@ -546,6 +546,24 @@ func _build_enemy_area():
 	enemy_block_label.add_theme_color_override("font_color", BLOCK_COLOR)
 	enemy_container.add_child(enemy_block_label)
 
+	# Intent Label — Próxima ação do inimigo (ex: "⚔️ Vai atacar por 12")
+	enemy_intent_label = Label.new()
+	enemy_intent_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if font_bold:
+		enemy_intent_label.add_theme_font_override("font", font_bold)
+	enemy_intent_label.add_theme_font_size_override("font_size", 11)
+	enemy_intent_label.add_theme_constant_override("outline_size", 3)
+	enemy_intent_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	# Fundo semi-transparente para destacar
+	var intent_bg = StyleBoxFlat.new()
+	intent_bg.bg_color = Color(0.0, 0.0, 0.0, 0.55)
+	intent_bg.corner_radius_top_left = 4
+	intent_bg.corner_radius_top_right = 4
+	intent_bg.corner_radius_bottom_left = 4
+	intent_bg.corner_radius_bottom_right = 4
+	enemy_intent_label.add_theme_stylebox_override("normal", intent_bg)
+	enemy_container.add_child(enemy_intent_label)
+
 func _build_bottom_bar():
 	# Painel inferior escuro
 	var bottom_panel = Panel.new()
@@ -2007,6 +2025,40 @@ func _update_all_ui():
 		enemy_hp_label.text = "❤️ " + str(enemy_hp) + " / " + str(enemy_max_hp)
 	if enemy_block_label:
 		enemy_block_label.text = "🛡 " + str(enemy_block) if enemy_block > 0 else ""
+
+	# Intent label — mostra a próxima ação do inimigo de forma clara
+	if enemy_intent_label and not enemy_intent.is_empty():
+		var intent_text = ""
+		var intent_color = DAMAGE_COLOR
+		match enemy_intent.type:
+			ThorEnemyDatabase.IntentType.ATTACK:
+				var dmg = enemy_intent.get("damage", 0) + enemy_strength
+				var hits = enemy_intent.get("hits", 1)
+				if hits > 1:
+					intent_text = ("⚔️ %dx%d=%d" % [hits, dmg, hits * dmg]) if is_pt else ("⚔️ %dx%d=%d" % [hits, dmg, hits * dmg])
+				else:
+					intent_text = ("⚔️ Ataque: %d" % dmg) if is_pt else ("⚔️ Attack: %d" % dmg)
+				intent_color = DAMAGE_COLOR
+			ThorEnemyDatabase.IntentType.DEFEND:
+				intent_text = ("🛡 Defende: %d" % enemy_intent.get("block", 0)) if is_pt else ("🛡 Defend: %d" % enemy_intent.get("block", 0))
+				intent_color = BLOCK_COLOR
+			ThorEnemyDatabase.IntentType.BUFF:
+				if enemy_intent.get("strength", 0) > 0:
+					intent_text = ("💪 +Força: %d" % enemy_intent.strength) if is_pt else ("💪 +Strength: %d" % enemy_intent.strength)
+				elif enemy_intent.get("heal", 0) > 0:
+					intent_text = ("❤️ Cura: %d" % enemy_intent.heal) if is_pt else ("❤️ Heals: %d" % enemy_intent.heal)
+				else:
+					intent_text = "💪 Buff" if is_pt else "💪 Buff"
+				intent_color = GOLD_COLOR
+			ThorEnemyDatabase.IntentType.ATTACK_DEFEND:
+				var dmg = enemy_intent.get("damage", 0) + enemy_strength
+				intent_text = ("⚔️🛡 %d + Defesa" % dmg) if is_pt else ("⚔️🛡 %d + Block" % dmg)
+				intent_color = DAMAGE_COLOR
+			_:
+				intent_text = "❓"
+				intent_color = GOLD_COLOR
+		enemy_intent_label.text = intent_text
+		enemy_intent_label.add_theme_color_override("font_color", intent_color)
 	
 	# Painel do inimigo (cor, borda e textura)
 	if enemy_panel:

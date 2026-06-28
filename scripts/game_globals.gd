@@ -267,7 +267,7 @@ var translations: Dictionary = {
 		"tutorial_story_book3": "O Ragnarök chegou. Thor, o deus do trovão, deve atravessar os reinos de Midgard, Jotunheim e Helheim, enfrentando horrores nórdicos até à batalha final contra Jörmungandr, a Serpente do Mundo.",
 		"tutorial_controls_book3": "Rato (Clique)  →  Selecionar e Jogar Carta\nBotão  →  Terminar Turno\nESC  →  Pausar",
 		"tutorial_objective_book3": "Use cartas de ataque, escudo e poderes para derrotar os inimigos!\nCada carta custa energia (⚡). Gere bem os seus recursos!\nDerrote o inimigo antes que ele o destrua!",
-		"tutorial_tip_book3": "💡 Preste atenção ao Intent do inimigo — ele mostra o que vai fazer no próximo turno!",
+		"tutorial_tip_book3": "💡 Veja a Próxima Ação do inimigo, por cima da barra de vida — mostra se vai atacar, defender ou ganhar Força!",
 		
 		"tutorial_play": "▶  Jogar!",
 		"tutorial_back": "◀  Voltar",
@@ -455,7 +455,7 @@ var translations: Dictionary = {
 		"tutorial_story_book3": "Ragnarök has come. Thor, the god of thunder, must journey through the realms of Midgard, Jotunheim and Helheim, facing Norse horrors until the final battle against Jörmungandr, the World Serpent.",
 		"tutorial_controls_book3": "Mouse (Click)  →  Select and Play Card\nButton  →  End Turn\nESC  →  Pause",
 		"tutorial_objective_book3": "Use attack, shield and power cards to defeat enemies!\nEach card costs energy (⚡). Manage your resources wisely!\nDefeat the enemy before it destroys you!",
-		"tutorial_tip_book3": "💡 Pay attention to the enemy's Intent — it shows what they'll do next turn!",
+		"tutorial_tip_book3": "💡 Watch the enemy's Next Action above their health bar — it shows if they'll attack, defend, or gain Strength!",
 		
 		"tutorial_play": "▶  Play!",
 		"tutorial_back": "◀  Back",

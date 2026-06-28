@@ -113,15 +113,15 @@ func _ready():
 	# Inicializar parâmetros de balanceamento por dificuldade
 	match difficulty:
 		0: # Fácil
-			boss_hit_chance = 0.65; boss_note_dmg = 0.10
+			boss_hit_chance = 0.60; boss_note_dmg = 0.10
 			heal_perfect = 3.0; heal_good = 1.5; heal_okay = 0.5
-			miss_dmg = 1.0; shock_dmg = 3.0
+			miss_dmg = 0.8; shock_dmg = 2.5
 		1: # Normal
-			boss_hit_chance = 0.78; boss_note_dmg = 0.25
-			heal_perfect = 2.0; heal_good = 1.0; heal_okay = 0.3
-			miss_dmg = 2.5; shock_dmg = 7.0
+			boss_hit_chance = 0.72; boss_note_dmg = 0.22
+			heal_perfect = 2.0; heal_good = 1.0; heal_okay = 0.5
+			miss_dmg = 2.0; shock_dmg = 6.0
 		2: # Difícil
-			boss_hit_chance = 0.90; boss_note_dmg = 0.40
+			boss_hit_chance = 0.85; boss_note_dmg = 0.38
 			heal_perfect = 1.2; heal_good = 0.6; heal_okay = 0.1
 			miss_dmg = 5.0; shock_dmg = 12.0
 			

@@ -95,6 +95,10 @@ func _process(delta):
 			
 		# Atualiza valores do HUD da Píton estilo Elden Ring
 		if boss_hud_container and is_instance_valid(boss):
+			# Se o boss morreu, ocultar imediatamente o HUD
+			if boss.current_health <= 0:
+				boss_hud_container.hide()
+				return
 			boss_hud_container.show()
 			
 			# Sincroniza valores máximos e atuais de vida
@@ -219,6 +223,9 @@ func _on_player_died():
 	game_over_screen.show()
 
 func _on_boss_died():
+	# Ocultar imediatamente o HUD do boss para evitar a barra roxa persistente
+	if boss_hud_container:
+		boss_hud_container.hide()
 	# Primeiro mostra o diálogo de vitória, depois o ecrã de vitória
 	get_tree().create_timer(0.5).timeout.connect(func():
 		if not get_tree().paused:
