@@ -34,6 +34,29 @@ func _ready():
 		GameGlobals.thor_map_data = {}
 		GameGlobals.thor_run_active = true
 		GameGlobals.thor_intro_played = false
+		GameGlobals.thor_node_id = ""
+		
+	# Verificar se o jogador saiu a meio de uma fase ativa e redirecionar imediatamente
+	if GameGlobals.thor_run_active and GameGlobals.thor_node_id != "" and not GameGlobals.thor_map_path.has(GameGlobals.thor_node_id):
+		var active_node = null
+		var layers = GameGlobals.thor_map_data
+		for layer_idx in layers.keys():
+			for node_data in layers[layer_idx]:
+				if node_data.id == GameGlobals.thor_node_id:
+					active_node = node_data
+					break
+			if active_node:
+				break
+		if active_node:
+			var scene_path = "res://scenes/thor_battle.tscn"
+			if active_node.type == NodeType.REST:
+				scene_path = "res://scenes/thor_rest.tscn"
+			elif active_node.type == NodeType.SHOP:
+				scene_path = "res://scenes/thor_shop.tscn"
+				
+			if ResourceLoader.exists(scene_path):
+				get_tree().change_scene_to_file(scene_path)
+				return
 		
 	if GameGlobals.thor_map_data.is_empty():
 		_generate_map()
