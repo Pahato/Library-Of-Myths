@@ -25,7 +25,6 @@ func _ready():
 	music_player.name = "LevelMusicPlayer"
 	music_player.bus = "Music"
 	add_child(music_player)
-	music_player.play()
 	music_player.finished.connect(func(): music_player.play())
 
 	# Construir o layout do mapa/arena dinamicamente
@@ -78,6 +77,10 @@ func _play_prologue():
 func _pan_down_and_walk():
 	if not is_instance_valid(player):
 		return
+		
+	# Iniciar a música de combate exatamente quando o pan down começa
+	if is_instance_valid(music_player) and not music_player.playing:
+		music_player.play()
 		
 	# 1. Animação de correr do jogador
 	player.sprite.play("Run")

@@ -33,6 +33,7 @@ func _ready():
 		GameGlobals.thor_map_path = []
 		GameGlobals.thor_map_data = {}
 		GameGlobals.thor_run_active = true
+		GameGlobals.thor_intro_played = false
 		
 	if GameGlobals.thor_map_data.is_empty():
 		_generate_map()
@@ -41,6 +42,22 @@ func _ready():
 	
 	# Música temática do Thor
 	GameGlobals.play_music("res://assets/music/time_for_adventure.mp3", -8.0)
+
+	# Iniciar diálogo introdutório de história da run do Thor
+	if not GameGlobals.get("thor_intro_played"):
+		GameGlobals.thor_intro_played = true
+		# Pequeno atraso para dar tempo ao mapa de carregar e aparecer no fundo
+		get_tree().create_timer(0.25).timeout.connect(func():
+			var dialogue_scene = load("res://scenes/dialogue_box.tscn")
+			if dialogue_scene:
+				var d = dialogue_scene.instantiate()
+				d.dialogue_list = [
+					{"name": "char_narrator", "text": "dialogue_thor_story_intro_1"},
+					{"name": "char_narrator", "text": "dialogue_thor_story_intro_2"},
+					{"name": "char_thor", "text": "dialogue_thor_story_intro_3"}
+				]
+				add_child(d)
+		)
 
 func _generate_map():
 	var rng = RandomNumberGenerator.new()

@@ -81,7 +81,7 @@ const JUMP_BUFFER_DURATION = 0.12
 var coyote_timer: float = 0.0
 var jump_buffer_timer: float = 0.0
 
-var is_cutscene: bool = false
+var is_cutscene: bool = true
 var was_on_floor: bool = false
 
 var sound_shoot: AudioStreamPlayer
@@ -102,6 +102,8 @@ func _ready():
 	current_health = max_health
 	# Garante que a UI recebe a vida inicial
 	health_changed.emit(current_health)
+	if sprite:
+		sprite.play("Idle")
 	sprite.animation_finished.connect(_on_animation_finished)
 	# Permite que as animações do pato rodem mesmo quando o jogo é pausado por caixas de diálogo
 	sprite.process_mode = Node.PROCESS_MODE_ALWAYS

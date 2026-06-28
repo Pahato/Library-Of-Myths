@@ -225,6 +225,9 @@ var translations: Dictionary = {
 		"char_jormungandr": "Jörmungandr",
 		
 		# Dialogue - Book 3 Intro
+		"dialogue_thor_story_intro_1": "Midgard, o reino dos homens, foi assolado pelo frio do Fimbulwinter. Das profundezas do oceano, a Serpente do Mundo acordou, espalhando o seu veneno pelos reinos nórdicos...",
+		"dialogue_thor_story_intro_2": "O Ragnarök aproxima-se. Para salvar os nove reinos, Thor deve marchar até à batalha final contra Jörmungandr.",
+		"dialogue_thor_story_intro_3": "Mjölnir clama pelo trovão. Nenhum lobo, gigante ou esqueleto de Helheim ficará de pé!",
 		"dialogue_thor_intro_1": "O Ragnarök aproxima-se... Sinto o veneno da serpente no ar de Midgard.",
 		"dialogue_thor_intro_2": "Mjölnir guiará o meu caminho. Nenhuma fera de Helheim me impedirá!",
 		"dialogue_draugr_intro": "Gggrrr... Carnes vivas... Não passarás por Midgard!",
@@ -413,6 +416,9 @@ var translations: Dictionary = {
 		"char_jormungandr": "Jörmungandr",
 		
 		# Dialogue - Book 3 Intro
+		"dialogue_thor_story_intro_1": "Midgard, the realm of men, has been plagued by the cold of Fimbulwinter. From the depths of the ocean, the World Serpent awakened, spreading its poison across the Norse realms...",
+		"dialogue_thor_story_intro_2": "Ragnarök draws near. To save the nine realms, Thor must march towards the final battle against Jörmungandr.",
+		"dialogue_thor_story_intro_3": "Mjölnir calls for the thunder. No wolf, giant, or skeleton of Helheim shall stand!",
 		"dialogue_thor_intro_1": "Ragnarök draws near... I feel the serpent's poison in Midgard's air.",
 		"dialogue_thor_intro_2": "Mjölnir will guide my way. No beast of Helheim shall stop me!",
 		"dialogue_draugr_intro": "Gggrrr... Living flesh... You shall not pass through Midgard!",
