@@ -158,7 +158,7 @@ func _init_enemy(enemy_id: String = ""):
 	combat_waves.clear()
 	
 	if id_to_spawn == "" and GameGlobals and GameGlobals.thor_run_active:
-		# Encontrar o nó atual no mapa (corrigindo a leitura direta do dicionário de layers)
+		# Encontrar o nó atual no mapa
 		var current_node = null
 		if not GameGlobals.thor_map_data.is_empty():
 			for layer_idx in GameGlobals.thor_map_data:
@@ -168,27 +168,46 @@ func _init_enemy(enemy_id: String = ""):
 						current_node = node
 						break
 				if current_node: break
-				
+			
 		if current_node:
+			# Deriva o ato a partir da layer atual para progressão de dificuldade
+			# Layers 1-5 = Ato 1 (Midgard), 6-10 = Ato 2 (Jotunheim), 11-14 = Ato 3 (Helheim)
+			var layer_num = current_node.layer
+			var act: int
+			if layer_num <= 5:
+				act = 1
+			elif layer_num <= 10:
+				act = 2
+			else:
+				act = 3
+			
 			# 0 = COMBAT, 1 = ELITE, 2 = REST, 3 = SHOP, 4 = BOSS
-			var act = GameGlobals.thor_act
 			if current_node.type == 4: # BOSS
 				is_boss = true
 				id_to_spawn = "jormungandr"
-			elif current_node.type == 1: # ELITE
+			elif current_node.type == 1: # ELITE — escolhe elite disponível para o ato
 				is_elite = true
-				var elites = ["hel_rainha", "fenrir_gigante"]
-				id_to_spawn = elites.pick_random()
+				# Hel aparece nos atos 1 e 2; Fenrir nos atos 2 e 3
+				var elites_for_act: Array = []
+				if act <= 2:
+					elites_for_act.append("hel_rainha")
+				if act >= 2:
+					elites_for_act.append("fenrir_gigante")
+				if elites_for_act.is_empty():
+					elites_for_act = ["hel_rainha"]
+				id_to_spawn = elites_for_act.pick_random()
 			else:
-				# COMBAT normal — Spawna inimigo aleatório e tem 40% de chance de ter um segundo inimigo (onda de reforço)
+				# COMBAT normal — inimigo aleatório do ato atual
 				var normals = ThorEnemyDatabase.get_enemies_for_act(act)
 				if normals.size() > 0:
 					normals.shuffle()
 					id_to_spawn = normals[0]
-					
-					# 40% de chance de spawnar um segundo inimigo como reforço (fase com múltiplos inimigos em ondas)
-					if randf() < 0.4 and normals.size() > 1:
-						combat_waves = [normals[1]]
+					# 45% de chance de ter um segundo inimigo diferente como onda de reforço
+					if randf() < 0.45 and normals.size() > 1:
+						# Garante que a onda é um inimigo diferente do principal
+						var wave_candidates = normals.filter(func(e): return e != id_to_spawn)
+						if not wave_candidates.is_empty():
+							combat_waves = [wave_candidates.pick_random()]
 				else:
 					id_to_spawn = "draugr"
 		else:

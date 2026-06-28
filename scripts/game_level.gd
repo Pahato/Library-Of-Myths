@@ -176,6 +176,11 @@ func _run_boss_entrance():
 		
 		if player.dialogue_scene:
 			var dialogue = player.dialogue_scene.instantiate()
+			dialogue.dialogue_list = [
+				{"name": "char_apolo", "text": "dialogue_apolo_python_1"},
+				{"name": "char_python", "text": "dialogue_python_apolo_1"},
+				{"name": "char_apolo", "text": "dialogue_apolo_python_2"}
+			]
 			# Conecta ao término do diálogo para iniciar a jogabilidade
 			dialogue.dialogue_finished.connect(_on_cutscene_finished)
 			add_child(dialogue)
@@ -196,7 +201,6 @@ func _on_cutscene_finished():
 	# Restaura a câmara para a jogabilidade normal focada no jogador
 	player.camera_zoom_target = 2.8
 	player.camera_offset_target = Vector2.ZERO
-	print("Cutscene terminada! Combate iniciado!")
 
 func _setup_background():
 	# Criar um CanvasLayer para o fundo para que ele siga a câmara automaticamente e cubra todo o ecrã
@@ -401,7 +405,7 @@ func _spawn_solar_notification():
 		return
 	# Cria uma notificação visual simples (Label flutuante)
 	var label = Label.new()
-	label.text = "PODER SOLAR ATIVO! (TIRO TRIPLO)"
+	label.text = GameGlobals.get_text("ui_solar_active") if GameGlobals else "SOLAR POWER ACTIVE!"
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.2))
 	label.add_theme_font_size_override("font_size", 9)

@@ -42,12 +42,12 @@ func _generate_shop_items():
 			var c_id = possible_cards[i]
 			cards_for_sale.append(c_id)
 			var c_data = ThorCardDatabase.get_card(c_id)
-			var base_price = 25
+			var base_price = 20
 			if c_data.rarity == ThorCardDatabase.CardRarity.UNCOMMON:
-				base_price = 45
+				base_price = 32
 			elif c_data.rarity == ThorCardDatabase.CardRarity.RARE:
-				base_price = 75
-			card_prices.append(randi_range(base_price - 5, base_price + 10))
+				base_price = 52
+			card_prices.append(randi_range(base_price, base_price + 8))
 
 func _build_ui():
 	var bg_color = ColorRect.new()
@@ -171,24 +171,29 @@ func _build_ui():
 	vbox.add_child(services_hbox)
 	
 	# Heal Service
-	var heal_price = 15
+	var heal_price = 10
+	var is_hp_full = GameGlobals and GameGlobals.thor_hp >= GameGlobals.thor_max_hp
 	var heal_btn = Button.new()
-	heal_btn.text = ("Curar 20 HP (💰 %d)" % heal_price) if is_pt else ("Heal 20 HP (💰 %d)" % heal_price)
+	heal_btn.text = ("Curar 30 HP (💰 %d)" % heal_price) if is_pt else ("Heal 30 HP (💰 %d)" % heal_price)
+	if is_hp_full:
+		heal_btn.text = "HP Cheio! ✓" if is_pt else "HP Full! ✓"
+		heal_btn.disabled = true
 	heal_btn.custom_minimum_size = Vector2(200, 45)
 	_style_service_btn(heal_btn)
 	heal_btn.pressed.connect(func():
 		if GameGlobals and GameGlobals.thor_gold >= heal_price and GameGlobals.thor_hp < GameGlobals.thor_max_hp:
 			GameGlobals.thor_gold -= heal_price
-			GameGlobals.thor_hp = mini(GameGlobals.thor_hp + 20, GameGlobals.thor_max_hp)
+			GameGlobals.thor_hp = mini(GameGlobals.thor_hp + 30, GameGlobals.thor_max_hp)
 			_update_gold_label()
 			hp_label.text = "❤️ HP: %d/%d" % [GameGlobals.thor_hp, GameGlobals.thor_max_hp]
 			GameGlobals.play_click_sound()
 			heal_btn.disabled = true
+			heal_btn.text = "HP Cheio! ✓" if is_pt else "HP Full! ✓"
 	)
 	services_hbox.add_child(heal_btn)
 	
 	# Max HP Service
-	var maxhp_price = 35
+	var maxhp_price = 25
 	var maxhp_btn = Button.new()
 	maxhp_btn.text = ("+10 Max HP (💰 %d)" % maxhp_price) if is_pt else ("+10 Max HP (💰 %d)" % maxhp_price)
 	maxhp_btn.custom_minimum_size = Vector2(200, 45)
