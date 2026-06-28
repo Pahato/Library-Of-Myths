@@ -236,9 +236,7 @@ func _show_thor_quit_confirmation():
 	var c_panel = Panel.new()
 	c_panel.name = "ConfirmationPanel"
 	c_panel.size = c_size
-	c_panel.set_anchors_preset(Control.PRESET_CENTER)
-	c_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	c_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
+	c_panel.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	var vp = get_viewport().get_visible_rect().size
 	c_panel.position = (vp - c_size) / 2
 	
