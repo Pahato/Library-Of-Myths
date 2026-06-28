@@ -80,6 +80,7 @@ var thor_current_layer: int = 1
 var thor_map_path: Array = [] # Caminho percorrido no mapa
 var thor_map_data: Dictionary = {} # Nós gerados
 var thor_node_id: String = "" # Nó atual sendo visitado
+var thor_intro_played: bool = false
 
 # --- Traduções ---
 var translations: Dictionary = {
