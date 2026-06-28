@@ -678,8 +678,7 @@ func _ensure_action(action_name: String, bindings: Array):
 	if not InputMap.has_action(action_name):
 		InputMap.add_action(action_name)
 	
-	# Só adiciona os eventos se a lista de eventos para esta ação estiver vazia
-	# (isto permite que, caso o utilizador defina controlos no editor, eles não sejam sobrepostos)
+	# Caso o utilizador defina controlos no editor não sejam sobrepostos
 	if InputMap.action_get_events(action_name).is_empty():
 		for binding in bindings:
 			var event = null

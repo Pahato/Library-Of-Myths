@@ -34,7 +34,7 @@ func fade_to(scene_path: String):
 	)
 
 func _do_fade_in():
-	# Garante que o overlay está preto antes de revelar a nova cena
+	# Overlay a preto antes de revelar a nova cena
 	overlay.color = Color(0, 0, 0, 1)
 	var tween = create_tween()
 	tween.tween_property(overlay, "color:a", 0.0, 0.35).set_trans(Tween.TRANS_SINE)

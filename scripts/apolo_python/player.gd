@@ -101,12 +101,12 @@ func _ready():
 	# Lê vida máxima da dificuldade global
 	max_health = GameGlobals.get_player_max_health()
 	current_health = max_health
-	# Garante que a UI recebe a vida inicial
+	# Atualiza a UI com a vida inicial
 	health_changed.emit(current_health)
 	if sprite:
 		sprite.play("Idle")
 	sprite.animation_finished.connect(_on_animation_finished)
-	# Permite que as animações do pato rodem mesmo quando o jogo é pausado por caixas de diálogo
+	# Animações do pato rodam mesmo com o jogo pausado
 	sprite.process_mode = Node.PROCESS_MODE_ALWAYS
 	
 	# Setup programático da ação "dash" caso não esteja no InputMap

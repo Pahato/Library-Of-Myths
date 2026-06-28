@@ -18,7 +18,7 @@ var sound_type: AudioStreamPlayer
 var sound_advance: AudioStreamPlayer
 
 func _ready():
-	# PERMITE QUE ESTE NÓ FUNCIONE MESMO COM O JOGO PAUSADO
+	# Executa mesmo com o jogo pausado
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	# Pausa o resto do jogo para que o combate não decorra durante o diálogo
 	get_tree().paused = true

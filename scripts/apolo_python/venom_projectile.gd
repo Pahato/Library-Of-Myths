@@ -8,7 +8,7 @@ var direction: Vector2 = Vector2.ZERO
 
 func _ready():
 	# Configurar colisão programática: detecta APENAS o jogador (Layer 2)
-	# Isto permite que o veneno atravesse plataformas e o chão sem ser destruído instantaneamente
+	# O veneno atravessa plataformas e o chão sem ser destruído instantaneamente
 	collision_layer = 0
 	collision_mask = 2
 

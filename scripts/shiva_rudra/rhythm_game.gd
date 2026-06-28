@@ -41,7 +41,7 @@ var player_max_combo: int = 0
 var notes_hit: int = 0
 var total_chart_notes: int = 0
 var accuracy: float = 100.0
-var timing_total: float = 0.0 # Usado para média de precisão
+var timing_total: float = 0.0 # Média de precisão
 
 # --- Barra de Vida (Tug of War) ---
 # 50.0 é equilíbrio, 0.0 é Rudra domina (derrota), 100.0 é Shiva domina (vitória)

@@ -472,7 +472,7 @@ func _on_options_pressed():
 		options_overlay.show()
 		# Forçar reposicionamento caso o tamanho da janela tenha mudado
 		options_panel.position = (size - options_panel.size) / 2
-		# Garante que começa no menu de opções principal
+		# Inicializa no menu de opções principal
 		keybinds_vbox.hide()
 		main_options_vbox.show()
 		_update_options_labels()

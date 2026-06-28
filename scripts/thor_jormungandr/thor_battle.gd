@@ -205,7 +205,7 @@ func _init_enemy(enemy_id: String = ""):
 					id_to_spawn = normals[0]
 					# 45% de chance de ter um segundo inimigo diferente como onda de reforço
 					if randf() < 0.45 and normals.size() > 1:
-						# Garante que a onda é um inimigo diferente do principal
+						# Onda de reforço com um inimigo diferente do principal
 						var wave_candidates = normals.filter(func(e): return e != id_to_spawn)
 						if not wave_candidates.is_empty():
 							combat_waves = [wave_candidates.pick_random()]

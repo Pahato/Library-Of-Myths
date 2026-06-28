@@ -35,7 +35,7 @@ var victory_lines: Array = [
 ]
 
 func _ready():
-	# PERMITE QUE A INTERFACE E BOTÕES FUNCIONEM SE O JOGO FOR PAUSADO
+	# Interface e botões funcionam mesmo com o jogo pausado
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	
 	game_over_screen.hide()

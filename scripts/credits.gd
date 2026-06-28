@@ -47,4 +47,3 @@ func _build_credits():
 
 func _on_back():
 	SceneTransition.fade_to("res://scenes/main_menu.tscn")
-
