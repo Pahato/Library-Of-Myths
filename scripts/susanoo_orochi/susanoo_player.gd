@@ -63,8 +63,8 @@ func _physics_process(_delta: float) -> void:
 		velocity = Vector2.ZERO
 		_play_animation(Vector2.ZERO)
 		move_and_slide()
-		global_position.x = clamp(global_position.x, 150.0, 1770.0)
-		global_position.y = clamp(global_position.y, 90.0, 990.0)
+		global_position.x = clamp(global_position.x, 135.0, 1535.0)
+		global_position.y = clamp(global_position.y, 80.0, 905.0)
 		return
 
 	var direction: Vector2 = _get_input_direction()
@@ -74,8 +74,8 @@ func _physics_process(_delta: float) -> void:
 	move_and_slide()
 	
 	# Garante que o jogador não sai dos limites do mapa (fundo do templo)
-	global_position.x = clamp(global_position.x, 150.0, 1770.0)
-	global_position.y = clamp(global_position.y, 90.0, 990.0)
+	global_position.x = clamp(global_position.x, 135.0, 1535.0)
+	global_position.y = clamp(global_position.y, 80.0, 905.0)
 
 
 

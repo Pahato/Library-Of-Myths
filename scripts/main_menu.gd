@@ -361,7 +361,7 @@ func _setup_book_carousel():
 	carousel_label.add_theme_font_size_override("font_size", 18)
 	carousel_label.add_theme_color_override("font_color", Color(0.96, 0.87, 0.70, 1.0))
 	carousel_label.position = Vector2(0, carousel_cover.position.y + carousel_cover.size.y + 10.0)
-	carousel_label.size = Vector2(carousel_container.size.x, 90.0)
+	carousel_label.size = Vector2(carousel_container.size.x, 30.0)
 	
 	# Aplicar fonte Cinzel
 	var cinzel = _load_font(true)
@@ -375,7 +375,7 @@ func _setup_book_carousel():
 	carousel_btn_play.custom_minimum_size = Vector2(180, 40)
 	carousel_btn_play.position = Vector2(
 		(carousel_container.size.x - 180.0) / 2.0,
-		carousel_label.position.y + 95.0
+		carousel_label.position.y + 40.0
 	)
 	carousel_btn_play.pressed.connect(_on_carousel_cover_pressed)
 	carousel_container.add_child(carousel_btn_play)
@@ -449,8 +449,8 @@ func _run_intro_animation():
 	player_instance.sprite.play("Run")
 	
 	var tween = create_tween()
-	# 1. Caminha pelo chão até à posição anterior à cadeira (X = 240)
-	tween.tween_property(player_instance, "global_position:x", 240.0, 1.8).set_trans(Tween.TRANS_SINE)
+	# 1. Caminha pelo chão até à posição anterior à cadeira (X = 220)
+	tween.tween_property(player_instance, "global_position:x", 220.0, 1.8).set_trans(Tween.TRANS_SINE)
 	
 	# 2. Salta para cima da cadeira!
 	tween.tween_callback(func():
@@ -460,13 +460,13 @@ func _run_intro_animation():
 	tween.tween_callback(func():
 		# Salto (arco parabólico usando tweens paralelos)
 		var jump_tween = create_tween().set_parallel(true)
-		# Move horizontalmente para a cadeira (X = 325, ligeiramente atrás)
-		jump_tween.tween_property(player_instance, "global_position:x", 325.0, 0.45)
+		# Move horizontalmente para a cadeira (X = 300, mais atrás)
+		jump_tween.tween_property(player_instance, "global_position:x", 300.0, 0.45)
 		
-		# Arco de altura (Y sobe para 360 e desce para o assento em 440, mais acima)
+		# Arco de altura (Y sobe para 335 e desce para o assento em 415, mais acima)
 		var y_tween = create_tween()
-		y_tween.tween_property(player_instance, "global_position:y", 360.0, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		y_tween.tween_property(player_instance, "global_position:y", 440.0, 0.23).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		y_tween.tween_property(player_instance, "global_position:y", 335.0, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		y_tween.tween_property(player_instance, "global_position:y", 415.0, 0.23).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 		
 		y_tween.tween_callback(func():
 			# Aterrou na cadeira! Fica sentado em Idle

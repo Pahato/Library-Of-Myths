@@ -86,6 +86,9 @@ func _ready() -> void:
 	# Oculta/desativa cabeças em excesso conforme a dificuldade selecionada.
 	_configure_heads_for_difficulty()
 
+	# Randomiza os spawns dos saques (barris de sake)
+	_randomize_barrel_positions()
+
 	# Pausa o jogo e inicia a sequência de introdução narrativa.
 	get_tree().paused = true
 	_play_intro()
@@ -246,7 +249,7 @@ func _on_player_left_barrel() -> void:
 # Condição de vitória
 # ---------------------------------------------------------------------------
 
-## Inicia a sequência de vitória: para o player, mostra diálogo e muda de cena.
+## Inicia a sequência de vitória: para o player, faz animação do Orochi bebedo e morrendo, e depois mostra diálogo.
 func _trigger_victory() -> void:
 	if not game_active:
 		return
@@ -259,14 +262,27 @@ func _trigger_victory() -> void:
 	# Para o movimento das cabeças.
 	_set_heads_active(false)
 
-	# Mostra o diálogo de vitória narrado (2 linhas).
-	var box: DialogueBox = dialogue_box_scene.instantiate()
-	box.dialogue_list = [
-		{"name": "char_narrator", "text": "dialogue_narrator_susanoo_victory_1"},
-		{"name": "char_narrator", "text": "dialogue_narrator_susanoo_victory_2"},
-	]
-	box.dialogue_finished.connect(_on_victory_dialogue_finished)
-	add_child(box)
+	# Cria animação das cabeças do Orochi a rodopiar, a ficar vermelhas e a desaparecer (bebedeira e morte)
+	var victory_tween = create_tween().set_parallel(true)
+	for head in heads_container.get_children():
+		if head.visible and head is OrochiHead:
+			# Rodopia as cabeças
+			victory_tween.tween_property(head, "rotation", head.rotation + PI * 8.0, 2.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			# Fica avermelhado (bêbedo) e depois transparente
+			victory_tween.tween_property(head, "modulate", Color(1.0, 0.3, 0.3, 0.0), 2.0).set_trans(Tween.TRANS_SINE)
+			# Encolhe
+			victory_tween.tween_property(head, "scale", Vector2.ZERO, 2.0).set_trans(Tween.TRANS_QUAD)
+
+	# Quando a animação terminar, mostra o diálogo do narrador
+	victory_tween.chain().tween_callback(func():
+		var box: DialogueBox = dialogue_box_scene.instantiate()
+		box.dialogue_list = [
+			{"name": "char_narrator", "text": "dialogue_narrator_susanoo_victory_1"},
+			{"name": "char_narrator", "text": "dialogue_narrator_susanoo_victory_2"},
+		]
+		box.dialogue_finished.connect(_on_victory_dialogue_finished)
+		add_child(box)
+	)
 
 
 ## Após o diálogo de vitória, regressa ao menu principal.
@@ -402,6 +418,47 @@ func _set_heads_active(active: bool) -> void:
 				Node.PROCESS_MODE_INHERIT if active
 				else Node.PROCESS_MODE_DISABLED
 			)
+
+
+## Randomiza as posições dos pontos de barril de sake na área caminhável do templo.
+func _randomize_barrel_positions() -> void:
+	var points: Array = barrels_container.get_children()
+	var generated_positions: Array = []
+	
+	# Ponto de spawn do player a evitar
+	var player_spawn := Vector2(960, 950)
+	
+	var rng = RandomNumberGenerator.new()
+	rng.randomize()
+	
+	for point in points:
+		var valid_pos := false
+		var attempts := 0
+		var new_pos := Vector2.ZERO
+		
+		while not valid_pos and attempts < 100:
+			attempts += 1
+			# Gera posição aleatória nos limites da área caminhável do templo
+			new_pos.x = rng.randf_range(250.0, 1450.0)
+			new_pos.y = rng.randf_range(180.0, 820.0)
+			
+			# Evita spawnar em cima do jogador
+			if new_pos.distance_to(player_spawn) < 220.0:
+				continue
+				
+			# Evita spawnar muito próximo de outros barris
+			var too_close := false
+			for pos in generated_positions:
+				if new_pos.distance_to(pos) < 180.0:
+					too_close = true
+					break
+			
+			if not too_close:
+				valid_pos = true
+		
+		if valid_pos:
+			point.position = new_pos
+			generated_positions.append(new_pos)
 
 
 # ---------------------------------------------------------------------------
