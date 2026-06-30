@@ -296,8 +296,8 @@ func _setup_book_carousel():
 	# 4. Criar a capa do livro central (TextureButton)
 	carousel_cover = TextureButton.new()
 	carousel_cover.name = "CarouselCover"
-	carousel_cover.custom_minimum_size = Vector2(250, 350)
-	carousel_cover.size = Vector2(250, 350)
+	carousel_cover.custom_minimum_size = Vector2(480, 300)
+	carousel_cover.size = Vector2(480, 300)
 	carousel_cover.position = Vector2(
 		(carousel_container.size.x - carousel_cover.size.x) / 2.0,
 		20.0
@@ -360,8 +360,8 @@ func _setup_book_carousel():
 	carousel_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	carousel_label.add_theme_font_size_override("font_size", 18)
 	carousel_label.add_theme_color_override("font_color", Color(0.96, 0.87, 0.70, 1.0))
-	carousel_label.position = Vector2(0, carousel_cover.position.y + carousel_cover.size.y + 15.0)
-	carousel_label.size = Vector2(carousel_container.size.x, 30.0)
+	carousel_label.position = Vector2(0, carousel_cover.position.y + carousel_cover.size.y + 10.0)
+	carousel_label.size = Vector2(carousel_container.size.x, 90.0)
 	
 	# Aplicar fonte Cinzel
 	var cinzel = _load_font(true)
@@ -375,7 +375,7 @@ func _setup_book_carousel():
 	carousel_btn_play.custom_minimum_size = Vector2(180, 40)
 	carousel_btn_play.position = Vector2(
 		(carousel_container.size.x - 180.0) / 2.0,
-		carousel_label.position.y + 40.0
+		carousel_label.position.y + 95.0
 	)
 	carousel_btn_play.pressed.connect(_on_carousel_cover_pressed)
 	carousel_container.add_child(carousel_btn_play)
@@ -434,10 +434,10 @@ func _setup_intro_scene():
 	if player_scene:
 		player_instance = player_scene.instantiate()
 		player_instance.is_cutscene = true
-		player_instance.scale = Vector2(6.5, 6.5) # Aumentado para ficar proporcional à cadeira
+		player_instance.scale = Vector2(4.8, 4.8) # Diminuído para caber perfeitamente na cadeira
 		
-		# Posição inicial: fora do ecrã à esquerda no chão (Y = 580)
-		player_instance.global_position = Vector2(-100, 580)
+		# Posição inicial: fora do ecrã à esquerda no chão (Y = 590)
+		player_instance.global_position = Vector2(-100, 590)
 		add_child(player_instance)
 
 func _run_intro_animation():
@@ -449,8 +449,8 @@ func _run_intro_animation():
 	player_instance.sprite.play("Run")
 	
 	var tween = create_tween()
-	# 1. Caminha pelo chão até à posição anterior à cadeira (X = 260)
-	tween.tween_property(player_instance, "global_position:x", 260.0, 1.8).set_trans(Tween.TRANS_SINE)
+	# 1. Caminha pelo chão até à posição anterior à cadeira (X = 240)
+	tween.tween_property(player_instance, "global_position:x", 240.0, 1.8).set_trans(Tween.TRANS_SINE)
 	
 	# 2. Salta para cima da cadeira!
 	tween.tween_callback(func():
@@ -460,13 +460,13 @@ func _run_intro_animation():
 	tween.tween_callback(func():
 		# Salto (arco parabólico usando tweens paralelos)
 		var jump_tween = create_tween().set_parallel(true)
-		# Move horizontalmente para a cadeira (X = 340)
-		jump_tween.tween_property(player_instance, "global_position:x", 340.0, 0.45)
+		# Move horizontalmente para a cadeira (X = 325, ligeiramente atrás)
+		jump_tween.tween_property(player_instance, "global_position:x", 325.0, 0.45)
 		
-		# Arco de altura (Y sobe para 380 e desce para o assento em 470)
+		# Arco de altura (Y sobe para 360 e desce para o assento em 440, mais acima)
 		var y_tween = create_tween()
-		y_tween.tween_property(player_instance, "global_position:y", 380.0, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		y_tween.tween_property(player_instance, "global_position:y", 470.0, 0.23).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		y_tween.tween_property(player_instance, "global_position:y", 360.0, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		y_tween.tween_property(player_instance, "global_position:y", 440.0, 0.23).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 		
 		y_tween.tween_callback(func():
 			# Aterrou na cadeira! Fica sentado em Idle

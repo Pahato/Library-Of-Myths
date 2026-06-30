@@ -47,6 +47,10 @@ var camera_target: Vector2 = Vector2(960, 540)
 var _active_dialogue: DialogueBox = null
 @onready var camera: Camera2D = get_node_or_null("Camera2D")
 
+# Variáveis do menu de pausa
+var pause_menu_scene: PackedScene = preload("res://scenes/pause_menu.tscn")
+var pause_menu_instance: Node = null
+
 
 # ---------------------------------------------------------------------------
 # _ready
@@ -71,6 +75,7 @@ func _ready() -> void:
 	if player:
 		player.position = Vector2(960, 950)
 		player.visible = false
+		player.scale = Vector2(3.5, 3.5) # Aumenta a escala do player na fase de stealth
 		player.disable_input()
 
 	# Oculta a dica de ação logo no início; só aparece quando o jogador
@@ -397,3 +402,22 @@ func _set_heads_active(active: bool) -> void:
 				Node.PROCESS_MODE_INHERIT if active
 				else Node.PROCESS_MODE_DISABLED
 			)
+
+
+# ---------------------------------------------------------------------------
+# Menu de pausa
+# ---------------------------------------------------------------------------
+
+func _unhandled_input(event: InputEvent) -> void:
+	# ESC abre/fecha o menu de pausa (só funciona com o jogo a decorrer)
+	if event.is_action_pressed("ui_cancel") and game_active:
+		_toggle_pause()
+
+
+func _toggle_pause() -> void:
+	if is_instance_valid(pause_menu_instance):
+		return # Já está aberto
+	get_tree().paused = true
+	pause_menu_instance = pause_menu_scene.instantiate()
+	pause_menu_instance.tree_exited.connect(func(): pause_menu_instance = null)
+	add_child(pause_menu_instance)

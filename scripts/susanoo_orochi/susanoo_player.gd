@@ -47,6 +47,9 @@ var _input_enabled: bool = true
 # ---------------------------------------------------------------------------
 
 func _ready() -> void:
+	# Camadas de colisão programáticas: Layer 2 (Players), Mask 1 (World)
+	collision_layer = 2
+	collision_mask = 1
 	# Garante que o nó processa mesmo quando o jogo está pausado (durante diálogos).
 	process_mode = Node.PROCESS_MODE_PAUSABLE
 
