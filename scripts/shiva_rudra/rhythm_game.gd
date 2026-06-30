@@ -231,7 +231,7 @@ func _setup_environment():
 	rudra_duck = Sprite2D.new()
 	rudra_duck.name = "RudraDuck"
 	rudra_duck.texture = rudra_boss_tex
-	rudra_duck.position = Vector2(180, 375) # Ajustado Y para assentar na plataforma (não flutuar)
+	rudra_duck.position = Vector2(180, 363) # Ajustado Y para assentar na plataforma (não afundar/flutuar)
 	rudra_duck.scale = Vector2(0.11, 0.11)
 	rudra_duck.visible = false # Fica visível no impacto do trovão
 	add_child(rudra_duck)
