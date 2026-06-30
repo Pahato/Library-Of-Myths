@@ -269,25 +269,25 @@ func _setup_book_carousel():
 	carousel_books = [
 		{
 			"id": 1,
-			"cover_path": "res://assets/sprites/ApoloPython_bg.png",
+			"cover_path": "res://assets/sprites/Trocas/nova_CapaApollo.png",
 			"title_key": "menu_book_apolo",
 			"pressed_func": _on_book_apolo_pressed
 		},
 		{
 			"id": 2,
-			"cover_path": "res://assets/sprites/ShivaRudra_bg.png",
+			"cover_path": "res://assets/sprites/Trocas/nova_CapaShiva.png",
 			"title_key": "menu_book_shiva",
 			"pressed_func": _on_book_shiva_pressed
 		},
 		{
 			"id": 3,
-			"cover_path": "res://assets/sprites/ThorJormungandr_bg.png",
+			"cover_path": "res://assets/sprites/Trocas/nova_CapaThor.png",
 			"title_key": "menu_book_thor",
 			"pressed_func": _on_book_thor_pressed
 		},
 		{
 			"id": 4,
-			"cover_path": "res://assets/sprites/SusanoYamatoNoOroshi_bg.png",
+			"cover_path": "res://assets/sprites/Trocas/nova_CapaSusanoo.png",
 			"title_key": "menu_book_susanoo",
 			"pressed_func": _on_book_susanoo_pressed
 		}
@@ -436,8 +436,8 @@ func _setup_intro_scene():
 		player_instance.is_cutscene = true
 		player_instance.scale = Vector2(6.5, 6.5) # Aumentado para ficar proporcional à cadeira
 		
-		# Posição inicial: fora do ecrã à esquerda no chão (Y = 780)
-		player_instance.global_position = Vector2(-150, 780)
+		# Posição inicial: fora do ecrã à esquerda no chão (Y = 580)
+		player_instance.global_position = Vector2(-100, 580)
 		add_child(player_instance)
 
 func _run_intro_animation():
@@ -449,8 +449,8 @@ func _run_intro_animation():
 	player_instance.sprite.play("Run")
 	
 	var tween = create_tween()
-	# 1. Caminha pelo chão até à posição anterior à cadeira (X = 380)
-	tween.tween_property(player_instance, "global_position:x", 380.0, 1.8).set_trans(Tween.TRANS_SINE)
+	# 1. Caminha pelo chão até à posição anterior à cadeira (X = 260)
+	tween.tween_property(player_instance, "global_position:x", 260.0, 1.8).set_trans(Tween.TRANS_SINE)
 	
 	# 2. Salta para cima da cadeira!
 	tween.tween_callback(func():
@@ -460,13 +460,13 @@ func _run_intro_animation():
 	tween.tween_callback(func():
 		# Salto (arco parabólico usando tweens paralelos)
 		var jump_tween = create_tween().set_parallel(true)
-		# Move horizontalmente para a cadeira (X = 490)
-		jump_tween.tween_property(player_instance, "global_position:x", 490.0, 0.45)
+		# Move horizontalmente para a cadeira (X = 340)
+		jump_tween.tween_property(player_instance, "global_position:x", 340.0, 0.45)
 		
-		# Arco de altura (Y sobe para 560 e desce para o assento em 680)
+		# Arco de altura (Y sobe para 380 e desce para o assento em 470)
 		var y_tween = create_tween()
-		y_tween.tween_property(player_instance, "global_position:y", 560.0, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		y_tween.tween_property(player_instance, "global_position:y", 680.0, 0.23).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		y_tween.tween_property(player_instance, "global_position:y", 380.0, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		y_tween.tween_property(player_instance, "global_position:y", 470.0, 0.23).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 		
 		y_tween.tween_callback(func():
 			# Aterrou na cadeira! Fica sentado em Idle

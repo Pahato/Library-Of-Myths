@@ -40,7 +40,7 @@ var _input_enabled: bool = true
 # Nós filhos
 # ---------------------------------------------------------------------------
 
-@onready var sprite: AnimatedSprite2D = $sprite
+@onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
 
 # ---------------------------------------------------------------------------
 # _ready
@@ -147,46 +147,24 @@ func _get_input_direction() -> Vector2:
 	return dir
 
 
-## Reproduz a animação correta conforme a direção de movimento.
-## Caso o AnimatedSprite2D não disponha de animações direcionais,
-## recorre apenas a 'Idle' e 'Walk'.
 func _play_animation(direction: Vector2) -> void:
 	if sprite == null:
 		return
 
 	if direction == Vector2.ZERO:
-		# Parado: animação de repouso.
 		if sprite.sprite_frames != null and sprite.sprite_frames.has_animation("Idle"):
 			if sprite.animation != "Idle":
 				sprite.play("Idle")
 		return
 
-	# Em movimento: tenta usar animação direcional; caso contrário, usa 'Walk'.
-	var anim_name: String = "Walk"
+	if sprite.sprite_frames != null and sprite.sprite_frames.has_animation("Run"):
+		if sprite.animation != "Run":
+			sprite.play("Run")
 
-	if abs(direction.x) >= abs(direction.y):
-		# Predominância horizontal.
-		if direction.x > 0:
-			if sprite.sprite_frames != null and sprite.sprite_frames.has_animation("WalkRight"):
-				anim_name = "WalkRight"
-		else:
-			if sprite.sprite_frames != null and sprite.sprite_frames.has_animation("WalkLeft"):
-				anim_name = "WalkLeft"
-	else:
-		# Predominância vertical.
-		if direction.y < 0:
-			if sprite.sprite_frames != null and sprite.sprite_frames.has_animation("WalkUp"):
-				anim_name = "WalkUp"
-		else:
-			if sprite.sprite_frames != null and sprite.sprite_frames.has_animation("WalkDown"):
-				anim_name = "WalkDown"
+	if direction.x < 0:
+		sprite.flip_h = true
+	elif direction.x > 0:
+		sprite.flip_h = false
 
-	if sprite.sprite_frames != null and sprite.sprite_frames.has_animation(anim_name):
-		if sprite.animation != anim_name:
-			sprite.play(anim_name)
-	else:
-		# Fallback: animação genérica de Walk ou Idle.
-		var fallback := "Walk" if (sprite.sprite_frames != null and sprite.sprite_frames.has_animation("Walk")) else "Idle"
-		if sprite.sprite_frames != null and sprite.sprite_frames.has_animation(fallback):
-			if sprite.animation != fallback:
-				sprite.play(fallback)
+
+

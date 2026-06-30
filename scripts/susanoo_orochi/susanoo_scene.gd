@@ -61,6 +61,11 @@ func _ready() -> void:
 	var camera_node = get_node_or_null("Camera2D")
 	if camera_node:
 		camera_node.process_mode = Node.PROCESS_MODE_ALWAYS
+		# Define os limites da câmara com base na dimensão do fundo (1672x941 centrado em 960,540)
+		camera_node.limit_left = 124
+		camera_node.limit_right = 1796
+		camera_node.limit_top = 70
+		camera_node.limit_bottom = 1011
 
 	# Colocar o jogador na safe zone (fundo centro) e ocultá-lo temporariamente
 	if player:
