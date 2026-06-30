@@ -231,7 +231,7 @@ func _setup_environment():
 	rudra_duck = Sprite2D.new()
 	rudra_duck.name = "RudraDuck"
 	rudra_duck.texture = rudra_boss_tex
-	rudra_duck.position = Vector2(180, 350) # Ajustado Y para assentar na plataforma (não flutuar)
+	rudra_duck.position = Vector2(180, 375) # Ajustado Y para assentar na plataforma (não flutuar)
 	rudra_duck.scale = Vector2(0.11, 0.11)
 	rudra_duck.visible = false # Fica visível no impacto do trovão
 	add_child(rudra_duck)
@@ -789,7 +789,7 @@ func _on_beat_hit():
 
 func _bounce_character(duck: Node2D, is_shiva: bool):
 	if not duck: return
-	var base_scale = Vector2(4.5, 4.5) if is_shiva else Vector2(0.18, 0.18)
+	var base_scale = Vector2(4.5, 4.5) if is_shiva else Vector2(0.11, 0.11)
 	
 	if is_shiva and stun_timer > 0.0:
 		return

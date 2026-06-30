@@ -463,10 +463,10 @@ func _run_intro_animation():
 		# Move horizontalmente para a cadeira (X = 300, mais atrás)
 		jump_tween.tween_property(player_instance, "global_position:x", 300.0, 0.45)
 		
-		# Arco de altura (Y sobe para 335 e desce para o assento em 415, mais acima)
+		# Arco de altura (Y sobe para 315 e desce para o assento em 395, mais acima)
 		var y_tween = create_tween()
-		y_tween.tween_property(player_instance, "global_position:y", 335.0, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		y_tween.tween_property(player_instance, "global_position:y", 415.0, 0.23).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		y_tween.tween_property(player_instance, "global_position:y", 315.0, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		y_tween.tween_property(player_instance, "global_position:y", 395.0, 0.23).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 		
 		y_tween.tween_callback(func():
 			# Aterrou na cadeira! Fica sentado em Idle
