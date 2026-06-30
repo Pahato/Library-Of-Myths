@@ -129,7 +129,7 @@ func _ready():
 			book_thor.add_child(rect)
 			
 	if book_susanoo:
-		book_susanoo.pressed.connect(func(): _show_status(GameGlobals.get_text("menu_locked_susanoo")))
+		book_susanoo.pressed.connect(_on_book_susanoo_pressed)
 		var cover_tex = load("res://assets/sprites/SusanoYamatoNoOroshi_bg.png")
 		if cover_tex:
 			book_susanoo.text = "" 
@@ -368,6 +368,9 @@ func _on_book_shiva_pressed():
 
 func _on_book_thor_pressed():
 	_show_tutorial(3, "res://scenes/thor_jormungandr/thor_map.tscn")
+
+func _on_book_susanoo_pressed():
+	_show_tutorial(4, "res://scenes/susanoo_orochi/susanoo_scene.tscn")
 
 func _show_tutorial(book: int, scene: String):
 	var tutorial_scene = load("res://scenes/tutorial_screen.tscn")

@@ -1,0 +1,18 @@
+[gd_scene load_steps=3 format=3 uid="uid://susanoo_barrel_point"]
+
+[ext_resource type="Script" path="res://scripts/susanoo_orochi/orochi_head.gd" id="1_head_script"]
+[ext_resource type="Texture2D" path="res://assets/sprites/susanoo_orochi/Orochi_head.png" id="2_head_tex"]
+
+[node name="OrochiHead" type="CharacterBody2D"]
+collision_layer = 4
+collision_mask = 0
+
+[node name="Sprite" type="Sprite2D" parent="."]
+texture = ExtResource("2_head_tex")
+scale = Vector2(0.08, 0.08)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = CircleShape2D new()
+
+[node name="VisionCone" type="Node2D" parent="."]
+script = ExtResource("1_head_script")

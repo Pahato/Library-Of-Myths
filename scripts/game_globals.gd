@@ -82,6 +82,10 @@ var thor_map_data: Dictionary = {} # Nós gerados
 var thor_node_id: String = "" # Nó atual sendo visitado
 var thor_intro_played: bool = false
 
+# --- Estado do Livro IV (Susanoo Stealth) ---
+var susanoo_barrels_placed: int = 0
+var susanoo_intro_played: bool = false
+
 # --- Traduções ---
 var translations: Dictionary = {
 	"PT": {
@@ -275,6 +279,40 @@ var translations: Dictionary = {
 		
 		"tutorial_play": "▶  Jogar!",
 		"tutorial_back": "◀  Voltar",
+		
+		# Nomes de Personagens (Livro IV)
+		"char_susanoo": "Susanoo",
+		"char_orochi": "Yamata no Orochi",
+		
+		# Diálogo — Intro do Livro IV
+		"dialogue_narrator_susanoo_1": "Nas terras de Izumo, uma besta de oito cabeças aterrorizava o povo...",
+		"dialogue_narrator_susanoo_2": "Yamata no Orochi — a grande serpente — devorava uma donzela por ano. A última estava condenada...",
+		"dialogue_narrator_susanoo_3": "Susanoo, deus da tempestade, fez um trato: salvar a donzela Kushinada-hime em troca da sua mão em casamento.",
+		"dialogue_narrator_susanoo_4": "O seu plano não era força bruta. Era astúcia. Sake. E paciência.",
+		
+		# Diálogo — Vitória Livro IV
+		"dialogue_narrator_susanoo_victory_1": "O Orochi bebeu todo o sake... e adormeceu profundamente.",
+		"dialogue_narrator_susanoo_victory_2": "Susanoo ergueu a sua espada Totsuka-no-Tsurugi e cortou as oito cabeças da besta. Izumo estava salva.",
+		
+		# Diálogo — Game Over Livro IV
+		"dialogue_narrator_susanoo_caught": "Uma das cabeças do Orochi detetou Susanoo! O plano foi descoberto...",
+		
+		# HUD — Livro IV
+		"ui_susanoo_barrels": "Barris colocados: ",
+		"ui_susanoo_place": "[E] Colocar barril de sake",
+		"ui_susanoo_title": "STEALTH DO SAKE",
+		
+		# Ecrãs de Resultado — Livro IV
+		"victory_title_susanoo": "Vitória de Susanoo!",
+		"gameover_title_susanoo": "Foste detetado...",
+		"gameover_retry_susanoo": "Tentar Novamente",
+		
+		# Tutorial — Livro IV
+		"tutorial_title_book4": "📖 LIVRO IV — Susanoo vs Yamata no Orochi",
+		"tutorial_story_book4": "Susanoo, deus da tempestade, deve colocar 8 barris de sake pelos pontos do templo para embebedar o Orochi de 8 cabeças — sem ser visto.",
+		"tutorial_controls_book4": "W / A / S / D ou ↑ ← ↓ →  →  Mover\nE  →  Colocar barril de sake",
+		"tutorial_objective_book4": "Coloca os 8 barris de sake nos pontos marcados do templo sem ser detetado pelas cabeças do Orochi!\nSe uma cabeça te vir, o jogo acaba.",
+		"tutorial_tip_book4": "💡 Presta atenção aos cones de visão laranja — se entrares, tens um segundo para recuar!",
 	},
 	"EN": {
 		# Main Menu
@@ -466,6 +504,40 @@ var translations: Dictionary = {
 		
 		"tutorial_play": "▶  Play!",
 		"tutorial_back": "◀  Back",
+		
+		# Character Names (Book IV)
+		"char_susanoo": "Susanoo",
+		"char_orochi": "Yamata no Orochi",
+		
+		# Dialogue — Book IV Intro
+		"dialogue_narrator_susanoo_1": "In the lands of Izumo, an eight-headed beast terrorized the people...",
+		"dialogue_narrator_susanoo_2": "Yamata no Orochi — the great serpent — devoured a maiden every year. The last one was doomed...",
+		"dialogue_narrator_susanoo_3": "Susanoo, god of the storm, struck a deal: save the maiden Kushinada-hime in exchange for her hand in marriage.",
+		"dialogue_narrator_susanoo_4": "His plan was not brute force. It was cunning. Sake. And patience.",
+		
+		# Dialogue — Book IV Victory
+		"dialogue_narrator_susanoo_victory_1": "The Orochi drank all the sake... and fell into a deep slumber.",
+		"dialogue_narrator_susanoo_victory_2": "Susanoo raised his sword Totsuka-no-Tsurugi and severed the eight heads of the beast. Izumo was saved.",
+		
+		# Dialogue — Book IV Game Over
+		"dialogue_narrator_susanoo_caught": "One of Orochi's heads spotted Susanoo! The plan has been discovered...",
+		
+		# HUD — Book IV
+		"ui_susanoo_barrels": "Barrels placed: ",
+		"ui_susanoo_place": "[E] Place sake barrel",
+		"ui_susanoo_title": "SAKE STEALTH",
+		
+		# Result Screens — Book IV
+		"victory_title_susanoo": "Susanoo's Victory!",
+		"gameover_title_susanoo": "You were spotted...",
+		"gameover_retry_susanoo": "Try Again",
+		
+		# Tutorial — Book IV
+		"tutorial_title_book4": "📖 BOOK IV — Susanoo vs Yamata no Orochi",
+		"tutorial_story_book4": "Susanoo, god of the storm, must place 8 sake barrels at points throughout the temple to intoxicate the eight-headed Orochi — without being seen.",
+		"tutorial_controls_book4": "W / A / S / D or ↑ ← ↓ →  →  Move\nE  →  Place sake barrel",
+		"tutorial_objective_book4": "Place all 8 sake barrels at the marked points in the temple without being spotted by Orochi's heads!\nIf a head sees you, the game is over.",
+		"tutorial_tip_book4": "💡 Watch the orange vision cones — if you enter one, you have a second to step back!",
 	}
 }
 
@@ -671,6 +743,28 @@ func _setup_default_controls():
 		{"type": "key", "code": KEY_J},
 		{"type": "mouse", "code": MOUSE_BUTTON_LEFT},
 		{"type": "joy_button", "code": JOY_BUTTON_X}
+	])
+
+	# 6. move_up (Livro IV — stealth top-down)
+	_ensure_action("move_up", [
+		{"type": "key", "code": KEY_W},
+		{"type": "key", "code": KEY_UP},
+		{"type": "joy_button", "code": JOY_BUTTON_DPAD_UP},
+		{"type": "joy_axis", "axis": JOY_AXIS_LEFT_Y, "value": -1.0}
+	])
+
+	# 7. move_down (Livro IV — stealth top-down)
+	_ensure_action("move_down", [
+		{"type": "key", "code": KEY_S},
+		{"type": "key", "code": KEY_DOWN},
+		{"type": "joy_button", "code": JOY_BUTTON_DPAD_DOWN},
+		{"type": "joy_axis", "axis": JOY_AXIS_LEFT_Y, "value": 1.0}
+	])
+
+	# 8. ui_susanoo_place — colocar barril de sake (Livro IV)
+	_ensure_action("ui_susanoo_place", [
+		{"type": "key", "code": KEY_E},
+		{"type": "joy_button", "code": JOY_BUTTON_Y}
 	])
 
 func _ensure_action(action_name: String, bindings: Array):

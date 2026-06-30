@@ -1,0 +1,324 @@
+extends Node
+class_name SusanooScene
+
+# ---------------------------------------------------------------------------
+# Referências a nós da cena (@onready)
+# ---------------------------------------------------------------------------
+
+## Nó do jogador Susanoo.
+@onready var player: SusanooPlayer = $SusanooPlayer
+
+## Label do HUD que mostra o número de barris colocados.
+@onready var hud_barrels_label: Label = $HUD/BarrelsLabel
+
+## Label do HUD que mostra a dica de interação ([E] Colocar barril).
+@onready var hud_action_label: Label = $HUD/ActionLabel
+
+## Container do ecrã de narração introdutório.
+@onready var narrator_container: Control = $NarratorContainer
+
+## Nó pai de todas as cabeças do Orochi presentes na cena.
+@onready var heads_container: Node = $Heads
+
+## Nó pai de todos os pontos de barril presentes na cena.
+@onready var barrels_container: Node = $BarrelPoints
+
+## Cena do DialogueBox partilhada com o resto do projeto.
+var dialogue_box_scene: PackedScene = preload("res://scenes/dialogue_box.tscn")
+
+# ---------------------------------------------------------------------------
+# Estado da sessão
+# ---------------------------------------------------------------------------
+
+## Número total de barris que o jogador tem de colocar para vencer.
+var total_barrels: int = 8
+
+## Número de barris colocados até ao momento.
+var barrels_placed: int = 0
+
+## Indica se o jogador já pode interagir com o mundo (após o intro).
+var game_active: bool = false
+
+## Indica se a sequência de introdução já foi concluída.
+var intro_done: bool = false
+
+# ---------------------------------------------------------------------------
+# _ready
+# ---------------------------------------------------------------------------
+
+func _ready() -> void:
+	# Oculta a dica de ação logo no início; só aparece quando o jogador
+	# está perto de um ponto de barril.
+	if hud_action_label:
+		hud_action_label.visible = false
+
+	# Oculta/desativa cabeças em excesso conforme a dificuldade selecionada.
+	_configure_heads_for_difficulty()
+
+	# Pausa o jogo e inicia a sequência de introdução narrativa.
+	get_tree().paused = true
+	_play_intro()
+
+
+# ---------------------------------------------------------------------------
+# Sequência de introdução
+# ---------------------------------------------------------------------------
+
+## Instancia o DialogueBox com as 4 linhas do narrador introdutório e aguarda
+## o sinal dialogue_finished para arrancar a jogabilidade.
+func _play_intro() -> void:
+	var box: DialogueBox = dialogue_box_scene.instantiate()
+
+	box.dialogue_list = [
+		{"name": "char_narrator", "text": "dialogue_narrator_susanoo_1"},
+		{"name": "char_narrator", "text": "dialogue_narrator_susanoo_2"},
+		{"name": "char_narrator", "text": "dialogue_narrator_susanoo_3"},
+		{"name": "char_narrator", "text": "dialogue_narrator_susanoo_4"},
+	]
+
+	# O DialogueBox despausa o jogo e emite dialogue_finished ao terminar.
+	box.dialogue_finished.connect(_on_intro_finished)
+	add_child(box)
+
+
+## Chamado pelo DialogueBox quando o utilizador conclui todas as linhas do intro.
+func _on_intro_finished() -> void:
+	intro_done = true
+	_start_gameplay()
+
+
+# ---------------------------------------------------------------------------
+# Início da jogabilidade
+# ---------------------------------------------------------------------------
+
+## Configura e ativa todos os sistemas de jogo após o intro.
+func _start_gameplay() -> void:
+	game_active = true
+
+	# Liga o sinal do player.
+	if player:
+		player.barrel_placed.connect(_on_barrel_placed)
+		player.player_caught.connect(_on_player_caught)
+
+	# Liga o sinal de deteção de cada cabeça ativa.
+	for head in heads_container.get_children():
+		if head.visible and head is OrochiHead:
+			head.player_ref = player
+			if not head.player_detected.is_connected(_on_player_detected_by_head):
+				head.player_detected.connect(_on_player_detected_by_head)
+
+	# Liga o sinal de proximidade de cada ponto de barril.
+	for point in barrels_container.get_children():
+		if point.has_signal("player_near") and not point.player_near.is_connected(_on_player_near_barrel):
+			point.player_near.connect(_on_player_near_barrel.bind(point))
+		if point.has_signal("player_left") and not point.player_left.is_connected(_on_player_left_barrel):
+			point.player_left.connect(_on_player_left_barrel)
+
+	_update_hud()
+
+
+# ---------------------------------------------------------------------------
+# Callbacks de sinais
+# ---------------------------------------------------------------------------
+
+## Chamado quando o jogador coloca um barril com sucesso.
+func _on_barrel_placed(total: int) -> void:
+	barrels_placed = total
+	_update_hud()
+
+	# Verifica condição de vitória.
+	if barrels_placed >= total_barrels:
+		_trigger_victory()
+
+
+## Chamado quando uma cabeça do Orochi emite player_detected.
+## Delega ao player para garantir que o sinal player_caught é emitido uma única vez.
+func _on_player_detected_by_head() -> void:
+	if player and game_active:
+		player.catch_player()
+
+
+## Chamado quando o sinal player_caught do player é recebido.
+func _on_player_caught() -> void:
+	if not game_active:
+		return
+	game_active = false
+
+	# Para o movimento de todas as cabeças.
+	_set_heads_active(false)
+
+	_show_game_over()
+
+
+## Chamado quando o jogador entra na área de interação de um ponto de barril.
+func _on_player_near_barrel(point: Node) -> void:
+	if player:
+		player.near_barrel_point = point
+	if hud_action_label:
+		hud_action_label.text = GameGlobals.get_text("ui_susanoo_place")
+		hud_action_label.visible = true
+
+
+## Chamado quando o jogador sai da área de interação de um ponto de barril.
+func _on_player_left_barrel() -> void:
+	if player:
+		player.near_barrel_point = null
+	if hud_action_label:
+		hud_action_label.visible = false
+
+
+# ---------------------------------------------------------------------------
+# Condição de vitória
+# ---------------------------------------------------------------------------
+
+## Inicia a sequência de vitória: para o player, mostra diálogo e muda de cena.
+func _trigger_victory() -> void:
+	if not game_active:
+		return
+	game_active = false
+
+	# Impede que o jogador continue a mover-se.
+	if player:
+		player.disable_input()
+
+	# Para o movimento das cabeças.
+	_set_heads_active(false)
+
+	# Mostra o diálogo de vitória narrado (2 linhas).
+	var box: DialogueBox = dialogue_box_scene.instantiate()
+	box.dialogue_list = [
+		{"name": "char_narrator", "text": "dialogue_narrator_susanoo_victory_1"},
+		{"name": "char_narrator", "text": "dialogue_narrator_susanoo_victory_2"},
+	]
+	box.dialogue_finished.connect(_on_victory_dialogue_finished)
+	add_child(box)
+
+
+## Após o diálogo de vitória, regressa ao menu principal.
+func _on_victory_dialogue_finished() -> void:
+	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+
+
+# ---------------------------------------------------------------------------
+# Ecrã de Game Over
+# ---------------------------------------------------------------------------
+
+## Constrói e apresenta um ecrã de Game Over simples diretamente sobre a cena.
+func _show_game_over() -> void:
+	# Painel de fundo semitransparente.
+	var overlay := ColorRect.new()
+	overlay.color = Color(0.0, 0.0, 0.0, 0.75)
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.z_index = 100
+	add_child(overlay)
+
+	# Container vertical centrado.
+	var vbox := VBoxContainer.new()
+	vbox.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	vbox.custom_minimum_size = Vector2(400.0, 200.0)
+	vbox.position -= vbox.custom_minimum_size * 0.5
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.z_index = 101
+	add_child(vbox)
+
+	# Título de Game Over.
+	var title_label := Label.new()
+	title_label.text = GameGlobals.get_text("gameover_title_susanoo")
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_label.add_theme_font_size_override("font_size", 36)
+	vbox.add_child(title_label)
+
+	# Espaçador.
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0.0, 20.0)
+	vbox.add_child(spacer)
+
+	# Botão de retry.
+	var retry_btn := Button.new()
+	retry_btn.text = GameGlobals.get_text("gameover_retry_susanoo")
+	retry_btn.pressed.connect(_on_retry_pressed)
+	vbox.add_child(retry_btn)
+
+	# Botão de regresso ao menu.
+	var menu_btn := Button.new()
+	menu_btn.text = GameGlobals.get_text("gameover_menu")
+	menu_btn.pressed.connect(_on_menu_pressed)
+	vbox.add_child(menu_btn)
+
+	# Garante que o jogo está despausado para que os botões respondam.
+	get_tree().paused = false
+
+
+## Reinicia a cena atual (retry).
+func _on_retry_pressed() -> void:
+	get_tree().reload_current_scene()
+
+
+## Regressa ao menu principal.
+func _on_menu_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+
+
+# ---------------------------------------------------------------------------
+# HUD
+# ---------------------------------------------------------------------------
+
+## Atualiza a label de barris com o texto localizado e o contador atual.
+func _update_hud() -> void:
+	if hud_barrels_label:
+		hud_barrels_label.text = (
+			GameGlobals.get_text("ui_susanoo_barrels")
+			+ str(barrels_placed)
+			+ "/"
+			+ str(total_barrels)
+		)
+
+
+# ---------------------------------------------------------------------------
+# Configuração por dificuldade
+# ---------------------------------------------------------------------------
+
+## Devolve o número de cabeças ativas conforme a dificuldade selecionada.
+func _get_active_heads_count() -> int:
+	match GameGlobals.current_difficulty:
+		GameGlobals.Difficulty.EASY:   return 4
+		GameGlobals.Difficulty.HARD:   return 8
+		_:                             return 6  # NORMAL
+
+
+## Devolve a velocidade de patrulha das cabeças conforme a dificuldade.
+func _get_patrol_speed_for_difficulty() -> float:
+	match GameGlobals.current_difficulty:
+		GameGlobals.Difficulty.EASY:   return 50.0
+		GameGlobals.Difficulty.HARD:   return 120.0
+		_:                             return 80.0  # NORMAL
+
+
+## Oculta as cabeças em excesso e ajusta a velocidade de patrulha das ativas.
+func _configure_heads_for_difficulty() -> void:
+	var active_count: int = _get_active_heads_count()
+	var patrol_speed: float = _get_patrol_speed_for_difficulty()
+	var all_heads: Array = heads_container.get_children()
+
+	for i in range(all_heads.size()):
+		var head: Node = all_heads[i]
+		if i < active_count:
+			# Cabeça ativa: torna visível e configura velocidade.
+			head.visible = true
+			head.process_mode = Node.PROCESS_MODE_INHERIT
+			if head is OrochiHead:
+				head.patrol_speed = patrol_speed
+		else:
+			# Cabeça em excesso: oculta e desativa processamento.
+			head.visible = false
+			head.process_mode = Node.PROCESS_MODE_DISABLED
+
+
+## Ativa ou desativa o processamento de todas as cabeças visíveis.
+func _set_heads_active(active: bool) -> void:
+	for head in heads_container.get_children():
+		if head.visible:
+			head.process_mode = (
+				Node.PROCESS_MODE_INHERIT if active
+				else Node.PROCESS_MODE_DISABLED
+			)
