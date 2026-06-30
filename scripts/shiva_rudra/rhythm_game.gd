@@ -220,7 +220,7 @@ func _setup_environment():
 	
 	# Carregar Textura do Pato para a HUD e do Rudra Boss
 	duck_tex = load("res://assets/sprites/Duck.png")
-	rudra_boss_tex = load("res://assets/sprites/rudra_boss.png")
+	rudra_boss_tex = load("res://assets/sprites/Trocas/novo_Rudra.png")
 	
 	# Carregar frames do jogador para Shiva
 	var temp_player = load("res://scenes/apolo_python/player.tscn").instantiate()
@@ -232,7 +232,7 @@ func _setup_environment():
 	rudra_duck.name = "RudraDuck"
 	rudra_duck.texture = rudra_boss_tex
 	rudra_duck.position = Vector2(180, 350) # Ajustado Y para assentar na plataforma (não flutuar)
-	rudra_duck.scale = Vector2(0.18, 0.18)
+	rudra_duck.scale = Vector2(0.11, 0.11)
 	rudra_duck.visible = false # Fica visível no impacto do trovão
 	add_child(rudra_duck)
 	
@@ -584,7 +584,7 @@ func _run_intro_step_6_rudra_strike():
 	rudra_duck.scale = Vector2.ZERO
 	var rudra_bounce = create_tween()
 	rudra_bounce.tween_interval(0.1)
-	rudra_bounce.tween_property(rudra_duck, "scale", Vector2(0.18, 0.18), 0.35).set_trans(Tween.TRANS_BOUNCE)
+	rudra_bounce.tween_property(rudra_duck, "scale", Vector2(0.11, 0.11), 0.35).set_trans(Tween.TRANS_BOUNCE)
 	
 	flash_tween.tween_callback(func():
 		lightning_beam.queue_free()

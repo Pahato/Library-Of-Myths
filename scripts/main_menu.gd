@@ -50,11 +50,39 @@ var temp_resolution_index: int = 3
 var temp_keybinds: Dictionary = {}
 var confirmation_overlay: ColorRect = null
 
+# Variáveis do Carrossel de Livros (Redesign)
+var carousel_index: int = 0
+var carousel_books: Array = []
+var carousel_container: Control = null
+var carousel_cover: TextureButton = null
+var carousel_label: Label = null
+var carousel_btn_left: Button = null
+var carousel_btn_right: Button = null
+var carousel_btn_play: Button = null
+var _is_ui_enabled: bool = false
+
+
 func _ready():
 	get_tree().paused = false
 	# Iniciar a música de menu
 	if GameGlobals:
 		GameGlobals.play_menu_music()
+
+	# Ocultar o ColorRect antigo se existir
+	var old_bg = get_node_or_null("BG")
+	if old_bg:
+		old_bg.visible = false
+	
+	# Criar e adicionar o novo fundo TextureRect
+	var new_bg = TextureRect.new()
+	new_bg.name = "NewBG"
+	new_bg.texture = load("res://assets/sprites/Trocas/novo_MainMenu.png")
+	new_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	new_bg.stretch_mode = TextureRect.STRETCH_SCALE
+	new_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	new_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(new_bg)
+	move_child(new_bg, 0) # Colocar no fundo
 
 	# Inicialmente esconde a UI para a introdução
 	if title_label: title_label.modulate.a = 0.0
@@ -70,6 +98,9 @@ func _ready():
 		var cinzel = _load_font(true)
 		if cinzel:
 			title_label.add_theme_font_override("font", cinzel)
+	
+	# Setup do carrossel de livros
+	_setup_book_carousel()
 	
 	# Criar Botão de Opções dinamicamente no canto inferior direito
 	_create_options_button()
@@ -216,12 +247,191 @@ func _create_options_button():
 	
 	options_btn.pressed.connect(_on_options_pressed)
 
+func _setup_book_carousel():
+	# 1. Ocultar o HBoxContainer original
+	if hbox_container:
+		hbox_container.visible = false
+		hbox_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
+	# 2. Criar o CarouselContainer
+	carousel_container = Control.new()
+	carousel_container.name = "CarouselContainer"
+	carousel_container.set_anchors_preset(Control.PRESET_CENTER)
+	carousel_container.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	carousel_container.grow_vertical = Control.GROW_DIRECTION_BOTH
+	carousel_container.size = Vector2(800, 480)
+	carousel_container.position = -carousel_container.size / 2.0
+	carousel_container.position.y -= 20.0
+	carousel_container.modulate.a = 0.0 # Começa invisível para animação
+	add_child(carousel_container)
+	
+	# 3. Criar os dados do carrossel
+	carousel_books = [
+		{
+			"id": 1,
+			"cover_path": "res://assets/sprites/ApoloPython_bg.png",
+			"title_key": "menu_book_apolo",
+			"pressed_func": _on_book_apolo_pressed
+		},
+		{
+			"id": 2,
+			"cover_path": "res://assets/sprites/ShivaRudra_bg.png",
+			"title_key": "menu_book_shiva",
+			"pressed_func": _on_book_shiva_pressed
+		},
+		{
+			"id": 3,
+			"cover_path": "res://assets/sprites/ThorJormungandr_bg.png",
+			"title_key": "menu_book_thor",
+			"pressed_func": _on_book_thor_pressed
+		},
+		{
+			"id": 4,
+			"cover_path": "res://assets/sprites/SusanoYamatoNoOroshi_bg.png",
+			"title_key": "menu_book_susanoo",
+			"pressed_func": _on_book_susanoo_pressed
+		}
+	]
+	
+	# 4. Criar a capa do livro central (TextureButton)
+	carousel_cover = TextureButton.new()
+	carousel_cover.name = "CarouselCover"
+	carousel_cover.custom_minimum_size = Vector2(250, 350)
+	carousel_cover.size = Vector2(250, 350)
+	carousel_cover.position = Vector2(
+		(carousel_container.size.x - carousel_cover.size.x) / 2.0,
+		20.0
+	)
+	carousel_cover.ignore_texture_size = true
+	carousel_cover.stretch_mode = TextureButton.STRETCH_SCALE
+	carousel_cover.texture_filter = Control.TEXTURE_FILTER_NEAREST
+	carousel_container.add_child(carousel_cover)
+	carousel_cover.pressed.connect(_on_carousel_cover_pressed)
+	
+	# Hover effects na capa
+	carousel_cover.pivot_offset = carousel_cover.size / 2.0
+	carousel_cover.mouse_entered.connect(func():
+		var tween = create_tween()
+		tween.tween_property(carousel_cover, "scale", Vector2(1.05, 1.05), 0.15).set_trans(Tween.TRANS_SINE)
+		if GameGlobals: GameGlobals.play_hover_sound()
+	)
+	carousel_cover.mouse_exited.connect(func():
+		var tween = create_tween()
+		tween.tween_property(carousel_cover, "scale", Vector2(1.0, 1.0), 0.15).set_trans(Tween.TRANS_SINE)
+	)
+	
+	# 5. Criar Seta Esquerda
+	carousel_btn_left = Button.new()
+	carousel_btn_left.name = "CarouselLeft"
+	carousel_btn_left.text = "◀"
+	carousel_btn_left.add_theme_font_size_override("font_size", 28)
+	carousel_btn_left.custom_minimum_size = Vector2(50, 50)
+	carousel_btn_left.position = Vector2(
+		carousel_cover.position.x - 70.0,
+		carousel_cover.position.y + (carousel_cover.size.y - 50.0) / 2.0
+	)
+	carousel_btn_left.flat = true
+	carousel_btn_left.add_theme_color_override("font_color", Color(0.9, 0.8, 0.6, 1.0))
+	carousel_btn_left.add_theme_color_override("font_hover_color", Color(1.0, 0.95, 0.4, 1.0))
+	carousel_container.add_child(carousel_btn_left)
+	carousel_btn_left.pressed.connect(func(): _navigate_carousel(-1))
+	_setup_hover_events(carousel_btn_left)
+	
+	# 6. Criar Seta Direita
+	carousel_btn_right = Button.new()
+	carousel_btn_right.name = "CarouselRight"
+	carousel_btn_right.text = "▶"
+	carousel_btn_right.add_theme_font_size_override("font_size", 28)
+	carousel_btn_right.custom_minimum_size = Vector2(50, 50)
+	carousel_btn_right.position = Vector2(
+		carousel_cover.position.x + carousel_cover.size.x + 20.0,
+		carousel_cover.position.y + (carousel_cover.size.y - 50.0) / 2.0
+	)
+	carousel_btn_right.flat = true
+	carousel_btn_right.add_theme_color_override("font_color", Color(0.9, 0.8, 0.6, 1.0))
+	carousel_btn_right.add_theme_color_override("font_hover_color", Color(1.0, 0.95, 0.4, 1.0))
+	carousel_container.add_child(carousel_btn_right)
+	carousel_btn_right.pressed.connect(func(): _navigate_carousel(1))
+	_setup_hover_events(carousel_btn_right)
+	
+	# 7. Label do Título do Livro
+	carousel_label = Label.new()
+	carousel_label.name = "CarouselLabel"
+	carousel_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	carousel_label.add_theme_font_size_override("font_size", 18)
+	carousel_label.add_theme_color_override("font_color", Color(0.96, 0.87, 0.70, 1.0))
+	carousel_label.position = Vector2(0, carousel_cover.position.y + carousel_cover.size.y + 15.0)
+	carousel_label.size = Vector2(carousel_container.size.x, 30.0)
+	
+	# Aplicar fonte Cinzel
+	var cinzel = _load_font(true)
+	if cinzel:
+		carousel_label.add_theme_font_override("font", cinzel)
+	carousel_container.add_child(carousel_label)
+	
+	# 8. Botão "JOGAR"
+	carousel_btn_play = Button.new()
+	carousel_btn_play.name = "CarouselPlay"
+	carousel_btn_play.custom_minimum_size = Vector2(180, 40)
+	carousel_btn_play.position = Vector2(
+		(carousel_container.size.x - 180.0) / 2.0,
+		carousel_label.position.y + 40.0
+	)
+	carousel_btn_play.pressed.connect(_on_carousel_cover_pressed)
+	carousel_container.add_child(carousel_btn_play)
+	_setup_hover_events(carousel_btn_play)
+	
+	# Inicializar o primeiro item
+	_update_carousel_ui()
+
+func _update_carousel_ui():
+	if carousel_books.is_empty():
+		return
+		
+	var book_data = carousel_books[carousel_index]
+	var cover_tex = load(book_data["cover_path"])
+	if cover_tex:
+		carousel_cover.texture_normal = cover_tex
+		
+	carousel_label.text = GameGlobals.get_text(book_data["title_key"])
+	
+	if carousel_btn_play:
+		carousel_btn_play.text = GameGlobals.get_text("tutorial_play")
+
+func _navigate_carousel(direction: int):
+	if not _is_ui_enabled:
+		return
+		
+	carousel_index = (carousel_index + direction) % carousel_books.size()
+	if carousel_index < 0:
+		carousel_index = carousel_books.size() - 1
+		
+	var tween = create_tween().set_parallel(true)
+	tween.tween_property(carousel_cover, "modulate:a", 0.0, 0.12)
+	tween.tween_property(carousel_label, "modulate:a", 0.0, 0.12)
+	
+	tween.chain().tween_callback(func():
+		_update_carousel_ui()
+		var fade_in_tween = create_tween().set_parallel(true)
+		fade_in_tween.tween_property(carousel_cover, "modulate:a", 1.0, 0.18)
+		fade_in_tween.tween_property(carousel_label, "modulate:a", 1.0, 0.18)
+	)
+	
+	if GameGlobals:
+		GameGlobals.play_click_sound()
+
+func _on_carousel_cover_pressed():
+	if not _is_ui_enabled:
+		return
+	var book_data = carousel_books[carousel_index]
+	book_data["pressed_func"].call()
+
 func _setup_intro_scene():
 	print("[INTRO DEBUG] A iniciar a montagem da cena de introdução...")
-	# 1. Cria a cadeira (Chair) com o sprite de pixel art gerado e removemos o magenta a nível de píxel
+	# 1. Cria a cadeira (Chair) com o novo sprite transparente
 	var chair = TextureRect.new()
 	chair.name = "Chair"
-	chair.texture = _load_transparent_texture("res://assets/sprites/wooden_chair.jpg")
+	chair.texture = load("res://assets/sprites/Trocas/nova_Cadeira.png")
 	chair.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	chair.stretch_mode = TextureRect.STRETCH_SCALE
 	chair.size = Vector2(80, 80) # Mantém proporção 1:1 para não deformar a imagem
@@ -293,10 +503,10 @@ func _fade_in_ui():
 	if subtitle_label:
 		fade_tween.tween_property(subtitle_label, "modulate:a", 1.0, 0.8)
 		
-	if hbox_container:
-		hbox_container.position.y += 30.0 # Começa abaixo para fazer slide up
-		fade_tween.tween_property(hbox_container, "modulate:a", 1.0, 0.8)
-		fade_tween.tween_property(hbox_container, "position:y", hbox_container.position.y - 30.0, 0.8).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	if carousel_container:
+		carousel_container.position.y += 30.0 # Começa abaixo para fazer slide up
+		fade_tween.tween_property(carousel_container, "modulate:a", 1.0, 0.8)
+		fade_tween.tween_property(carousel_container, "position:y", carousel_container.position.y - 30.0, 0.8).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		
 	if diff_label:
 		fade_tween.tween_property(diff_label, "modulate:a", 1.0, 0.8)
@@ -314,6 +524,7 @@ func _fade_in_ui():
 	)
 
 func _set_buttons_enabled(enabled: bool):
+	_is_ui_enabled = enabled
 	var filter = Control.MOUSE_FILTER_STOP if enabled else Control.MOUSE_FILTER_IGNORE
 	if book_apolo: book_apolo.mouse_filter = filter
 	if book_shiva: book_shiva.mouse_filter = filter
@@ -323,6 +534,11 @@ func _set_buttons_enabled(enabled: bool):
 	if diff_normal_btn: diff_normal_btn.mouse_filter = filter
 	if diff_hard_btn: diff_hard_btn.mouse_filter = filter
 	if credits_btn: credits_btn.mouse_filter = filter
+	
+	if carousel_cover: carousel_cover.mouse_filter = filter
+	if carousel_btn_left: carousel_btn_left.mouse_filter = filter
+	if carousel_btn_right: carousel_btn_right.mouse_filter = filter
+	if carousel_btn_play: carousel_btn_play.mouse_filter = filter
 	
 	var opt_btn = get_node_or_null("OptionsButton")
 	if opt_btn: opt_btn.mouse_filter = filter
@@ -1204,6 +1420,8 @@ func update_translations():
 	if diff_normal_btn: diff_normal_btn.text = GameGlobals.get_text("menu_diff_normal")
 	if diff_hard_btn: diff_hard_btn.text = GameGlobals.get_text("menu_diff_hard")
 	if credits_btn: credits_btn.text = GameGlobals.get_text("menu_credits")
+	
+	_update_carousel_ui()
 	
 	var opt_btn = get_node_or_null("OptionsButton")
 	if opt_btn: opt_btn.text = GameGlobals.get_text("menu_options")
