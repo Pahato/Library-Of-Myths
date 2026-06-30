@@ -434,11 +434,10 @@ func _setup_intro_scene():
 	if player_scene:
 		player_instance = player_scene.instantiate()
 		player_instance.is_cutscene = true
-		player_instance.scale = Vector2(2.5, 2.5) # Pato maior no menu principal
+		player_instance.scale = Vector2(6.5, 6.5) # Aumentado para ficar proporcional à cadeira
 		
-		# Posição inicial: fora do ecrã à esquerda
-		# Com pivot de center, Y=356 coloca as patas na base do chão (Y=396)
-		player_instance.global_position = Vector2(-80, 356)
+		# Posição inicial: fora do ecrã à esquerda no chão (Y = 780)
+		player_instance.global_position = Vector2(-150, 780)
 		add_child(player_instance)
 
 func _run_intro_animation():
@@ -450,23 +449,24 @@ func _run_intro_animation():
 	player_instance.sprite.play("Run")
 	
 	var tween = create_tween()
-	# 1. Caminha até à cadeira
-	tween.tween_property(player_instance, "global_position:x", 150.0, 1.8).set_trans(Tween.TRANS_SINE)
+	# 1. Caminha pelo chão até à posição anterior à cadeira (X = 380)
+	tween.tween_property(player_instance, "global_position:x", 380.0, 1.8).set_trans(Tween.TRANS_SINE)
 	
 	# 2. Salta para cima da cadeira!
 	tween.tween_callback(func():
-		player_instance.sprite.play("Idle") # Prepara salto
+		player_instance.sprite.play("Idle") # Prepara o salto
 	)
 	tween.tween_interval(0.2)
 	tween.tween_callback(func():
 		# Salto (arco parabólico usando tweens paralelos)
 		var jump_tween = create_tween().set_parallel(true)
-		jump_tween.tween_property(player_instance, "global_position:x", 188.0, 0.45)
+		# Move horizontalmente para a cadeira (X = 490)
+		jump_tween.tween_property(player_instance, "global_position:x", 490.0, 0.45)
 		
-		# Arco de altura (Y sobe e desce)
+		# Arco de altura (Y sobe para 560 e desce para o assento em 680)
 		var y_tween = create_tween()
-		y_tween.tween_property(player_instance, "global_position:y", 280.0, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		y_tween.tween_property(player_instance, "global_position:y", 320.0, 0.23).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		y_tween.tween_property(player_instance, "global_position:y", 560.0, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		y_tween.tween_property(player_instance, "global_position:y", 680.0, 0.23).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 		
 		y_tween.tween_callback(func():
 			# Aterrou na cadeira! Fica sentado em Idle
@@ -479,6 +479,7 @@ func _run_intro_animation():
 	tween.tween_callback(func():
 		_fade_in_ui()
 	)
+
 
 func _fade_in_ui():
 	var fade_tween = create_tween().set_parallel(true)

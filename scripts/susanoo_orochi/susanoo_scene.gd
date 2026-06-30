@@ -175,7 +175,7 @@ func _start_gameplay() -> void:
 	# Liga o sinal de proximidade de cada ponto de barril.
 	for point in barrels_container.get_children():
 		if point.has_signal("player_near") and not point.player_near.is_connected(_on_player_near_barrel):
-			point.player_near.connect(_on_player_near_barrel.bind(point))
+			point.player_near.connect(_on_player_near_barrel)
 		if point.has_signal("player_left") and not point.player_left.is_connected(_on_player_left_barrel):
 			point.player_left.connect(_on_player_left_barrel)
 
@@ -268,23 +268,28 @@ func _on_victory_dialogue_finished() -> void:
 # Ecrã de Game Over
 # ---------------------------------------------------------------------------
 
-## Constrói e apresenta um ecrã de Game Over simples diretamente sobre a cena.
+## Constrói e apresenta um ecrã de Game Over simples dentro de um CanvasLayer.
 func _show_game_over() -> void:
+	# Criar um CanvasLayer para garantir que o UI desenha por cima da câmara e centrado
+	var canvas_layer := CanvasLayer.new()
+	canvas_layer.name = "GameOverLayer"
+	add_child(canvas_layer)
+
 	# Painel de fundo semitransparente.
 	var overlay := ColorRect.new()
 	overlay.color = Color(0.0, 0.0, 0.0, 0.75)
-	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	overlay.z_index = 100
-	add_child(overlay)
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	canvas_layer.add_child(overlay)
 
 	# Container vertical centrado.
 	var vbox := VBoxContainer.new()
-	vbox.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	vbox.set_anchors_preset(Control.PRESET_CENTER)
+	vbox.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	vbox.grow_vertical = Control.GROW_DIRECTION_BOTH
 	vbox.custom_minimum_size = Vector2(400.0, 200.0)
-	vbox.position -= vbox.custom_minimum_size * 0.5
+	vbox.position = -vbox.custom_minimum_size * 0.5
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.z_index = 101
-	add_child(vbox)
+	canvas_layer.add_child(vbox)
 
 	# Título de Game Over.
 	var title_label := Label.new()
