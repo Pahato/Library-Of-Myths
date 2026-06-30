@@ -179,6 +179,11 @@ func _is_player_in_cone() -> bool:
 	if player_ref == null or not is_instance_valid(player_ref):
 		return false
 
+	# Se o jogador estiver invisível (por exemplo, na introdução), não é detetado
+	if not player_ref.visible:
+		return false
+
+
 	var to_player: Vector2 = player_ref.global_position - global_position
 
 	# Verificação de distância.

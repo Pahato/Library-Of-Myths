@@ -42,11 +42,32 @@ var game_active: bool = false
 ## Indica se a sequência de introdução já foi concluída.
 var intro_done: bool = false
 
+# Variáveis para a introdução cinematográfica
+var camera_target: Vector2 = Vector2(960, 540)
+var _active_dialogue: DialogueBox = null
+@onready var camera: Camera2D = get_node_or_null("Camera2D")
+
+
 # ---------------------------------------------------------------------------
 # _ready
 # ---------------------------------------------------------------------------
 
 func _ready() -> void:
+	# O controller e o container das cabeças continuam a processar durante a pausa
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	if heads_container:
+		heads_container.process_mode = Node.PROCESS_MODE_ALWAYS
+	
+	var camera_node = get_node_or_null("Camera2D")
+	if camera_node:
+		camera_node.process_mode = Node.PROCESS_MODE_ALWAYS
+
+	# Colocar o jogador na safe zone (fundo centro) e ocultá-lo temporariamente
+	if player:
+		player.position = Vector2(960, 950)
+		player.visible = false
+		player.disable_input()
+
 	# Oculta a dica de ação logo no início; só aparece quando o jogador
 	# está perto de um ponto de barril.
 	if hud_action_label:
@@ -76,6 +97,9 @@ func _play_intro() -> void:
 		{"name": "char_narrator", "text": "dialogue_narrator_susanoo_4"},
 	]
 
+	# Guardamos a referência do diálogo ativo para ler o progresso
+	_active_dialogue = box
+
 	# O DialogueBox despausa o jogo e emite dialogue_finished ao terminar.
 	box.dialogue_finished.connect(_on_intro_finished)
 	add_child(box)
@@ -84,7 +108,48 @@ func _play_intro() -> void:
 ## Chamado pelo DialogueBox quando o utilizador conclui todas as linhas do intro.
 func _on_intro_finished() -> void:
 	intro_done = true
+	_active_dialogue = null
+	
+	# Mostrar o jogador, colocá-lo na safe zone e dar-lhe controlo
+	if player:
+		player.visible = true
+		player.enable_input()
+		# Ajusta a câmara instantaneamente para o jogador para não haver lag visual
+		var camera_node = get_node_or_null("Camera2D")
+		if camera_node:
+			camera_node.position = player.position
+			
 	_start_gameplay()
+
+func _process(delta: float) -> void:
+	# Atualizar o target da câmara com base no diálogo de introdução
+	if not intro_done:
+		_update_intro_camera()
+	elif game_active and player:
+		camera_target = player.position
+
+	# Mover suavemente a câmara para o target
+	var camera_node = get_node_or_null("Camera2D")
+	if camera_node:
+		camera_node.position = camera_node.position.lerp(camera_target, 3.5 * delta)
+
+func _update_intro_camera() -> void:
+	if not _active_dialogue or not is_instance_valid(_active_dialogue):
+		return
+		
+	match _active_dialogue.current_line:
+		0:
+			# Mostrar cabeças do lado esquerdo
+			camera_target = Vector2(500, 300)
+		1:
+			# Mostrar cabeças do lado direito
+			camera_target = Vector2(1400, 400)
+		2:
+			# Mostrar saques (barris no topo)
+			camera_target = Vector2(960, 200)
+		3:
+			# Focar no ponto de spawn do jogador (safe zone)
+			camera_target = Vector2(960, 950)
 
 
 # ---------------------------------------------------------------------------

@@ -76,7 +76,7 @@ func _ready():
 	# Criar e adicionar o novo fundo TextureRect
 	var new_bg = TextureRect.new()
 	new_bg.name = "NewBG"
-	new_bg.texture = load("res://assets/sprites/Trocas/novo_MainMenu.png")
+	new_bg.texture = load("res://assets/sprites/Trocas/novo_novoMainMenu.png")
 	new_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	new_bg.stretch_mode = TextureRect.STRETCH_SCALE
 	new_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -428,18 +428,6 @@ func _on_carousel_cover_pressed():
 
 func _setup_intro_scene():
 	print("[INTRO DEBUG] A iniciar a montagem da cena de introdução...")
-	# 1. Cria a cadeira (Chair) com o novo sprite transparente
-	var chair = TextureRect.new()
-	chair.name = "Chair"
-	chair.texture = load("res://assets/sprites/Trocas/nova_Cadeira.png")
-	chair.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	chair.stretch_mode = TextureRect.STRETCH_SCALE
-	chair.size = Vector2(80, 80) # Mantém proporção 1:1 para não deformar a imagem
-	# Alinha o centro da cadeira (152 + 40 = 192) e altura Y para 304 para alinhamento fino com o pato
-	chair.position = Vector2(152, 304)
-	chair.texture_filter = Control.TEXTURE_FILTER_NEAREST
-	add_child(chair)
-	print("[INTRO DEBUG] Cadeira adicionada ao menu principal. Posição: ", chair.position, " Visível: ", chair.visible)
 	
 	# 2. Instancia o jogador Apolo (Pato)
 	var player_scene = load("res://scenes/apolo_python/player.tscn")
