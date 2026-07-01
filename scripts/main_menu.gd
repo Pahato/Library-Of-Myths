@@ -984,6 +984,8 @@ func _update_options_labels():
 	if not options_overlay:
 		return
 		
+	var lang_str = "PT" if temp_language == GameGlobals.Language.PT else "EN"
+	
 	var title = options_panel.get_node("TitleLabel")
 	if title:
 		if keybinds_vbox.visible:
@@ -996,7 +998,6 @@ func _update_options_labels():
 	# Botões principais
 	var k_btn = main_options_vbox.get_node("KeystrokeButton")
 	if k_btn:
-		var lang_str = "PT" if temp_language == GameGlobals.Language.PT else "EN"
 		k_btn.text = GameGlobals.translations[lang_str]["options_keystroke_enabled"] if temp_keystroke_enabled else GameGlobals.translations[lang_str]["options_keystroke_disabled"]
 		
 	var l_btn = main_options_vbox.get_node("LanguageButton")
@@ -1007,7 +1008,7 @@ func _update_options_labels():
 	if res_btn:
 		var r_opt = GameGlobals.resolution_options[temp_resolution_index]
 		var res_text = r_opt["text"]
-		var lang_str = "PT" if temp_language == GameGlobals.Language.PT else "EN"
+		lang_str = "PT" if temp_language == GameGlobals.Language.PT else "EN"
 		if r_opt["fullscreen"]:
 			res_text = GameGlobals.translations[lang_str]["resolution_fullscreen"]
 		res_btn.text = GameGlobals.translations[lang_str]["options_resolution"].replace("[TEXT]", res_text)
@@ -1029,7 +1030,7 @@ func _update_options_labels():
 		audio_btn.text = GameGlobals.translations["PT"]["options_audio"] if temp_language == GameGlobals.Language.PT else GameGlobals.translations["EN"]["options_audio"]
 		
 	if audio_vbox:
-		var lang_str = "PT" if temp_language == GameGlobals.Language.PT else "EN"
+		lang_str = "PT" if temp_language == GameGlobals.Language.PT else "EN"
 		var m_lbl = audio_vbox.get_node("MasterLabel")
 		if m_lbl:
 			m_lbl.text = GameGlobals.translations[lang_str]["audio_master"] + ": " + str(round(temp_master_volume * 100)) + "%"

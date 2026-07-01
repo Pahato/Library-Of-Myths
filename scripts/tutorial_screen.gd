@@ -13,7 +13,6 @@ func _build_ui():
 	# Determinar textos com base no livro
 	var title_key: String
 	var story_key: String
-	var controls_key: String
 	var objective_key: String
 	var tip_key: String
 	
@@ -21,37 +20,31 @@ func _build_ui():
 		1:
 			title_key = "tutorial_title_book1"
 			story_key = "tutorial_story_book1"
-			controls_key = "tutorial_controls_book1"
 			objective_key = "tutorial_objective_book1"
 			tip_key = "tutorial_tip_book1"
 		2:
 			title_key = "tutorial_title_book2"
 			story_key = "tutorial_story_book2"
-			controls_key = "tutorial_controls_book2"
 			objective_key = "tutorial_objective_book2"
 			tip_key = "tutorial_tip_book2"
 		3:
 			title_key = "tutorial_title_book3"
 			story_key = "tutorial_story_book3"
-			controls_key = "tutorial_controls_book3"
 			objective_key = "tutorial_objective_book3"
 			tip_key = "tutorial_tip_book3"
 		4:
 			title_key = "tutorial_title_book4"
 			story_key = "tutorial_story_book4"
-			controls_key = "tutorial_controls_book4"
 			objective_key = "tutorial_objective_book4"
 			tip_key = "tutorial_tip_book4"
 		5:
 			title_key = "tutorial_title_book5"
 			story_key = "tutorial_story_book5"
-			controls_key = "tutorial_controls_book5"
 			objective_key = "tutorial_objective_book5"
 			tip_key = "tutorial_tip_book5"
 		_:
 			title_key = "tutorial_title_book1"
 			story_key = "tutorial_story_book1"
-			controls_key = "tutorial_controls_book1"
 			objective_key = "tutorial_objective_book1"
 			tip_key = "tutorial_tip_book1"
 	
@@ -326,7 +319,7 @@ func _make_sub_panel(bg: Color, border: Color) -> PanelContainer:
 	p.add_theme_stylebox_override("panel", sb)
 	return p
 
-func _make_button(txt: String, font: FontFile, col: Color, border: Color) -> Button:
+func _make_button(txt: String, font: FontFile, col: Color, _border: Color) -> Button:
 	var btn = Button.new()
 	btn.text = txt
 	btn.custom_minimum_size = Vector2(140, 36)

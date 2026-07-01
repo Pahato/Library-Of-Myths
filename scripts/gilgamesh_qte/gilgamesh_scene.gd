@@ -282,8 +282,8 @@ func _setup_visual_hierarchy():
 	qte_container.name = "QTEContainer"
 	qte_container.size = Vector2(420, 160)
 	qte_container.set_anchors_preset(Control.PRESET_CENTER)
-	qte_container.grow_horizontal = 2
-	qte_container.grow_vertical = 2
+	qte_container.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	qte_container.grow_vertical = Control.GROW_DIRECTION_BOTH
 	qte_container.position = -qte_container.size / 2.0
 	qte_container.position.y -= 40.0
 	qte_container.visible = false
@@ -340,8 +340,8 @@ func _setup_visual_hierarchy():
 	feedback_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	feedback_label.size = Vector2(400, 40)
 	feedback_label.set_anchors_preset(Control.PRESET_CENTER)
-	feedback_label.grow_horizontal = 2
-	feedback_label.grow_vertical = 2
+	feedback_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	feedback_label.grow_vertical = Control.GROW_DIRECTION_BOTH
 	feedback_label.position = -feedback_label.size / 2.0
 	feedback_label.position.y += 80.0
 	feedback_label.modulate.a = 0.0
@@ -952,7 +952,7 @@ func _fire_golden_weapon():
 	# Som de disparo
 	_play_sfx("shoot", randf_range(1.0, 1.4), -8.0)
 
-func _on_weapon_impact(weapon: Sprite2D, impact_pos: Vector2):
+func _on_weapon_impact(weapon: Sprite2D, _impact_pos: Vector2):
 	weapon.queue_free()
 	
 	# Som de clink e flash
@@ -1059,8 +1059,8 @@ func _trigger_game_over():
 	game_over_panel.name = "GameOverPanel"
 	game_over_panel.size = Vector2(380, 240)
 	game_over_panel.set_anchors_preset(Control.PRESET_CENTER)
-	game_over_panel.grow_horizontal = 2
-	game_over_panel.grow_vertical = 2
+	game_over_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	game_over_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
 	game_over_panel.position = -game_over_panel.size / 2.0
 	game_over_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	
@@ -1146,10 +1146,10 @@ func _play_sfx(sound_name: String, pitch: float = 1.0, volume: float = 0.0):
 		sfx.play()
 		sfx.finished.connect(sfx.queue_free)
 
-func _set_hud_visible(is_visible: bool) -> void:
-	if boss_hp_bar: boss_hp_bar.visible = is_visible
-	if boss_name_label: boss_name_label.visible = is_visible
-	if player_hp_bar: player_hp_bar.visible = is_visible
-	if player_hp_label: player_hp_label.visible = is_visible
-	if fury_bar: fury_bar.visible = is_visible
-	if fury_title_label: fury_title_label.visible = is_visible
+func _set_hud_visible(p_visible: bool) -> void:
+	if boss_hp_bar: boss_hp_bar.visible = p_visible
+	if boss_name_label: boss_name_label.visible = p_visible
+	if player_hp_bar: player_hp_bar.visible = p_visible
+	if player_hp_label: player_hp_label.visible = p_visible
+	if fury_bar: fury_bar.visible = p_visible
+	if fury_title_label: fury_title_label.visible = p_visible
