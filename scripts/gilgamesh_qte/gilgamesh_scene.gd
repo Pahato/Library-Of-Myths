@@ -144,7 +144,7 @@ func _setup_visual_hierarchy():
 	if player_scene:
 		player_instance = player_scene.instantiate()
 		player_instance.name = "GilgameshPlayer"
-		player_instance.position = Vector2(250, 470)
+		player_instance.position = Vector2(250, 488)
 		player_instance.scale = Vector2(3.8, 3.8)
 		player_instance.set_physics_process(false)
 		player_instance.set_process(false)
@@ -162,7 +162,7 @@ func _setup_visual_hierarchy():
 	boss_sprite = Sprite2D.new()
 	boss_sprite.name = "BullOfHeaven"
 	boss_sprite.texture = boss_idle_tex
-	boss_sprite.position = Vector2(900, 345)
+	boss_sprite.position = Vector2(900, 327)
 	boss_sprite.scale = Vector2(0.35, 0.35)
 	add_child(boss_sprite)
 	
@@ -378,7 +378,7 @@ func _play_lightning_effect():
 	
 	# Ataque visual do Boss: lunge para a esquerda e flash elétrico amarelo
 	if boss_sprite:
-		var original_pos = Vector2(900, 345)
+		var original_pos = Vector2(900, 327)
 		var boss_tw = create_tween().bind_node(boss_sprite)
 		boss_tw.tween_property(boss_sprite, "position", original_pos + Vector2(-50, 15), 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		boss_tw.tween_property(boss_sprite, "position", original_pos, 0.2).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
@@ -511,15 +511,15 @@ func _spawn_bull_projectile(duration: float):
 		
 	var projectile = Sprite2D.new()
 	projectile.texture = preload("res://assets/sprites/Trocas/ataqueTouro.png")
-	projectile.position = Vector2(820, 360) # Muralha direita
+	projectile.position = Vector2(820, 342) # Muralha direita
 	projectile.scale = Vector2(0.18, 0.18)
-	projectile.rotation = (Vector2(320, 460) - projectile.position).angle()
+	projectile.rotation = (Vector2(320, 478) - projectile.position).angle()
 	add_child(projectile)
 	active_bull_projectile = projectile
 	
 	# Animação do projetil em direção ao pato
 	var travel_tw = create_tween().bind_node(projectile)
-	travel_tw.tween_property(projectile, "position", Vector2(320, 460), duration).set_trans(Tween.TRANS_SINE)
+	travel_tw.tween_property(projectile, "position", Vector2(320, 478), duration).set_trans(Tween.TRANS_SINE)
 
 # --- QTE de Teclado ---
 func _spawn_keyboard_qte():
@@ -734,13 +734,13 @@ func _on_qte_success(score_mult: float = 1.0):
 			reset_tw.tween_callback(func(): if not in_attack_phase: anim_sprite.play("Idle"))
 			
 		var jump_tw = create_tween().bind_node(player_instance)
-		jump_tw.tween_property(player_instance, "position:y", 430.0, 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		jump_tw.tween_property(player_instance, "position:y", 470.0, 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		jump_tw.tween_property(player_instance, "position:y", 448.0, 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		jump_tw.tween_property(player_instance, "position:y", 488.0, 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 		
 	# Spawn do Escudo Dourado de Gilgamesh para bloquear o ataque
 	var shield = Sprite2D.new()
 	shield.texture = preload("res://assets/sprites/Trocas/escudoDourado.png")
-	shield.position = Vector2(340, 460)
+	shield.position = Vector2(340, 478)
 	shield.scale = Vector2(0.16, 0.16)
 	shield.modulate.a = 0.0
 	add_child(shield)
@@ -756,7 +756,7 @@ func _on_qte_success(score_mult: float = 1.0):
 		var proj = active_bull_projectile
 		active_bull_projectile = null
 		var hit_tw = create_tween().bind_node(proj)
-		hit_tw.tween_property(proj, "position", Vector2(320, 460), 0.08)
+		hit_tw.tween_property(proj, "position", Vector2(320, 478), 0.08)
 		hit_tw.tween_property(proj, "scale", Vector2.ZERO, 0.15).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 		hit_tw.tween_callback(func():
 			_play_sfx("clink", randf_range(1.0, 1.3), -2.0)
@@ -797,7 +797,7 @@ func _on_qte_failed(reason_text: String):
 		var proj = active_bull_projectile
 		active_bull_projectile = null
 		var hit_tw = create_tween().bind_node(proj)
-		hit_tw.tween_property(proj, "position", Vector2(250, 470), 0.08)
+		hit_tw.tween_property(proj, "position", Vector2(250, 488), 0.08)
 		hit_tw.tween_property(proj, "scale", Vector2(0.25, 0.25), 0.1)
 		hit_tw.tween_property(proj, "modulate:a", 0.0, 0.1)
 		hit_tw.tween_callback(proj.queue_free)
