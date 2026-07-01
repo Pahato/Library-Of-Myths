@@ -58,25 +58,26 @@ func _process(delta):
 func _input(event):
 	if input_cooldown > 0:
 		return
-	if event.is_action_pressed("ui_accept") or event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+	if event.is_action_pressed("ui_accept") or (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
+		get_viewport().set_input_as_handled()
 		if is_typing:
 			# Se estiver a digitar, mostra todo o texto de uma vez
 			is_typing = false
 			text_label.visible_characters = text_label.text.length()
 			timer.stop()
-			if sound_advance:
+			if sound_advance and not sound_advance.playing:
 				sound_advance.play()
 		else:
 			# Senão, avança para a próxima linha
 			current_line += 1
 			if current_line < dialogue_list.size():
-				if sound_advance:
+				if sound_advance and not sound_advance.playing:
 					sound_advance.play()
 				# Define um pequeno cooldown para cada nova fala
 				input_cooldown = 0.15
 				_show_current_line()
 			else:
-				if sound_advance:
+				if sound_advance and not sound_advance.playing:
 					sound_advance.play()
 				_finish_dialogue()
 
