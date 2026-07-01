@@ -321,7 +321,7 @@ func _setup_visual_hierarchy():
 
 func _update_hud_text():
 	if boss_name_label:
-		boss_name_label.text = GameGlobals.get_text("char_touro").upper()
+		boss_name_label.text = GameGlobals.get_text("char_touro").to_upper()
 	if fury_title_label:
 		fury_title_label.text = GameGlobals.get_text("fury_title") if GameGlobals.translations["PT"].has("fury_title") else "FÚRIA REAL"
 		if in_attack_phase:
