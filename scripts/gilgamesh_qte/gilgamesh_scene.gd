@@ -58,7 +58,8 @@ var pause_menu_instance: Node = null
 # Timers de QTE
 var qte_timer_active: float = 0.0
 var qte_timer_max: float = 2.0
-var current_qte_key: int = -1
+var current_qte_keys: Array = []
+var active_bull_projectile: Sprite2D = null
 var qte_bar: ProgressBar = null
 var qte_key_label: Label = null
 
@@ -72,9 +73,9 @@ func _ready() -> void:
 	# Instanciar e desenhar os componentes visuais
 	_setup_visual_hierarchy()
 	
-	# Inicia música tema do Gilgamesh
+	# Inicia música tema do Gilgamesh (Orbital Colossus!)
 	if GameGlobals:
-		GameGlobals.play_music("res://assets/music/battle_theme.mp3", -10.0) # Se não existir, toca o tema geral
+		GameGlobals.play_music("res://assets/music/orbital_colossus.mp3", -10.0)
 		
 	# Trava inputs e inicia diálogos da introdução
 	get_tree().paused = true
@@ -100,8 +101,35 @@ func _setup_visual_hierarchy():
 	bg_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	bg_rect.stretch_mode = TextureRect.STRETCH_SCALE
 	bg_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg_rect.size = Vector2(1152, 648)
 	add_child(bg_rect)
+	
+	# Plataforma de Pedra/Ouro do Jogador (Gilgamesh)
+	var player_plat = Panel.new()
+	player_plat.name = "PlayerPlatform"
+	player_plat.position = Vector2(150, 560)
+	player_plat.size = Vector2(200, 24)
+	var sb_p_plat = StyleBoxFlat.new()
+	sb_p_plat.bg_color = Color(0.18, 0.16, 0.14, 0.95)
+	sb_p_plat.border_width_top = 3
+	sb_p_plat.border_color = Color(1.0, 0.82, 0.2, 1.0)
+	sb_p_plat.corner_radius_top_left = 3
+	sb_p_plat.corner_radius_top_right = 3
+	player_plat.add_theme_stylebox_override("panel", sb_p_plat)
+	add_child(player_plat)
+	
+	# Plataforma de Pedra/Ouro do Boss (Muralha/Torre)
+	var boss_plat = Panel.new()
+	boss_plat.name = "BossPlatform"
+	boss_plat.position = Vector2(740, 545)
+	boss_plat.size = Vector2(320, 24)
+	var sb_b_plat = StyleBoxFlat.new()
+	sb_b_plat.bg_color = Color(0.18, 0.16, 0.14, 0.95)
+	sb_b_plat.border_width_top = 3
+	sb_b_plat.border_color = Color(1.0, 0.82, 0.2, 1.0)
+	sb_b_plat.corner_radius_top_left = 3
+	sb_b_plat.corner_radius_top_right = 3
+	boss_plat.add_theme_stylebox_override("panel", sb_b_plat)
+	add_child(boss_plat)
 	
 	# 2. Container dos Portais (Fica atrás de Gilgamesh)
 	portals_node = Node2D.new()
@@ -247,7 +275,7 @@ func _setup_visual_hierarchy():
 	# Container do QTE de Teclado
 	qte_container = Control.new()
 	qte_container.name = "QTEContainer"
-	qte_container.size = Vector2(300, 160)
+	qte_container.size = Vector2(420, 160)
 	qte_container.set_anchors_preset(Control.PRESET_CENTER)
 	qte_container.grow_horizontal = 2
 	qte_container.grow_vertical = 2
@@ -275,7 +303,7 @@ func _setup_visual_hierarchy():
 	qte_key_label = Label.new()
 	qte_key_label.name = "QTEKeyLabel"
 	qte_key_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	qte_key_label.size = Vector2(300, 60)
+	qte_key_label.size = Vector2(420, 60)
 	qte_key_label.position = Vector2(0, 30)
 	qte_key_label.add_theme_font_override("font", _load_font(true))
 	qte_key_label.add_theme_font_size_override("font_size", 34)
@@ -284,7 +312,7 @@ func _setup_visual_hierarchy():
 	
 	qte_bar = ProgressBar.new()
 	qte_bar.name = "QTEProgressBar"
-	qte_bar.size = Vector2(220, 10)
+	qte_bar.size = Vector2(340, 10)
 	qte_bar.position = Vector2(40, 110)
 	qte_bar.max_value = 1.0
 	qte_bar.value = 1.0
@@ -342,6 +370,17 @@ func _play_lightning_effect():
 		var flash_tw = create_tween()
 		flash_tw.tween_property(screen_flash, "color:a", 0.0, 0.25)
 	_shake_camera(6.0)
+	
+	# Ataque visual do Boss: lunge para a esquerda e flash elétrico amarelo
+	if boss_sprite:
+		var original_pos = Vector2(900, 465)
+		var boss_tw = create_tween().bind_node(boss_sprite)
+		boss_tw.tween_property(boss_sprite, "position", original_pos + Vector2(-50, 15), 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		boss_tw.tween_property(boss_sprite, "position", original_pos, 0.2).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		
+		var mod_tw = create_tween().bind_node(boss_sprite)
+		boss_sprite.modulate = Color(2.2, 2.2, 0.6, 1.0) # Amarelo relâmpago brilhante
+		mod_tw.tween_property(boss_sprite, "modulate", Color(1.0, 1.0, 1.0, 1.0), 0.3)
 
 # ---------------------------------------------------------------------------
 # Sequências de Diálogo e Cutscene
@@ -415,22 +454,19 @@ func _start_new_qte():
 	if not game_active or in_attack_phase:
 		return
 		
-	# Limpar qualquer input ou alvo anterior
+	# Limpar qualquer input ou alvo anterior e parar o temporizador
+	qte_timer_active = 0.0
 	qte_container.visible = false
-	current_qte_key = -1
+	current_qte_keys.clear()
 	for child in precision_container.get_children():
 		child.queue_free()
 		
+	if is_instance_valid(active_bull_projectile):
+		active_bull_projectile.queue_free()
+		active_bull_projectile = null
+		
 	# Configurar velocidade/dificuldade baseado nas fases do Boss
-	# boss_phase 1: 100% - 66% hp
-	# boss_phase 2: 66% - 33% hp
-	# boss_phase 3: 33% - 0% hp
-	
 	var rand_val = randf()
-	
-	# Fase 1: Apenas QTE de Teclado
-	# Fase 2: QTE e Clickers de Precisão misturados
-	# Fase 3: Clickers de precisão ultra rápidos e QTEs
 	if boss_phase == 1:
 		_spawn_keyboard_qte()
 	elif boss_phase == 2:
@@ -444,26 +480,83 @@ func _start_new_qte():
 		else:
 			_spawn_precision_click()
 
+func _get_key_name(keycode: int) -> String:
+	match keycode:
+		KEY_W: return "W"
+		KEY_A: return "A"
+		KEY_S: return "S"
+		KEY_D: return "D"
+		KEY_SPACE: return "ESPAÇO" if GameGlobals.current_language == GameGlobals.Language.PT else "SPACE"
+		KEY_ENTER: return "ENTER"
+		KEY_SHIFT: return "SHIFT"
+		_:
+			return OS.get_keycode_string(keycode)
+
+# --- Projétil do Touro ---
+func _spawn_bull_projectile(duration: float):
+	if is_instance_valid(active_bull_projectile):
+		active_bull_projectile.queue_free()
+		
+	var projectile = Sprite2D.new()
+	projectile.texture = preload("res://assets/sprites/Trocas/ataqueTouro.png")
+	projectile.position = Vector2(820, 480) # Muralha direita
+	projectile.scale = Vector2(0.18, 0.18)
+	projectile.rotation = (Vector2(320, 520) - projectile.position).angle()
+	add_child(projectile)
+	active_bull_projectile = projectile
+	
+	# Animação do projetil em direção ao pato
+	var travel_tw = create_tween().bind_node(projectile)
+	travel_tw.tween_property(projectile, "position", Vector2(320, 520), duration).set_trans(Tween.TRANS_SINE)
+
 # --- QTE de Teclado ---
 func _spawn_keyboard_qte():
-	var keys = [KEY_W, KEY_A, KEY_S, KEY_D, KEY_SPACE]
-	current_qte_key = keys[randi() % keys.size()]
+	current_qte_keys.clear()
 	
+	var easy_keys = [KEY_W, KEY_A, KEY_S, KEY_D, KEY_SPACE]
+	var normal_keys = [
+		KEY_W, KEY_A, KEY_S, KEY_D, KEY_SPACE, KEY_ENTER, KEY_SHIFT,
+		KEY_Q, KEY_E, KEY_R, KEY_T, KEY_F, KEY_G, KEY_C, KEY_V, KEY_X, KEY_Z,
+		KEY_0, KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9
+	]
+	
+	var diff = GameGlobals.current_difficulty if GameGlobals else GameGlobals.Difficulty.EASY
+	
+	if diff == GameGlobals.Difficulty.EASY:
+		current_qte_keys = [easy_keys[randi() % easy_keys.size()]]
+	elif diff == GameGlobals.Difficulty.NORMAL:
+		current_qte_keys = [normal_keys[randi() % normal_keys.size()]]
+	else:
+		# HARD mode: 50% single, 50% double combination
+		if randf() < 0.5:
+			current_qte_keys = [normal_keys[randi() % normal_keys.size()]]
+		else:
+			var combo_pool = [KEY_W, KEY_A, KEY_S, KEY_D, KEY_SHIFT, KEY_SPACE, KEY_Q, KEY_E, KEY_F, KEY_R]
+			var k1 = combo_pool[randi() % combo_pool.size()]
+			var k2 = combo_pool[randi() % combo_pool.size()]
+			while k2 == k1:
+				k2 = combo_pool[randi() % combo_pool.size()]
+			current_qte_keys = [k1, k2]
+			
 	var key_text = ""
-	match current_qte_key:
-		KEY_W: key_text = "W"
-		KEY_A: key_text = "A"
-		KEY_S: key_text = "S"
-		KEY_D: key_text = "D"
-		KEY_SPACE: key_text = "ESPAÇO" if GameGlobals.current_language == GameGlobals.Language.PT else "SPACE"
+	if current_qte_keys.size() == 1:
+		key_text = _get_key_name(current_qte_keys[0])
+	else:
+		key_text = _get_key_name(current_qte_keys[0]) + " + " + _get_key_name(current_qte_keys[1])
 		
 	qte_key_label.text = "PRESSIONA [" + key_text + "]" if GameGlobals.current_language == GameGlobals.Language.PT else "PRESS [" + key_text + "]"
 	
-	# Ajustar tempo do QTE conforme fase e dificuldade
+	# Ajustar tamanho da fonte para textos longos
+	if qte_key_label.text.length() > 14:
+		qte_key_label.add_theme_font_size_override("font_size", 22)
+	else:
+		qte_key_label.add_theme_font_size_override("font_size", 34)
+		
 	var base_time = 2.0
-	match GameGlobals.current_difficulty:
+	match diff:
 		GameGlobals.Difficulty.EASY: base_time = 2.4
-		GameGlobals.Difficulty.HARD: base_time = 1.4
+		GameGlobals.Difficulty.NORMAL: base_time = 2.0
+		GameGlobals.Difficulty.HARD: base_time = 1.35
 		
 	if boss_phase == 2: base_time *= 0.85
 	elif boss_phase == 3: base_time *= 0.70
@@ -472,38 +565,42 @@ func _spawn_keyboard_qte():
 	qte_timer_active = base_time
 	qte_container.visible = true
 	
-	# Faz boss piscar indicando que vai atacar
 	if boss_sprite:
 		boss_sprite.texture = boss_atk_tex
 		var tw = create_tween()
 		tw.tween_property(boss_sprite, "modulate", Color(1.5, 0.4, 0.4, 1.0), 0.15)
 		tw.tween_property(boss_sprite, "modulate", Color(1.0, 1.0, 1.0, 1.0), 0.15).set_delay(base_time - 0.2)
 		
-	# Efeito de relâmpago ao iniciar o ataque
 	_play_lightning_effect()
+	_spawn_bull_projectile(base_time)
 
 func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel") and intro_done:
+		_toggle_pause()
+		get_viewport().set_input_as_handled()
+		return
+		
 	if not game_active or in_attack_phase:
 		return
 		
-	# ESC Menu de Pausa
-	if event.is_action_pressed("ui_cancel"):
-		_toggle_pause()
-		return
-		
-	if current_qte_key != -1 and event is InputEventKey and event.is_pressed() and not event.is_echo():
-		if event.physical_keycode == current_qte_key:
-			_on_qte_success()
+	if not current_qte_keys.is_empty() and event is InputEventKey and event.is_pressed() and not event.is_echo():
+		var key = event.physical_keycode
+		if key in current_qte_keys:
+			var all_pressed = true
+			for k in current_qte_keys:
+				if not Input.is_key_pressed(k):
+					all_pressed = false
+					break
+			if all_pressed:
+				_on_qte_success()
 		else:
 			_on_qte_failed("TECLA INCORRETA!" if GameGlobals.current_language == GameGlobals.Language.PT else "WRONG KEY!")
 
 # --- QTE de Precisão (Estilo Osu!) ---
 func _spawn_precision_click():
-	# Criar o alvo circular programaticamente no precision_container
 	var target = Control.new()
 	target.name = "PrecisionTarget"
 	
-	# Posição aleatória na tela (evitando cobrir o jogador e barras da UI)
 	var random_pos = Vector2(
 		randf_range(300.0, 800.0),
 		randf_range(160.0, 480.0)
@@ -511,17 +608,15 @@ func _spawn_precision_click():
 	target.position = random_pos
 	precision_container.add_child(target)
 	
-	# Desenhar o círculo interno (Alvo estático)
 	var circle = TextureRect.new()
 	circle.name = "Circle"
-	circle.texture = preload("res://icon.svg") # Usar icon como base modificado para círculo
+	circle.texture = preload("res://icon.svg")
 	circle.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	circle.stretch_mode = TextureRect.STRETCH_SCALE
 	circle.size = Vector2(80, 80)
 	circle.position = -circle.size / 2.0
-	circle.modulate = Color(1.0, 0.8, 0.2, 0.9) # Dourado
+	circle.modulate = Color(1.0, 0.8, 0.2, 0.9)
 	
-	# Usar um shader ou apenas modulação redonda (como criamos dinamicamente)
 	var sb_circle = StyleBoxFlat.new()
 	sb_circle.bg_color = Color(1.0, 0.85, 0.2, 0.35)
 	sb_circle.border_width_left = 3
@@ -540,7 +635,6 @@ func _spawn_precision_click():
 	panel.add_theme_stylebox_override("panel", sb_circle)
 	target.add_child(panel)
 	
-	# Desenhar o anel exterior que encolhe (Approach Ring)
 	var sb_ring = StyleBoxFlat.new()
 	sb_ring.bg_color = Color(0, 0, 0, 0)
 	sb_ring.border_width_left = 2
@@ -560,18 +654,17 @@ func _spawn_precision_click():
 	ring.add_theme_stylebox_override("panel", sb_ring)
 	target.add_child(ring)
 	
-	# Configurar botão transparente de clique sobre o painel
 	var btn = TextureButton.new()
 	btn.name = "ClickButton"
 	btn.size = panel.size
 	btn.position = panel.position
 	target.add_child(btn)
 	
-	# Animar o encolhimento do anel exterior
 	var click_time = 1.3
 	match GameGlobals.current_difficulty:
 		GameGlobals.Difficulty.EASY: click_time = 1.6
-		GameGlobals.Difficulty.HARD: click_time = 0.95
+		GameGlobals.Difficulty.NORMAL: click_time = 1.3
+		GameGlobals.Difficulty.HARD: click_time = 0.9
 		
 	if boss_phase == 3: click_time *= 0.8
 	
@@ -586,21 +679,19 @@ func _spawn_precision_click():
 		has_clicked["val"] = true
 		shrink_tween.kill()
 		
-		# Calcula a precisão com base no tamanho do anel exterior
 		var ring_current_size = ring.size.x
 		var diff = abs(ring_current_size - panel.size.x)
 		
 		if diff < 15.0:
-			_on_qte_success(1.2) # Perfeito!
+			_on_qte_success(1.2)
 		elif diff < 45.0:
-			_on_qte_success(0.7) # Bom!
+			_on_qte_success(0.7)
 		else:
 			_on_qte_failed("PREMEDITADO/ATRASADO!" if GameGlobals.current_language == GameGlobals.Language.PT else "TOO EARLY/LATE!")
 		if is_instance_valid(target):
 			target.queue_free()
 	)
 	
-	# Se expirar sem clique, falha
 	shrink_tween.chain().tween_callback(func():
 		if not has_clicked["val"]:
 			has_clicked["val"] = true
@@ -609,60 +700,100 @@ func _spawn_precision_click():
 				target.queue_free()
 	)
 	
-	# Toca som sutil de aviso de clique (tap)
 	_play_sfx("tap", 1.0, -10.0)
-	
-	# Efeito de relâmpago ao iniciar o ataque de precisão
 	_play_lightning_effect()
+	_spawn_bull_projectile(click_time)
 
 # --- Sucesso e Falha de QTE ---
 func _on_qte_success(score_mult: float = 1.0):
+	qte_timer_active = 0.0
+	current_qte_keys.clear()
+	
 	_show_feedback("PERFEITO!" if score_mult >= 1.0 else "BOM!", Color(1.0, 0.9, 0.3, 1.0))
 	_play_sfx("tap", 1.5, -4.0)
 	
-	# Pato Gilgamesh dá um pulo de vitória rápido
+	# Pato Gilgamesh faz o Roll e dá um salto
 	if player_instance:
 		var anim_sprite = player_instance.get_node_or_null("AnimatedSprite2D")
 		if anim_sprite:
-			anim_sprite.play("Jump")
+			anim_sprite.play("Roll")
 			var reset_tw = create_tween()
-			reset_tw.tween_interval(0.35)
+			reset_tw.tween_interval(0.5)
 			reset_tw.tween_callback(func(): if not in_attack_phase: anim_sprite.play("Idle"))
 			
-	# Carrega fúria
+		var jump_tw = create_tween().bind_node(player_instance)
+		jump_tw.tween_property(player_instance, "position:y", 500.0, 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		jump_tw.tween_property(player_instance, "position:y", 530.0, 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		
+	# Spawn do Escudo Dourado de Gilgamesh para bloquear o ataque
+	var shield = Sprite2D.new()
+	shield.texture = preload("res://assets/sprites/Trocas/escudoDourado.png")
+	shield.position = Vector2(340, 520)
+	shield.scale = Vector2(0.16, 0.16)
+	shield.modulate.a = 0.0
+	add_child(shield)
+	
+	var shield_tw = create_tween()
+	shield_tw.tween_property(shield, "modulate:a", 1.0, 0.1)
+	shield_tw.tween_interval(0.4)
+	shield_tw.tween_property(shield, "modulate:a", 0.0, 0.2)
+	shield_tw.tween_callback(shield.queue_free)
+	
+	# Parar e explodir projetil do touro no escudo
+	if is_instance_valid(active_bull_projectile):
+		var proj = active_bull_projectile
+		active_bull_projectile = null
+		var hit_tw = create_tween().bind_node(proj)
+		hit_tw.tween_property(proj, "position", Vector2(320, 520), 0.08)
+		hit_tw.tween_property(proj, "scale", Vector2.ZERO, 0.15).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+		hit_tw.tween_callback(func():
+			_play_sfx("clink", randf_range(1.0, 1.3), -2.0)
+			proj.queue_free()
+		)
+		
 	var fury_gain = 20.0 * score_mult
 	royal_fury = min(royal_fury + fury_gain, royal_fury_max)
 	if fury_bar:
 		fury_bar.value = royal_fury
 		
-	# Ativa o Portão da Babilónia se fúria atingir 100%
 	if royal_fury >= royal_fury_max:
 		var wait_tw = create_tween()
 		wait_tw.tween_interval(0.3)
 		wait_tw.tween_callback(_enter_attack_phase)
 	else:
-		# Avança para o próximo
 		var wait_tw = create_tween()
 		wait_tw.tween_interval(0.4)
 		wait_tw.tween_callback(_start_new_qte)
 
 func _on_qte_failed(reason_text: String):
+	qte_timer_active = 0.0
+	current_qte_keys.clear()
+	
 	_show_feedback(reason_text, Color(0.95, 0.2, 0.2, 1.0))
 	_play_sfx("hurt", 1.0, 2.0)
 	
-	# Flash de ecrã vermelho
+	# Flash vermelho e som de impacto
 	if screen_flash:
 		screen_flash.color = Color(1.0, 0.1, 0.1, 0.35)
 		var flash_tw = create_tween()
 		flash_tw.tween_property(screen_flash, "color:a", 0.0, 0.3)
 		
-	# Treme a câmara
 	_shake_camera(8.0)
 	
-	# Reduz vida
+	# Projetil acerta no pato
+	if is_instance_valid(active_bull_projectile):
+		var proj = active_bull_projectile
+		active_bull_projectile = null
+		var hit_tw = create_tween().bind_node(proj)
+		hit_tw.tween_property(proj, "position", Vector2(250, 530), 0.08)
+		hit_tw.tween_property(proj, "scale", Vector2(0.25, 0.25), 0.1)
+		hit_tw.tween_property(proj, "modulate:a", 0.0, 0.1)
+		hit_tw.tween_callback(proj.queue_free)
+		
 	var damage = 20.0
 	match GameGlobals.current_difficulty:
 		GameGlobals.Difficulty.EASY: damage = 14.0
+		GameGlobals.Difficulty.NORMAL: damage = 20.0
 		GameGlobals.Difficulty.HARD: damage = 28.0
 		
 	player_hp = max(player_hp - damage, 0.0)
@@ -672,7 +803,6 @@ func _on_qte_failed(reason_text: String):
 	if player_hp <= 0.0:
 		_trigger_game_over()
 	else:
-		# Próximo QTE
 		var wait_tw = create_tween()
 		wait_tw.tween_interval(0.6)
 		wait_tw.tween_callback(_start_new_qte)
@@ -709,7 +839,7 @@ func _shake_camera(amount: float):
 func _enter_attack_phase():
 	in_attack_phase = true
 	qte_container.visible = false
-	current_qte_key = -1
+	current_qte_keys.clear()
 	for child in precision_container.get_children():
 		child.queue_free()
 		
@@ -944,6 +1074,7 @@ func _trigger_game_over():
 	game_over_panel.add_child(btn_retry)
 	_setup_hover_events(btn_retry)
 	btn_retry.pressed.connect(func():
+		get_tree().paused = false
 		get_tree().change_scene_to_file("res://scenes/gilgamesh_qte/gilgamesh_scene.tscn")
 	)
 	
@@ -957,6 +1088,7 @@ func _trigger_game_over():
 	game_over_panel.add_child(btn_menu)
 	_setup_hover_events(btn_menu)
 	btn_menu.pressed.connect(func():
+		get_tree().paused = false
 		get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
 	)
 
