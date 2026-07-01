@@ -1052,7 +1052,7 @@ func _update_options_labels():
 		"parry": "keybinds_parry",
 		"shoot": "keybinds_shoot"
 	}
-	var lang_str = "PT" if temp_language == GameGlobals.Language.PT else "EN"
+	lang_str = "PT" if temp_language == GameGlobals.Language.PT else "EN"
 	for action in actions:
 		var lbl = keybinds_grid.get_node(action + "_Label")
 		if lbl:
