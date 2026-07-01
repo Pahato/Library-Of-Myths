@@ -1036,12 +1036,22 @@ func _trigger_game_over():
 	# Toca som de derrota
 	_play_sfx("explosion", 0.7, 4.0)
 	
-	# Escurecer o ecrã e mostrar painel de Game Over programático
+	# Pausar a árvore de jogo para parar toda a física/ataques sob o Game Over
+	get_tree().paused = true
+	
+	# Mostrar painel de Game Over sob um CanvasLayer dedicado para que receba cliques sem bloqueio
+	var go_layer = CanvasLayer.new()
+	go_layer.name = "GameOverLayer"
+	go_layer.layer = 100 # Camada muito alta
+	go_layer.process_mode = Node.PROCESS_MODE_ALWAYS # Crucial: corre enquanto o jogo está pausado!
+	add_child(go_layer)
+	
 	var overlay = ColorRect.new()
 	overlay.name = "GameOverOverlay"
 	overlay.color = Color(0.08, 0.02, 0.02, 0.8)
 	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(overlay)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	go_layer.add_child(overlay)
 	
 	game_over_panel = Panel.new()
 	game_over_panel.name = "GameOverPanel"
@@ -1050,6 +1060,7 @@ func _trigger_game_over():
 	game_over_panel.grow_horizontal = 2
 	game_over_panel.grow_vertical = 2
 	game_over_panel.position = -game_over_panel.size / 2.0
+	game_over_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	
 	var sb_go = StyleBoxFlat.new()
 	sb_go.bg_color = Color(0.12, 0.03, 0.03, 0.95)
