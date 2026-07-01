@@ -96,6 +96,7 @@ var translations: Dictionary = {
 		"menu_book_shiva": "LIVRO II: Shiva vs Rudra",
 		"menu_book_thor": "LIVRO III: Thor vs Jörmungandr",
 		"menu_book_susanoo": "LIVRO IV: Susanoo vs Orochi",
+		"menu_book_gilgamesh": "LIVRO V: Gilgamesh vs Touro dos Céus",
 		"menu_locked_thor": "O Livro III ainda está a ser escrito...",
 		"menu_locked_susanoo": "O Livro IV ainda está a ser escrito...",
 		"menu_diff_easy": "Fácil",
@@ -313,6 +314,27 @@ var translations: Dictionary = {
 		"tutorial_controls_book4": "W / A / S / D ou ↑ ← ↓ →  →  Mover\nE  →  Colocar barril de sake",
 		"tutorial_objective_book4": "Coloca os 8 barris de sake nos pontos marcados do templo sem ser detetado pelas cabeças do Orochi!\nSe uma cabeça te vir, o jogo acaba.",
 		"tutorial_tip_book4": "💡 Presta atenção aos cones de visão laranja — se entrares, tens um segundo para recuar!",
+		
+		# Nomes de Personagens (Livro V)
+		"char_gilgamesh": "Gilgamesh",
+		"char_touro": "O Touro dos Céus",
+		
+		# Diálogo — Intro do Livro V
+		"dialogue_narrator_gilgamesh_1": "Na cidade de Uruk, Gilgamesh, o lendário rei dos heróis, desafiava a fúria dos próprios deuses...",
+		"dialogue_narrator_gilgamesh_2": "Para punir a sua audácia, a deusa Ishtar enviou o Touro dos Céus — uma besta colossal de destruição.",
+		"dialogue_narrator_gilgamesh_3": "O sismo dos seus passos abre fendas na terra. A tempestade segue o seu rasto. Uruk está prestes a cair.",
+		"dialogue_narrator_gilgamesh_4": "But Gilgamesh não recua. Com o seu Portão da Babilónia pronto, ele vai subjugar a criatura divina!",
+		
+		# Diálogo — Vitória Livro V
+		"dialogue_narrator_gilgamesh_victory_1": "Sob uma chuva interminável de lanças e espadas douradas, o Touro dos Céus desabou derrotado.",
+		"dialogue_narrator_gilgamesh_victory_2": "Gilgamesh provou que mesmo a ira divina não é páreo para o Rei dos Heróis. Uruk celebra a vitória eterna!",
+		
+		# Tutorial — Livro V
+		"tutorial_title_book5": "📖 LIVRO V — Gilgamesh vs O Touro dos Céus",
+		"tutorial_story_book5": "Gilgamesh deve sobreviver aos ataques catastróficos do Touro dos Céus e carregar a sua Fúria Real para descarregar o Portão da Babilónia.",
+		"tutorial_controls_book5": "Teclas Indicadas (W, A, S, D, Espaço) ou Clique nos Círculos  →  QTE / Esquiva\nClique Rápido no Ecrã  →  Disparar Espadas (Fase de Ataque)",
+		"tutorial_objective_book5": "Sobrevive aos ataques de precisão e esquivas rítmicas do Boss. Quando a barra de Fúria encher, clica repetidamente no ecrã para disparar rajadas de armas de ouro contra o boss!",
+		"tutorial_tip_book5": "💡 A pressa é inimiga da perfeição: clica nos círculos de precisão apenas quando o anel exterior encolher totalmente até ao centro!",
 	},
 	"EN": {
 		# Main Menu
@@ -322,6 +344,7 @@ var translations: Dictionary = {
 		"menu_book_shiva": "BOOK II: Shiva vs Rudra",
 		"menu_book_thor": "BOOK III: Thor vs Jörmungandr",
 		"menu_book_susanoo": "BOOK IV: Susanoo vs Orochi",
+		"menu_book_gilgamesh": "BOOK V: Gilgamesh vs The Bull of Heaven",
 		"menu_locked_thor": "Book III is still being written...",
 		"menu_locked_susanoo": "Book IV is still being written...",
 		"menu_diff_easy": "Easy",
@@ -538,6 +561,27 @@ var translations: Dictionary = {
 		"tutorial_controls_book4": "W / A / S / D or ↑ ← ↓ →  →  Move\nE  →  Place sake barrel",
 		"tutorial_objective_book4": "Place all 8 sake barrels at the marked points in the temple without being spotted by Orochi's heads!\nIf a head sees you, the game is over.",
 		"tutorial_tip_book4": "💡 Watch the orange vision cones — if you enter one, you have a second to step back!",
+		
+		# Character Names (Book V)
+		"char_gilgamesh": "Gilgamesh",
+		"char_touro": "The Bull of Heaven",
+		
+		# Dialogue — Book V Intro
+		"dialogue_narrator_gilgamesh_1": "In the city of Uruk, Gilgamesh, the legendary king of heroes, challenged the wrath of the gods themselves...",
+		"dialogue_narrator_gilgamesh_2": "To punish his audacity, the goddess Ishtar unleashed the Bull of Heaven — a colossal beast of absolute destruction.",
+		"dialogue_narrator_gilgamesh_3": "The earthquake of its footsteps rips rifts in the earth. The storm follows in its wake. Uruk is about to fall.",
+		"dialogue_narrator_gilgamesh_4": "But Gilgamesh does not back down. With his Gate of Babylon ready, he will subdue the divine creature!",
+		
+		# Dialogue — Book V Victory
+		"dialogue_narrator_gilgamesh_victory_1": "Under an endless rain of golden spears and swords, the Bull of Heaven collapsed in defeat.",
+		"dialogue_narrator_gilgamesh_victory_2": "Gilgamesh proved that even divine wrath is no match for the King of Heroes. Uruk celebrates eternal victory!",
+		
+		# Tutorial — Book V
+		"tutorial_title_book5": "📖 BOOK V — Gilgamesh vs The Bull of Heaven",
+		"tutorial_story_book5": "Gilgamesh must survive the catastrophic attacks of the Bull of Heaven and charge his Royal Fury to unleash the Gate of Babylon.",
+		"tutorial_controls_book5": "Indicated Keys (W, A, S, D, Space) or Click Circles  →  QTE / Dodge\nRapid Clicks on Screen  →  Fire Swords (Attack Phase)",
+		"tutorial_objective_book5": "Survive the boss's precision attacks and rhythmic dodges. When the Fury bar is full, click repeatedly on the screen to fire barrages of golden weapons at the boss!",
+		"tutorial_tip_book5": "💡 Haste is the enemy of perfection: click the precision circles only when the outer ring completely shrinks to the center!",
 	}
 }
 

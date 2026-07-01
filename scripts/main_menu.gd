@@ -290,6 +290,12 @@ func _setup_book_carousel():
 			"cover_path": "res://assets/sprites/Trocas/nova_CapaSusanoo.png",
 			"title_key": "menu_book_susanoo",
 			"pressed_func": _on_book_susanoo_pressed
+		},
+		{
+			"id": 5,
+			"cover_path": "res://assets/sprites/Trocas/nova_CapaGilgamesh.png",
+			"title_key": "menu_book_gilgamesh",
+			"pressed_func": _on_book_gilgamesh_pressed
 		}
 	]
 	
@@ -576,6 +582,9 @@ func _on_book_thor_pressed():
 
 func _on_book_susanoo_pressed():
 	_show_tutorial(4, "res://scenes/susanoo_orochi/susanoo_scene.tscn")
+
+func _on_book_gilgamesh_pressed():
+	_show_tutorial(5, "res://scenes/gilgamesh_qte/gilgamesh_scene.tscn")
 
 func _show_tutorial(book: int, scene: String):
 	var tutorial_scene = load("res://scenes/tutorial_screen.tscn")

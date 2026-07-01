@@ -42,6 +42,12 @@ func _build_ui():
 			controls_key = "tutorial_controls_book4"
 			objective_key = "tutorial_objective_book4"
 			tip_key = "tutorial_tip_book4"
+		5:
+			title_key = "tutorial_title_book5"
+			story_key = "tutorial_story_book5"
+			controls_key = "tutorial_controls_book5"
+			objective_key = "tutorial_objective_book5"
+			tip_key = "tutorial_tip_book5"
 		_:
 			title_key = "tutorial_title_book1"
 			story_key = "tutorial_story_book1"
@@ -71,6 +77,10 @@ func _build_ui():
 			accent_color = Color(0.9, 0.15, 0.15, 1.0)    # Vermelho japonês
 			bg_color = Color(0.10, 0.02, 0.02, 0.96)
 			border_color = Color(0.8, 0.1, 0.1, 1.0)
+		5:
+			accent_color = Color(1.0, 0.75, 0.1, 1.0)     # Ouro Babilónia
+			bg_color = Color(0.12, 0.08, 0.02, 0.96)
+			border_color = Color(0.9, 0.7, 0.15, 1.0)
 		_:
 			accent_color = Color(1.0, 0.85, 0.25, 1.0)
 			bg_color = Color(0.06, 0.04, 0.02, 0.96)
