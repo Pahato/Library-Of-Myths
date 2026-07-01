@@ -112,7 +112,7 @@ func _setup_visual_hierarchy():
 	if player_scene:
 		player_instance = player_scene.instantiate()
 		player_instance.name = "GilgameshPlayer"
-		player_instance.position = Vector2(240, 480)
+		player_instance.position = Vector2(250, 530)
 		player_instance.scale = Vector2(3.8, 3.8)
 		player_instance.set_physics_process(false)
 		player_instance.set_process(false)
@@ -130,7 +130,7 @@ func _setup_visual_hierarchy():
 	boss_sprite = Sprite2D.new()
 	boss_sprite.name = "BullOfHeaven"
 	boss_sprite.texture = boss_idle_tex
-	boss_sprite.position = Vector2(900, 390)
+	boss_sprite.position = Vector2(900, 465)
 	boss_sprite.scale = Vector2(0.35, 0.35)
 	add_child(boss_sprite)
 	
@@ -335,6 +335,14 @@ func _load_font(bold: bool) -> Font:
 	var path = "res://assets/fonts/Cinzel-Bold.ttf" if bold else "res://assets/fonts/Cinzel-Regular.ttf"
 	return load(path) as Font
 
+func _play_lightning_effect():
+	_play_sfx("explosion", randf_range(1.2, 1.5), -2.0)
+	if screen_flash:
+		screen_flash.color = Color(1.0, 1.0, 1.0, 0.45)
+		var flash_tw = create_tween()
+		flash_tw.tween_property(screen_flash, "color:a", 0.0, 0.25)
+	_shake_camera(6.0)
+
 # ---------------------------------------------------------------------------
 # Sequências de Diálogo e Cutscene
 # ---------------------------------------------------------------------------
@@ -470,6 +478,9 @@ func _spawn_keyboard_qte():
 		var tw = create_tween()
 		tw.tween_property(boss_sprite, "modulate", Color(1.5, 0.4, 0.4, 1.0), 0.15)
 		tw.tween_property(boss_sprite, "modulate", Color(1.0, 1.0, 1.0, 1.0), 0.15).set_delay(base_time - 0.2)
+		
+	# Efeito de relâmpago ao iniciar o ataque
+	_play_lightning_effect()
 
 func _input(event: InputEvent) -> void:
 	if not game_active or in_attack_phase:
@@ -564,7 +575,7 @@ func _spawn_precision_click():
 		
 	if boss_phase == 3: click_time *= 0.8
 	
-	var shrink_tween = create_tween()
+	var shrink_tween = create_tween().bind_node(target)
 	shrink_tween.tween_property(ring, "size", panel.size, click_time).set_trans(Tween.TRANS_SINE)
 	shrink_tween.set_parallel(true)
 	shrink_tween.tween_property(ring, "position", panel.position, click_time).set_trans(Tween.TRANS_SINE)
@@ -585,7 +596,8 @@ func _spawn_precision_click():
 			_on_qte_success(0.7) # Bom!
 		else:
 			_on_qte_failed("PREMEDITADO/ATRASADO!" if GameGlobals.current_language == GameGlobals.Language.PT else "TOO EARLY/LATE!")
-		target.queue_free()
+		if is_instance_valid(target):
+			target.queue_free()
 	)
 	
 	# Se expirar sem clique, falha
@@ -593,11 +605,15 @@ func _spawn_precision_click():
 		if not has_clicked["val"]:
 			has_clicked["val"] = true
 			_on_qte_failed("TEMPO ESGOTADO!" if GameGlobals.current_language == GameGlobals.Language.PT else "TIMEOUT!")
-			target.queue_free()
+			if is_instance_valid(target):
+				target.queue_free()
 	)
 	
 	# Toca som sutil de aviso de clique (tap)
 	_play_sfx("tap", 1.0, -10.0)
+	
+	# Efeito de relâmpago ao iniciar o ataque de precisão
+	_play_lightning_effect()
 
 # --- Sucesso e Falha de QTE ---
 func _on_qte_success(score_mult: float = 1.0):
@@ -780,7 +796,7 @@ func _fire_golden_weapon():
 	
 	# Animação de disparo rápido em direção ao Boss
 	var shoot_tw = create_tween()
-	shoot_tw.tween_property(weapon, "position", target_pos, 0.25).set_trans(Tween.TRANS_SINE)
+	shoot_tw.tween_property(weapon, "position", target_pos, 0.45).set_trans(Tween.TRANS_SINE)
 	shoot_tw.tween_callback(func():
 		# Ao colidir com o boss
 		_on_weapon_impact(weapon, target_pos)
