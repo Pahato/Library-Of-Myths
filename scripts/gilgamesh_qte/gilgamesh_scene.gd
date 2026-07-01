@@ -100,6 +100,7 @@ func _setup_visual_hierarchy():
 	bg_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	bg_rect.stretch_mode = TextureRect.STRETCH_SCALE
 	bg_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg_rect.size = Vector2(1152, 648)
 	add_child(bg_rect)
 	
 	# 2. Container dos Portais (Fica atrás de Gilgamesh)
@@ -111,8 +112,8 @@ func _setup_visual_hierarchy():
 	if player_scene:
 		player_instance = player_scene.instantiate()
 		player_instance.name = "GilgameshPlayer"
-		player_instance.position = Vector2(240, 470)
-		player_instance.scale = Vector2(4.5, 4.5)
+		player_instance.position = Vector2(240, 480)
+		player_instance.scale = Vector2(3.8, 3.8)
 		player_instance.set_physics_process(false)
 		player_instance.set_process(false)
 		player_instance.set_process_input(false)
@@ -129,8 +130,8 @@ func _setup_visual_hierarchy():
 	boss_sprite = Sprite2D.new()
 	boss_sprite.name = "BullOfHeaven"
 	boss_sprite.texture = boss_idle_tex
-	boss_sprite.position = Vector2(920, 420)
-	boss_sprite.scale = Vector2(0.95, 0.95)
+	boss_sprite.position = Vector2(900, 390)
+	boss_sprite.scale = Vector2(0.35, 0.35)
 	add_child(boss_sprite)
 	
 	# 5. CanvasLayer HUD
@@ -728,7 +729,7 @@ func _enter_attack_phase():
 		# Animação de abertura do portal (escala cresce e brilha)
 		var open_tw = create_tween()
 		open_tw.tween_interval(i * 0.05) # Escalonamento na abertura
-		open_tw.tween_property(portal, "scale", Vector2(0.24, 0.24), 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		open_tw.tween_property(portal, "scale", Vector2(0.06, 0.06), 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		
 	# Pato Gilgamesh faz pose de ataque (Animação de Corrida ou Salto estático)
 	if player_instance:
@@ -770,7 +771,7 @@ func _fire_golden_weapon():
 	var weapon = Sprite2D.new()
 	weapon.texture = weapon_textures[randi() % weapon_textures.size()]
 	weapon.position = portal.position
-	weapon.scale = Vector2(0.35, 0.35)
+	weapon.scale = Vector2(0.08, 0.08)
 	
 	# Roda o sprite da arma para apontar na direção do Boss
 	var target_pos = Vector2(880 + randf_range(-40.0, 40.0), 380 + randf_range(-80.0, 80.0))
@@ -787,8 +788,8 @@ func _fire_golden_weapon():
 	
 	# Brilha o portal momentaneamente
 	var portal_tw = create_tween()
-	portal_tw.tween_property(portal, "scale", Vector2(0.32, 0.32), 0.08)
-	portal_tw.tween_property(portal, "scale", Vector2(0.24, 0.24), 0.08)
+	portal_tw.tween_property(portal, "scale", Vector2(0.08, 0.08), 0.08)
+	portal_tw.tween_property(portal, "scale", Vector2(0.06, 0.06), 0.08)
 	
 	# Som de disparo
 	_play_sfx("shoot", randf_range(1.0, 1.4), -8.0)
