@@ -46,6 +46,7 @@ var portals_node: Node2D = null
 var boss_hp_bar: ProgressBar = null
 var boss_name_label: Label = null
 var player_hp_bar: ProgressBar = null
+var player_hp_label: Label = null
 var fury_bar: ProgressBar = null
 var fury_title_label: Label = null
 var qte_container: Control = null
@@ -109,7 +110,7 @@ func _setup_visual_hierarchy():
 	# Plataforma de Pedra/Ouro do Jogador (Gilgamesh)
 	var player_plat = Panel.new()
 	player_plat.name = "PlayerPlatform"
-	player_plat.position = Vector2(150, 515)
+	player_plat.position = Vector2(150, 530)
 	player_plat.size = Vector2(200, 24)
 	var sb_p_plat = StyleBoxFlat.new()
 	sb_p_plat.bg_color = Color(0.18, 0.16, 0.14, 0.95)
@@ -123,7 +124,7 @@ func _setup_visual_hierarchy():
 	# Plataforma de Pedra/Ouro do Boss (Muralha/Torre)
 	var boss_plat = Panel.new()
 	boss_plat.name = "BossPlatform"
-	boss_plat.position = Vector2(740, 450)
+	boss_plat.position = Vector2(740, 430)
 	boss_plat.size = Vector2(320, 24)
 	var sb_b_plat = StyleBoxFlat.new()
 	sb_b_plat.bg_color = Color(0.18, 0.16, 0.14, 0.95)
@@ -143,7 +144,7 @@ func _setup_visual_hierarchy():
 	if player_scene:
 		player_instance = player_scene.instantiate()
 		player_instance.name = "GilgameshPlayer"
-		player_instance.position = Vector2(250, 455)
+		player_instance.position = Vector2(250, 470)
 		player_instance.scale = Vector2(3.8, 3.8)
 		player_instance.set_physics_process(false)
 		player_instance.set_process(false)
@@ -161,7 +162,7 @@ func _setup_visual_hierarchy():
 	boss_sprite = Sprite2D.new()
 	boss_sprite.name = "BullOfHeaven"
 	boss_sprite.texture = boss_idle_tex
-	boss_sprite.position = Vector2(900, 365)
+	boss_sprite.position = Vector2(900, 345)
 	boss_sprite.scale = Vector2(0.35, 0.35)
 	add_child(boss_sprite)
 	
@@ -238,13 +239,14 @@ func _setup_visual_hierarchy():
 	player_hp_bar.add_theme_stylebox_override("fill", sb_p_fill)
 	hud_layer.add_child(player_hp_bar)
 	
-	var p_lbl = Label.new()
-	p_lbl.text = "HP"
-	p_lbl.position = Vector2(40, 538)
-	p_lbl.add_theme_font_override("font", _load_font(true))
-	p_lbl.add_theme_font_size_override("font_size", 12)
-	p_lbl.add_theme_color_override("font_color", Color(0.9, 0.95, 0.9, 1.0))
-	hud_layer.add_child(p_lbl)
+	player_hp_label = Label.new()
+	player_hp_label.name = "PlayerHPLabel"
+	player_hp_label.text = "HP"
+	player_hp_label.position = Vector2(40, 538)
+	player_hp_label.add_theme_font_override("font", _load_font(true))
+	player_hp_label.add_theme_font_size_override("font_size", 12)
+	player_hp_label.add_theme_color_override("font_color", Color(0.9, 0.95, 0.9, 1.0))
+	hud_layer.add_child(player_hp_label)
 	
 	# Barra de Fúria Real (Base do ecrã)
 	fury_bar = ProgressBar.new()
@@ -376,7 +378,7 @@ func _play_lightning_effect():
 	
 	# Ataque visual do Boss: lunge para a esquerda e flash elétrico amarelo
 	if boss_sprite:
-		var original_pos = Vector2(900, 380)
+		var original_pos = Vector2(900, 345)
 		var boss_tw = create_tween().bind_node(boss_sprite)
 		boss_tw.tween_property(boss_sprite, "position", original_pos + Vector2(-50, 15), 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		boss_tw.tween_property(boss_sprite, "position", original_pos, 0.2).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
@@ -509,15 +511,15 @@ func _spawn_bull_projectile(duration: float):
 		
 	var projectile = Sprite2D.new()
 	projectile.texture = preload("res://assets/sprites/Trocas/ataqueTouro.png")
-	projectile.position = Vector2(820, 380) # Muralha direita
+	projectile.position = Vector2(820, 360) # Muralha direita
 	projectile.scale = Vector2(0.18, 0.18)
-	projectile.rotation = (Vector2(320, 445) - projectile.position).angle()
+	projectile.rotation = (Vector2(320, 460) - projectile.position).angle()
 	add_child(projectile)
 	active_bull_projectile = projectile
 	
 	# Animação do projetil em direção ao pato
 	var travel_tw = create_tween().bind_node(projectile)
-	travel_tw.tween_property(projectile, "position", Vector2(320, 445), duration).set_trans(Tween.TRANS_SINE)
+	travel_tw.tween_property(projectile, "position", Vector2(320, 460), duration).set_trans(Tween.TRANS_SINE)
 
 # --- QTE de Teclado ---
 func _spawn_keyboard_qte():
@@ -732,13 +734,13 @@ func _on_qte_success(score_mult: float = 1.0):
 			reset_tw.tween_callback(func(): if not in_attack_phase: anim_sprite.play("Idle"))
 			
 		var jump_tw = create_tween().bind_node(player_instance)
-		jump_tw.tween_property(player_instance, "position:y", 415.0, 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		jump_tw.tween_property(player_instance, "position:y", 455.0, 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		jump_tw.tween_property(player_instance, "position:y", 430.0, 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		jump_tw.tween_property(player_instance, "position:y", 470.0, 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 		
 	# Spawn do Escudo Dourado de Gilgamesh para bloquear o ataque
 	var shield = Sprite2D.new()
 	shield.texture = preload("res://assets/sprites/Trocas/escudoDourado.png")
-	shield.position = Vector2(340, 445)
+	shield.position = Vector2(340, 460)
 	shield.scale = Vector2(0.16, 0.16)
 	shield.modulate.a = 0.0
 	add_child(shield)
@@ -754,7 +756,7 @@ func _on_qte_success(score_mult: float = 1.0):
 		var proj = active_bull_projectile
 		active_bull_projectile = null
 		var hit_tw = create_tween().bind_node(proj)
-		hit_tw.tween_property(proj, "position", Vector2(320, 445), 0.08)
+		hit_tw.tween_property(proj, "position", Vector2(320, 460), 0.08)
 		hit_tw.tween_property(proj, "scale", Vector2.ZERO, 0.15).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 		hit_tw.tween_callback(func():
 			_play_sfx("clink", randf_range(1.0, 1.3), -2.0)
@@ -795,7 +797,7 @@ func _on_qte_failed(reason_text: String):
 		var proj = active_bull_projectile
 		active_bull_projectile = null
 		var hit_tw = create_tween().bind_node(proj)
-		hit_tw.tween_property(proj, "position", Vector2(250, 455), 0.08)
+		hit_tw.tween_property(proj, "position", Vector2(250, 470), 0.08)
 		hit_tw.tween_property(proj, "scale", Vector2(0.25, 0.25), 0.1)
 		hit_tw.tween_property(proj, "modulate:a", 0.0, 0.1)
 		hit_tw.tween_callback(proj.queue_free)
@@ -1148,5 +1150,6 @@ func _set_hud_visible(is_visible: bool) -> void:
 	if boss_hp_bar: boss_hp_bar.visible = is_visible
 	if boss_name_label: boss_name_label.visible = is_visible
 	if player_hp_bar: player_hp_bar.visible = is_visible
+	if player_hp_label: player_hp_label.visible = is_visible
 	if fury_bar: fury_bar.visible = is_visible
 	if fury_title_label: fury_title_label.visible = is_visible
