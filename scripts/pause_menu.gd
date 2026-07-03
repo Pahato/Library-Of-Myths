@@ -185,7 +185,6 @@ func _add_options_button():
 	var opt_btn = Button.new()
 	opt_btn.name = "OptionsButton"
 	opt_btn.text = GameGlobals.get_text("menu_options")
-	opt_btn.layout_mode = 2 as Control.LayoutMode
 	# Inserir entre o ResumeButton e o MenuButton
 	vbox.add_child(opt_btn)
 	vbox.move_child(opt_btn, 1) # Posição 1 = entre Resume (0) e Menu (2)

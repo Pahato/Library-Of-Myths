@@ -83,14 +83,12 @@ func _build_ui():
 	var overlay = ColorRect.new()
 	overlay.color = Color(0, 0, 0, 0.78)
 	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
-	overlay.layout_mode = 1 as Control.LayoutMode
 	overlay.anchor_right = 1.0
 	overlay.anchor_bottom = 1.0
 	add_child(overlay)
 	
 	# --- Painel central ---
 	var panel = Panel.new()
-	panel.layout_mode = 1 as Control.LayoutMode
 	panel.anchors_preset = Control.PRESET_CENTER
 	panel.anchor_left = 0.5
 	panel.anchor_top = 0.5
@@ -126,7 +124,6 @@ func _build_ui():
 	# --- VBox principal ---
 	var vbox = VBoxContainer.new()
 	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
-	vbox.layout_mode = 1 as Control.LayoutMode
 	vbox.anchor_right = 1.0
 	vbox.anchor_bottom = 1.0
 	vbox.offset_left = 24.0
