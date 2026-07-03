@@ -24,6 +24,7 @@ func _ready():
 	music_player.volume_db = -6.0
 	music_player.name = "LevelMusicPlayer"
 	music_player.bus = "Music"
+	music_player.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(music_player)
 	music_player.finished.connect(func(): music_player.play())
 

@@ -145,6 +145,7 @@ func _ready():
 	audio_player.stream = load("res://assets/music/orbital_colossus.wav")
 	audio_player.volume_db = -4.0
 	audio_player.bus = "Music"
+	audio_player.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(audio_player)
 	
 	# 2. Configurar Efeitos Sonoros
