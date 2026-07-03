@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://dr85o5x0o4u4l"]
+[gd_scene format=3 uid="uid://susanooplayer"]
 
 [ext_resource type="Texture2D" uid="uid://cgkptkew16jkh" path="res://assets/sprites/Duck.png" id="1_3vyb7"]
 [ext_resource type="Script" path="res://scripts/susanoo_orochi/susanoo_player.gd" id="1_g2els"]

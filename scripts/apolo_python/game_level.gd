@@ -460,8 +460,3 @@ func _spawn_falling_rock():
 	# Spawn bem alto no teto (Y = -350)
 	rock.position = Vector2(spawn_x, -350.0)
 	add_child(rock)
-
-
-
-
-

@@ -253,14 +253,14 @@ func _add_go_menu_button():
 	retry_button.offset_right = -5.0
 	retry_button.offset_top = -58.0
 	retry_button.offset_bottom = -22.0
-	retry_button.grow_horizontal = 2
-	retry_button.grow_vertical = 0
+	retry_button.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	retry_button.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	
 	# Criar botão "Voltar à Biblioteca" na metade direita
 	go_menu_button = Button.new()
 	go_menu_button.name = "GoMenuButton"
 	go_menu_button.text = GameGlobals.get_text("gameover_menu") if GameGlobals else "Voltar à Biblioteca"
-	go_menu_button.layout_mode = 1
+	go_menu_button.layout_mode = Control.LAYOUT_MODE_ANCHORS
 	go_menu_button.anchor_left = 0.5
 	go_menu_button.anchor_top = 1.0
 	go_menu_button.anchor_right = 0.5
@@ -269,8 +269,8 @@ func _add_go_menu_button():
 	go_menu_button.offset_right = 185.0
 	go_menu_button.offset_top = -58.0
 	go_menu_button.offset_bottom = -22.0
-	go_menu_button.grow_horizontal = 2
-	go_menu_button.grow_vertical = 0
+	go_menu_button.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	go_menu_button.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	go_panel.add_child(go_menu_button)
 	
 	go_menu_button.pressed.connect(_on_menu_pressed)

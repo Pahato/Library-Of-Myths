@@ -342,7 +342,7 @@ func _build_ui():
 func _build_player_area():
 	# Container do jogador (lado esquerdo) - Posicionado de forma absoluta sobre a cabeça (estilo HSR)
 	player_container = VBoxContainer.new()
-	player_container.layout_mode = 0
+	player_container.layout_mode = Control.LAYOUT_MODE_POSITION
 	player_container.position = Vector2(170, 195) # Posicionado 15px mais alto (Y=195) para ficar perfeitamente acima da cabeça sem sobrepor
 	player_container.size = Vector2(200, 100)
 	player_container.add_theme_constant_override("separation", 2)
@@ -472,7 +472,7 @@ func _build_enemy_area():
 	
 	# Container do inimigo (topo da tela - estilo Boss de Honkai Star Rail, perfeitamente centralizado)
 	enemy_container = VBoxContainer.new()
-	enemy_container.layout_mode = 1 # Usar âncoras para alinhamento robusto
+	enemy_container.layout_mode = Control.LAYOUT_MODE_ANCHORS # Usar âncoras para alinhamento robusto
 	enemy_container.anchor_left = 0.5
 	enemy_container.anchor_right = 0.5
 	enemy_container.anchor_top = 0.0
@@ -573,7 +573,7 @@ func _build_enemy_area():
 func _build_bottom_bar():
 	# Painel inferior escuro
 	var bottom_panel = Panel.new()
-	bottom_panel.layout_mode = 1
+	bottom_panel.layout_mode = Control.LAYOUT_MODE_ANCHORS
 	bottom_panel.anchor_left = 0.0
 	bottom_panel.anchor_top = 0.68
 	bottom_panel.anchor_right = 1.0
@@ -587,7 +587,7 @@ func _build_bottom_bar():
 	
 	# --- Energia (lado esquerdo) ---
 	var energy_container = VBoxContainer.new()
-	energy_container.layout_mode = 1
+	energy_container.layout_mode = Control.LAYOUT_MODE_ANCHORS
 	energy_container.anchor_left = 0.02
 	energy_container.anchor_top = 0.1
 	energy_container.anchor_right = 0.12
@@ -626,7 +626,7 @@ func _build_bottom_bar():
 	
 	# --- Container de Cartas (centro) ---
 	card_container = HBoxContainer.new()
-	card_container.layout_mode = 1
+	card_container.layout_mode = Control.LAYOUT_MODE_ANCHORS
 	card_container.anchor_left = 0.13
 	card_container.anchor_top = 0.05
 	card_container.anchor_right = 0.82
@@ -638,7 +638,7 @@ func _build_bottom_bar():
 	
 	# --- Botão Terminar Turno (lado direito) ---
 	var btn_container = VBoxContainer.new()
-	btn_container.layout_mode = 1
+	btn_container.layout_mode = Control.LAYOUT_MODE_ANCHORS
 	btn_container.anchor_left = 0.83
 	btn_container.anchor_top = 0.1
 	btn_container.anchor_right = 0.98
@@ -1973,7 +1973,7 @@ func _create_card_button(card: Dictionary, index: int) -> Panel:
 	# Invisible interaction button (MUST BE THE LAST CHILD ADDED!)
 	var click_btn = Button.new()
 	click_btn.set_anchors_preset(Control.PRESET_FULL_RECT)
-	click_btn.layout_mode = 1
+	click_btn.layout_mode = Control.LAYOUT_MODE_ANCHORS
 	click_btn.anchor_right = 1.0
 	click_btn.anchor_bottom = 1.0
 	click_btn.flat = true

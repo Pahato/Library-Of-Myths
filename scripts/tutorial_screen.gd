@@ -83,14 +83,14 @@ func _build_ui():
 	var overlay = ColorRect.new()
 	overlay.color = Color(0, 0, 0, 0.78)
 	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
-	overlay.layout_mode = 1
+	overlay.layout_mode = Control.LAYOUT_MODE_ANCHORS
 	overlay.anchor_right = 1.0
 	overlay.anchor_bottom = 1.0
 	add_child(overlay)
 	
 	# --- Painel central ---
 	var panel = Panel.new()
-	panel.layout_mode = 1
+	panel.layout_mode = Control.LAYOUT_MODE_ANCHORS
 	panel.anchors_preset = Control.PRESET_CENTER
 	panel.anchor_left = 0.5
 	panel.anchor_top = 0.5
@@ -100,8 +100,8 @@ func _build_ui():
 	panel.offset_top = -250.0
 	panel.offset_right = 310.0
 	panel.offset_bottom = 250.0
-	panel.grow_horizontal = 2
-	panel.grow_vertical = 2
+	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	panel.grow_vertical = Control.GROW_DIRECTION_BOTH
 	
 	var sb = StyleBoxFlat.new()
 	sb.bg_color = bg_color
@@ -126,7 +126,7 @@ func _build_ui():
 	# --- VBox principal ---
 	var vbox = VBoxContainer.new()
 	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
-	vbox.layout_mode = 1
+	vbox.layout_mode = Control.LAYOUT_MODE_ANCHORS
 	vbox.anchor_right = 1.0
 	vbox.anchor_bottom = 1.0
 	vbox.offset_left = 24.0
