@@ -311,3 +311,11 @@ func _create_card_button(card: Dictionary) -> Panel:
 	vbox.add_child(desc_lbl)
 	
 	return panel
+
+func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		var pause_scene = load("res://scenes/pause_menu.tscn")
+		if pause_scene:
+			var pause = pause_scene.instantiate()
+			add_child(pause)
+			get_tree().paused = true

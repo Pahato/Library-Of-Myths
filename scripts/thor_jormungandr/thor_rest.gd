@@ -197,3 +197,11 @@ func _return_to_map():
 		transition.fade_to("res://scenes/thor_jormungandr/thor_map.tscn")
 	else:
 		get_tree().change_scene_to_file("res://scenes/thor_jormungandr/thor_map.tscn")
+
+func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		var pause_scene = load("res://scenes/pause_menu.tscn")
+		if pause_scene:
+			var pause = pause_scene.instantiate()
+			add_child(pause)
+			get_tree().paused = true

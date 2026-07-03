@@ -628,3 +628,11 @@ func _on_node_clicked(node_data: Dictionary):
 			get_tree().change_scene_to_file(scene_path)
 	else:
 		push_error("Cena não encontrada! Esperado: " + scene_path)
+
+func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		var pause_scene = load("res://scenes/pause_menu.tscn")
+		if pause_scene:
+			var pause = pause_scene.instantiate()
+			add_child(pause)
+			get_tree().paused = true
