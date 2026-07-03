@@ -13,7 +13,11 @@ config_version=5
 config/name="Jogo_PAP"
 run/main_scene="res://scenes/main_menu.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
-config/icon="res://icon.svg"
+config/icon="res://libraryOfMyths_logo.png"
+boot_splash/image="res://libraryOfMyths_logo.png"
+boot_splash/bg_color=Color(0.06, 0.04, 0.12, 1)
+boot_splash/show_image=true
+boot_splash/fullsize=false
 
 [autoload]
 
