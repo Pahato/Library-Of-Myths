@@ -289,7 +289,7 @@ func _add_go_menu_button():
 	go_menu_button = Button.new()
 	go_menu_button.name = "GoMenuButton"
 	go_menu_button.text = GameGlobals.get_text("gameover_menu") if GameGlobals else "Voltar à Biblioteca"
-	go_menu_button.layout_mode = Control.LAYOUT_MODE_ANCHORS
+	go_menu_button.layout_mode = 1 as Control.LayoutMode
 	go_menu_button.anchor_left = 0.5
 	go_menu_button.anchor_top = 1.0
 	go_menu_button.anchor_right = 0.5
