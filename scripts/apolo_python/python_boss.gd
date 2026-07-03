@@ -292,7 +292,7 @@ func _evaluate_next_action():
 	
 	# Fase 1: altera a cor base se estiver com raiva (<50% vida)
 	if not is_phase_2:
-		var is_enraged = current_health < (max_health / 2)
+		var is_enraged = current_health < (max_health / 2.0)
 		if is_enraged:
 			base_color = Color(1.0, 0.6, 0.6, 1.0)
 		else:
@@ -819,7 +819,7 @@ func take_damage(amount: int):
 
 	# Verificar transição para Fase 2 (a 50% da vida máxima, Fase 1 apenas)
 	if not is_phase_2 and not phase2_triggered:
-		if current_health <= max_health / 2:
+		if current_health <= max_health / 2.0:
 			_start_phase_2_transition()
 			return # Interrompe — a transição toma conta do resto
 	
