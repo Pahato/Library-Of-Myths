@@ -17,7 +17,7 @@ func _ready():
 	_build_ui()
 	
 	if GameGlobals:
-		GameGlobals.play_music("res://assets/music/time_for_adventure.mp3", -8.0)
+		GameGlobals.play_music("res://assets/music/time_for_adventure.wav", -8.0)
 
 func _load_font(bold: bool = false) -> FontFile:
 	var path = "res://assets/fonts/Cinzel-Bold.ttf" if bold else "res://assets/fonts/Cinzel-Regular.ttf"

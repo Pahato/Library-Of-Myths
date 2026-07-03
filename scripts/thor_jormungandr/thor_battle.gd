@@ -103,7 +103,7 @@ func _ready():
 	
 	# Música temática do Thor
 	if GameGlobals:
-		GameGlobals.play_music("res://assets/music/time_for_adventure.mp3", -8.0)
+		GameGlobals.play_music("res://assets/music/time_for_adventure.wav", -8.0)
 	
 	# Começar com a animação de entrada e história
 	_play_intro_animation()
@@ -154,8 +154,8 @@ func _init_deck():
 
 func _init_enemy(enemy_id: String = ""):
 	var id_to_spawn = enemy_id
-	var is_elite = false
-	var is_boss = false
+	var _is_elite = false
+	var _is_boss = false
 	combat_waves.clear()
 	
 	if id_to_spawn == "" and GameGlobals and GameGlobals.thor_run_active:
@@ -184,10 +184,10 @@ func _init_enemy(enemy_id: String = ""):
 			
 			# 0 = COMBAT, 1 = ELITE, 2 = REST, 3 = SHOP, 4 = BOSS
 			if current_node.type == 4: # BOSS
-				is_boss = true
+				_is_boss = true
 				id_to_spawn = "jormungandr"
 			elif current_node.type == 1: # ELITE — escolhe elite disponível para o ato
-				is_elite = true
+				_is_elite = true
 				# Hel aparece nos atos 1 e 2; Fenrir nos atos 2 e 3
 				var elites_for_act: Array = []
 				if act <= 2:
@@ -251,7 +251,7 @@ func _build_ui():
 		"esqueleto_viking": "esqueletoViking_bg",
 		"hel_rainha": "helRainhaBoss_bg",
 		"fenrir_gigante": "fenrirGignateBoss_bg",
-		"jormungandr": "fenrirGignateBoss_bg"
+		"jormungandr": "serpenteDoMundo_bg"
 	}
 	var bg_file = enemy_bg_map.get(enemy_data.get("id", ""), "")
 	var bg_tex = null
@@ -1265,7 +1265,7 @@ func _spawn_next_wave():
 			"esqueleto_viking": "esqueletoViking_bg",
 			"hel_rainha": "helRainhaBoss_bg",
 			"fenrir_gigante": "fenrirGignateBoss_bg",
-			"jormungandr": "fenrirGignateBoss_bg"
+			"jormungandr": "serpenteDoMundo_bg"
 		}
 		var bg_file = enemy_bg_map.get(next_enemy_id, "")
 		var bg_tex = null

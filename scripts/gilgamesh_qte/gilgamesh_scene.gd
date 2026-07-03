@@ -76,7 +76,7 @@ func _ready() -> void:
 	
 	# Inicia música tema do Gilgamesh (Orbital Colossus!)
 	if GameGlobals:
-		GameGlobals.play_music("res://assets/music/orbital_colossus.mp3", -10.0)
+		GameGlobals.play_music("res://assets/music/gilgamesh_theme.wav", -10.0)
 		
 	# Esconder a HUD durante o diálogo inicial
 	_set_hud_visible(false)

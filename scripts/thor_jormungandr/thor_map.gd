@@ -65,7 +65,7 @@ func _ready():
 	_build_ui()
 	
 	# Música temática do Thor
-	GameGlobals.play_music("res://assets/music/time_for_adventure.mp3", -8.0)
+	GameGlobals.play_music("res://assets/music/time_for_adventure.wav", -8.0)
 
 	# Iniciar diálogo introdutório de história da run do Thor
 	if not GameGlobals.get("thor_intro_played"):
@@ -293,10 +293,10 @@ func _build_ui():
 							break
 							
 			var style = StyleBoxFlat.new()
-			style.corner_radius_top_left = btn_size / 2
-			style.corner_radius_top_right = btn_size / 2
-			style.corner_radius_bottom_left = btn_size / 2
-			style.corner_radius_bottom_right = btn_size / 2
+			style.corner_radius_top_left = btn_size / 2.0
+			style.corner_radius_top_right = btn_size / 2.0
+			style.corner_radius_bottom_left = btn_size / 2.0
+			style.corner_radius_bottom_right = btn_size / 2.0
 			style.border_width_left = 3
 			style.border_width_right = 3
 			style.border_width_top = 3

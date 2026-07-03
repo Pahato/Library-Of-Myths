@@ -66,7 +66,7 @@ const CONE_COLOR_ALERT  := Color(1.0, 0.0, 0.0, 0.40)
 # ---------------------------------------------------------------------------
 
 ## Sprite da cabeça do Orochi. O nó deve chamar-se 'Sprite'.
-@onready var _sprite: Node2D = $Sprite if has_node("Sprite") else null
+# @onready var _sprite: Node2D = $Sprite if has_node("Sprite") else null
 
 # ---------------------------------------------------------------------------
 # _ready

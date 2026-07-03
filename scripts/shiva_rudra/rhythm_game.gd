@@ -142,7 +142,7 @@ func _ready():
 		
 	# 1. Configurar Áudio Principal
 	audio_player = AudioStreamPlayer.new()
-	audio_player.stream = load("res://assets/music/orbital_colossus.mp3")
+	audio_player.stream = load("res://assets/music/orbital_colossus.wav")
 	audio_player.volume_db = -4.0
 	audio_player.bus = "Music"
 	add_child(audio_player)
@@ -291,7 +291,7 @@ func _setup_hud():
 	
 	# Fontes
 	var cinzel_bold = _load_font(true)
-	var cinzel_reg = _load_font(false)
+	var _cinzel_reg = _load_font(false)
 	
 	# Painel de Estatísticas de Ritmo Premium
 	stats_panel = Panel.new()
@@ -935,7 +935,7 @@ func _handle_miss():
 	if tug_of_war <= 0.0:
 		_end_game(false)
 
-func _handle_shock_penalty(note: Node2D):
+func _handle_shock_penalty(_note: Node2D):
 	player_combo = 0
 	stun_timer = 0.55
 	

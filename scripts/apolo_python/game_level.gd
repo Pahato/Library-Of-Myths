@@ -20,7 +20,7 @@ func _ready():
 		GameGlobals.stop_music()
 	
 	music_player = AudioStreamPlayer.new()
-	music_player.stream = load("res://assets/music/achilles.mp3")
+	music_player.stream = load("res://assets/music/achilles.wav")
 	music_player.volume_db = -6.0
 	music_player.name = "LevelMusicPlayer"
 	music_player.bus = "Music"

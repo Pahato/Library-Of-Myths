@@ -57,6 +57,9 @@ var pause_menu_instance: Node = null
 # ---------------------------------------------------------------------------
 
 func _ready() -> void:
+	if GameGlobals:
+		GameGlobals.play_music("res://assets/music/susanoo_theme.wav", -10.0)
+	
 	# O controller e o container das cabeças continuam a processar durante a pausa
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	if heads_container:

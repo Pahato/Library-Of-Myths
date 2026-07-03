@@ -514,7 +514,7 @@ func _update_keystroke_hud():
 		if not key_labels.has(key):
 			continue
 		var data = key_labels[key]
-		var panel = data[0]
+		var _panel = data[0]
 		var label = data[1]
 		var sb = data[2]
 		
