@@ -215,8 +215,28 @@ func _on_player_health_changed(health: int):
 		hearts_container.add_child(heart_label)
 
 func _on_player_died():
+	print("[DEATH DEBUG] Player died. Setting up game over screen...")
 	get_tree().paused = true
 	game_over_screen.show()
+	
+	# Garantir que todos os controlos da tela de morte processam sempre e não ignoram rato
+	game_over_screen.process_mode = Node.PROCESS_MODE_ALWAYS
+	game_over_screen.mouse_filter = Control.MOUSE_FILTER_STOP
+	
+	var panel = game_over_screen.get_node_or_null("Panel")
+	if panel:
+		panel.process_mode = Node.PROCESS_MODE_ALWAYS
+		panel.mouse_filter = Control.MOUSE_FILTER_STOP
+		
+	if retry_button:
+		retry_button.process_mode = Node.PROCESS_MODE_ALWAYS
+		retry_button.mouse_filter = Control.MOUSE_FILTER_STOP
+		print("[DEATH DEBUG] RetryButton configuration: visible=", retry_button.visible, " process_mode=", retry_button.process_mode, " mouse_filter=", retry_button.mouse_filter)
+		
+	if go_menu_button:
+		go_menu_button.process_mode = Node.PROCESS_MODE_ALWAYS
+		go_menu_button.mouse_filter = Control.MOUSE_FILTER_STOP
+		print("[DEATH DEBUG] GoMenuButton configuration: visible=", go_menu_button.visible, " process_mode=", go_menu_button.process_mode, " mouse_filter=", go_menu_button.mouse_filter)
 
 func _on_boss_died():
 	# Ocultar imediatamente o HUD do boss para evitar a barra roxa persistente
@@ -230,6 +250,15 @@ func _on_boss_died():
 			dialogue.dialogue_finished.connect(func():
 				get_tree().paused = true
 				victory_screen.show()
+				victory_screen.process_mode = Node.PROCESS_MODE_ALWAYS
+				victory_screen.mouse_filter = Control.MOUSE_FILTER_STOP
+				var v_panel = victory_screen.get_node_or_null("Panel")
+				if v_panel:
+					v_panel.process_mode = Node.PROCESS_MODE_ALWAYS
+					v_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+				if menu_button:
+					menu_button.process_mode = Node.PROCESS_MODE_ALWAYS
+					menu_button.mouse_filter = Control.MOUSE_FILTER_STOP
 			)
 			get_parent().add_child(dialogue)
 	)
