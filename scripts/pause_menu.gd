@@ -409,15 +409,20 @@ func _on_options_pressed():
 	temp_music_volume = GameGlobals.music_volume
 	temp_sfx_volume = GameGlobals.sfx_volume
 	temp_keybinds = {}
-	for action in ["move_left", "move_right", "jump", "parry", "shoot"]:
+	for action in ["move_left", "move_right", "move_up", "move_down", "jump", "parry", "shoot"]:
 		temp_keybinds[action] = InputMap.action_get_events(action).duplicate(true)
 	
 	_create_options_overlay()
 	if options_overlay:
-		options_overlay.show()
+		# Inicializa no menu de opções principal
 		keybinds_vbox.hide()
 		main_options_vbox.show()
 		_update_options_labels()
+		
+		# Forçar foco no primeiro botão para permitir navegação com comando/teclado
+		var opt_btn = main_options_vbox.get_node_or_null("KeystrokeButton")
+		if opt_btn:
+			opt_btn.grab_focus()
 
 func _create_options_overlay():
 	if options_overlay:
@@ -567,6 +572,8 @@ func _create_options_overlay():
 	var actions = {
 		"move_left": "keybinds_move_left",
 		"move_right": "keybinds_move_right",
+		"move_up": "keybinds_move_up",
+		"move_down": "keybinds_move_down",
 		"jump": "keybinds_jump",
 		"parry": "keybinds_parry",
 		"shoot": "keybinds_shoot"
@@ -734,6 +741,8 @@ func _update_options_labels():
 	var actions = {
 		"move_left": "keybinds_move_left",
 		"move_right": "keybinds_move_right",
+		"move_up": "keybinds_move_up",
+		"move_down": "keybinds_move_down",
 		"jump": "keybinds_jump",
 		"parry": "keybinds_parry",
 		"shoot": "keybinds_shoot"
@@ -794,6 +803,11 @@ func _on_keybinds_menu_pressed():
 	main_options_vbox.hide()
 	keybinds_vbox.show()
 	_update_options_labels()
+	
+	# Focar no botão "Voltar" do submenu de keybinds para controlo simples
+	var kb_back = keybinds_vbox.get_node_or_null("KeybindsBackButton")
+	if kb_back:
+		kb_back.grab_focus()
 
 func _on_keybinds_back_pressed():
 	rebinding_action = ""
@@ -803,20 +817,37 @@ func _on_keybinds_back_pressed():
 	keybinds_vbox.hide()
 	main_options_vbox.show()
 	_update_options_labels()
+	
+	# Devolver foco ao botão do menu de opções
+	var kb_btn = main_options_vbox.get_node_or_null("KeybindsMenuButton")
+	if kb_btn:
+		kb_btn.grab_focus()
 
 func _on_audio_menu_pressed():
 	main_options_vbox.hide()
 	audio_vbox.show()
 	_update_options_labels()
+	
+	# Focar no botão "Voltar" do submenu de áudio
+	var a_back = audio_vbox.get_node_or_null("AudioBackButton")
+	if a_back:
+		a_back.grab_focus()
 
 func _on_audio_back_pressed():
 	audio_vbox.hide()
 	main_options_vbox.show()
 	_update_options_labels()
+	
+	# Devolver foco ao botão do menu de opções
+	var a_btn = main_options_vbox.get_node_or_null("AudioMenuButton")
+	if a_btn:
+		a_btn.grab_focus()
 
 func _on_keybinds_reset_pressed():
 	temp_keybinds["move_left"]  = [_create_key_event(KEY_A)]
 	temp_keybinds["move_right"] = [_create_key_event(KEY_D)]
+	temp_keybinds["move_up"]    = [_create_key_event(KEY_W)]
+	temp_keybinds["move_down"]  = [_create_key_event(KEY_S)]
 	temp_keybinds["jump"]       = [_create_key_event(KEY_SPACE)]
 	temp_keybinds["parry"]      = [_create_key_event(KEY_C)]
 	temp_keybinds["shoot"]      = [_create_mouse_event(MOUSE_BUTTON_LEFT)]

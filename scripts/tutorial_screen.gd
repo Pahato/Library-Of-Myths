@@ -4,6 +4,7 @@ class_name TutorialScreen
 # book_type: 1 = Apollo vs Python, 2 = Shiva vs Rudra, 3 = Thor vs Jörmungandr
 var book_type: int = 1
 var _scene_to_load: String = ""
+var _is_closing: bool = false
 
 func _ready():
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -79,12 +80,13 @@ func _build_ui():
 			bg_color = Color(0.06, 0.04, 0.02, 0.96)
 			border_color = Color(0.85, 0.65, 0.25, 1.0)
 	
-	# --- Fundo escuro ---
+	# --- Fundo escuro --- bloqueia todos os cliques para o menu por baixo
 	var overlay = ColorRect.new()
 	overlay.color = Color(0, 0, 0, 0.78)
 	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	overlay.anchor_right = 1.0
 	overlay.anchor_bottom = 1.0
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(overlay)
 	
 	# --- Painel central ---
@@ -346,19 +348,33 @@ func _make_button(txt: String, font: FontFile, col: Color, _border: Color) -> Bu
 	return btn
 
 func _on_back_pressed():
+	# Guarda contra cliques duplos ou re-abertura acidental
+	if _is_closing:
+		return
+	_is_closing = true
 	if GameGlobals:
 		GameGlobals.play_click_sound()
+	# Adia o queue_free para o próximo frame, evitando que o clique
+	# se propague para o carousel_cover do menu principal por baixo
+	await get_tree().process_frame
 	queue_free()
 
 func _on_play_pressed():
+	# Guarda contra cliques duplos ou re-abertura acidental
+	if _is_closing:
+		return
+	_is_closing = true
 	if GameGlobals:
 		GameGlobals.play_click_sound()
+	var scene = _scene_to_load
+	# Adia o queue_free para o próximo frame, evitando propagação do clique
+	await get_tree().process_frame
 	queue_free()
 	var transition = get_tree().root.get_node_or_null("SceneTransition")
 	if transition:
-		transition.fade_to(_scene_to_load)
+		transition.fade_to(scene)
 	else:
-		get_tree().change_scene_to_file(_scene_to_load)
+		get_tree().change_scene_to_file(scene)
 
 func _load_font(bold: bool = false) -> FontFile:
 	var path = "res://assets/fonts/Cinzel-Bold.ttf" if bold else "res://assets/fonts/Cinzel-Regular.ttf"

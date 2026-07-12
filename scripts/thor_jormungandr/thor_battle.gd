@@ -82,6 +82,9 @@ const HEAL_COLOR = Color(0.3, 1.0, 0.5, 1.0)           # Verde
 const BLOCK_COLOR = Color(0.5, 0.7, 1.0, 1.0)          # Azul claro
 const ENERGY_COLOR = Color(1.0, 0.8, 0.2, 1.0)         # Amarelo energia
 
+# Referência às partículas de faiscas elétricas do Thor
+var thunder_particles: CPUParticles2D = null
+
 # =============================================================================
 # INICIALIZAÇÃO
 # =============================================================================
@@ -125,6 +128,10 @@ func _process(delta):
 		# Slight slither tilt rotation
 		var tilt = sin(anim_time * 2.2) * 2.0
 		enemy_panel.rotation_degrees = tilt
+	
+	# Faiscas elétricas ativas só no turno do jogador
+	if thunder_particles:
+		thunder_particles.emitting = (state == BattleState.PLAYER_TURN)
 
 func _load_font(bold: bool = false) -> FontFile:
 	var path = "res://assets/fonts/Cinzel-Bold.ttf" if bold else "res://assets/fonts/Cinzel-Regular.ttf"
@@ -132,6 +139,14 @@ func _load_font(bold: bool = false) -> FontFile:
 	if f.load_dynamic_font(path) != OK:
 		return null
 	return f
+
+# Cria a rampa de cor das faíscas elétricas azuis do Thor
+func _make_blue_spark_gradient() -> Gradient:
+	var g = Gradient.new()
+	g.colors = [Color(0.5, 0.85, 1.0, 0.95), Color(0.2, 0.6, 1.0, 0.6), Color(0.1, 0.3, 0.8, 0.0)]
+	g.offsets = [0.0, 0.5, 1.0]
+	return g
+
 
 func _init_deck():
 	if GameGlobals and GameGlobals.thor_run_active:
@@ -443,6 +458,26 @@ func _build_enemy_area():
 		anim_sprite.scale = Vector2(3.5, 3.5)
 		anim_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	
+	# Faiscas elétricas de Thor (CPUParticles2D)
+	thunder_particles = CPUParticles2D.new()
+	thunder_particles.amount = 12
+	thunder_particles.lifetime = 0.6
+	thunder_particles.preprocess = 0.0
+	thunder_particles.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	thunder_particles.emission_rect_extents = Vector2(18, 22)
+	thunder_particles.direction = Vector2(0.0, -1.0)
+	thunder_particles.spread = 50.0
+	thunder_particles.gravity = Vector2(0.0, -20.0)
+	thunder_particles.initial_velocity_min = 25.0
+	thunder_particles.initial_velocity_max = 55.0
+	thunder_particles.scale_amount_min = 1.5
+	thunder_particles.scale_amount_max = 3.5
+	thunder_particles.color = Color(0.35, 0.75, 1.0, 0.9)
+	thunder_particles.color_ramp = _make_blue_spark_gradient()
+	thunder_particles.position = Vector2(0.0, -30.0)  # Centrado no corpo do pato
+	thunder_particles.emitting = false
+	player_node.add_child(thunder_particles)
+	
 	# Painel visual do inimigo — posicionado sobre a plataforma (Y=370)
 	enemy_panel = Panel.new()
 	enemy_panel.custom_minimum_size = Vector2(140, 140)
@@ -741,8 +776,11 @@ func _play_card(index: int):
 	# Gastar energia
 	player_energy -= card.cost
 	
+	# Impedir mais cliques durante a animação e processamento de hits
+	state = BattleState.ANIMATION
+	
 	# Aplicar efeitos
-	_apply_card_effects(card)
+	await _apply_card_effects(card)
 	
 	# Remover da mão e adicionar ao descarte (POWERs não vão para o descarte)
 	hand.remove_at(index)
@@ -756,6 +794,9 @@ func _play_card(index: int):
 		else:
 			_on_enemy_defeated()
 		return
+		
+	# Devolver o controlo ao jogador
+	state = BattleState.PLAYER_TURN
 	
 	# Atualizar UI
 	_rebuild_hand_ui()
@@ -877,6 +918,8 @@ func _deal_damage_to_enemy(damage: int):
 		_show_info("⚔️ " + str(actual_dmg) + _get_trans(" dano!", " damage!"), DAMAGE_COLOR)
 		_shake_node(enemy_panel)
 		_play_spark_vfx(enemy_panel.global_position + enemy_panel.size / 2) # Partículas!
+		
+	_update_all_ui()
 
 func _deal_damage_to_player(damage: int):
 	var actual_dmg = damage
@@ -902,6 +945,8 @@ func _deal_damage_to_player(damage: int):
 		_play_sfx("hurt", 1.0, -2.0) # Som de dano sofrido
 		if player_node:
 			_shake_node(player_node)
+			
+	_update_all_ui()
 
 # =============================================================================
 # TURNO DO INIMIGO
@@ -1036,6 +1081,9 @@ func _on_enemy_defeated():
 		timer.timeout.connect(_show_victory_screen)
 
 func _show_victory_screen():
+	# Toca som de vitória triunfante
+	if GameGlobals:
+		GameGlobals.play_victory_sound()
 	var is_boss = (enemy_data.get("type", 0) == ThorEnemyDatabase.EnemyType.BOSS)
 	var is_pt = true
 	if GameGlobals:
@@ -1100,39 +1148,31 @@ func _show_victory_screen():
 		rewards_title.add_theme_color_override("font_color", Color.WHITE)
 		vbox.add_child(rewards_title)
 		
-		# Ouro
+		# Ouro (Adicionado Automaticamente)
+		player_gold += reward_gold
+		_play_sfx("power_up", 1.25, -4.0)
+		
 		var gold_btn = Button.new()
-		gold_btn.text = "+ " + str(reward_gold) + " Ouro" if is_pt else "+ " + str(reward_gold) + " Gold"
+		gold_btn.text = "+ " + str(reward_gold) + " Ouro (Adicionado)" if is_pt else "+ " + str(reward_gold) + " Gold (Added)"
 		gold_btn.custom_minimum_size = Vector2(250, 40)
 		gold_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		if font_bold:
 			gold_btn.add_theme_font_override("font", font_bold)
 		gold_btn.add_theme_font_size_override("font_size", 14)
-		gold_btn.add_theme_color_override("font_color", GOLD_COLOR)
+		gold_btn.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
 		var sb = StyleBoxFlat.new()
-		sb.bg_color = Color(0.2, 0.15, 0.05, 0.9)
+		sb.bg_color = Color(0.1, 0.08, 0.04, 0.85)
 		sb.border_width_left = 2
 		sb.border_width_top = 2
 		sb.border_width_right = 2
 		sb.border_width_bottom = 2
-		sb.border_color = GOLD_COLOR
+		sb.border_color = Color(0.5, 0.45, 0.25, 0.8)
 		sb.corner_radius_top_left = 6
 		sb.corner_radius_top_right = 6
 		sb.corner_radius_bottom_left = 6
 		sb.corner_radius_bottom_right = 6
 		gold_btn.add_theme_stylebox_override("normal", sb)
-		var sb_h = sb.duplicate()
-		sb_h.bg_color = Color(0.3, 0.25, 0.1, 0.9)
-		gold_btn.add_theme_stylebox_override("hover", sb_h)
-		
-		gold_btn.pressed.connect(func():
-			player_gold += reward_gold
-			gold_btn.disabled = true
-			gold_btn.text = "Recebido" if is_pt else "Claimed"
-			gold_btn.add_theme_color_override("font_disabled_color", Color(0.5, 0.5, 0.5))
-			if GameGlobals:
-				GameGlobals.play_click_sound()
-		)
+		gold_btn.disabled = true
 		vbox.add_child(gold_btn)
 		
 		# Container das cartas
@@ -1283,6 +1323,7 @@ func _spawn_next_wave():
 	
 	_update_all_ui()
 	_rebuild_hand_ui()
+	state = BattleState.PLAYER_TURN
 
 func _generate_card_rewards() -> Array:
 	var possible_cards = ThorCardDatabase.get_reward_pool(-1)
@@ -1610,65 +1651,102 @@ func _on_player_defeated():
 	timer.timeout.connect(_show_defeat_screen)
 
 func _show_defeat_screen():
+	# Toca som de derrota temático
+	if GameGlobals:
+		GameGlobals.play_defeat_sound()
+	# Overlay de fundo escuro semitransparente.
 	var overlay = ColorRect.new()
-	overlay.color = Color(0.1, 0, 0, 0.8)
+	overlay.color = Color(0.0, 0.0, 0.0, 0.75)
 	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(overlay)
-	
-	var vbox = VBoxContainer.new()
-	vbox.set_anchors_preset(Control.PRESET_CENTER)
-	vbox.anchor_left = 0.5
-	vbox.anchor_top = 0.5
-	vbox.anchor_right = 0.5
-	vbox.anchor_bottom = 0.5
-	vbox.offset_left = -180
-	vbox.offset_top = -100
-	vbox.offset_right = 180
-	vbox.offset_bottom = 100
-	vbox.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	vbox.grow_vertical = Control.GROW_DIRECTION_BOTH
-	vbox.add_theme_constant_override("separation", 16)
+
+	# CenterContainer para centrar tudo perfeitamente
+	var center_container := CenterContainer.new()
+	center_container.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(center_container)
+
+	# Painel decorado premium
+	var panel := Panel.new()
+	panel.custom_minimum_size = Vector2(420.0, 240.0)
+	var ps := StyleBoxFlat.new()
+	ps.bg_color = Color(0.04, 0.06, 0.12, 0.96) # Azul escuro tempestade de Thor
+	ps.border_width_left = 2
+	ps.border_width_top = 2
+	ps.border_width_right = 2
+	ps.border_width_bottom = 2
+	ps.border_color = Color(0.3, 0.6, 1.0, 1.0) # Borda azul relâmpago de Mjölnir
+	ps.corner_radius_top_left = 6
+	ps.corner_radius_top_right = 6
+	ps.corner_radius_bottom_left = 6
+	ps.corner_radius_bottom_right = 6
+	ps.shadow_size = 15
+	ps.shadow_color = Color(0, 0, 0, 0.8)
+	panel.add_theme_stylebox_override("panel", ps)
+	center_container.add_child(panel)
+
+	# Container vertical centrado
+	var vbox := VBoxContainer.new()
+	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	overlay.add_child(vbox)
-	
+	vbox.add_theme_constant_override("separation", 12)
+	panel.add_child(vbox)
+
 	var is_pt = true
 	if GameGlobals:
 		is_pt = GameGlobals.current_language == GameGlobals.Language.PT
 		
 	var title = Label.new()
-	title.text = "💀 DERROTA 💀" if is_pt else "💀 DEFEAT 💀"
+	title.text = "⚡ DERROTA ⚡" if is_pt else "⚡ DEFEAT ⚡"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if font_bold:
 		title.add_theme_font_override("font", font_bold)
 	title.add_theme_font_size_override("font_size", 24)
-	title.add_theme_color_override("font_color", DAMAGE_COLOR)
-	title.add_theme_constant_override("outline_size", 5)
+	title.add_theme_color_override("font_color", Color(0.3, 0.6, 1.0, 1.0))
+	title.add_theme_constant_override("outline_size", 3)
 	title.add_theme_color_override("font_outline_color", Color.BLACK)
 	vbox.add_child(title)
 	
+	# Espaçador.
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0.0, 10.0)
+	vbox.add_child(spacer)
+
+	# Estilos para os botões
+	var sb_normal = StyleBoxFlat.new()
+	sb_normal.bg_color = Color(0.06, 0.10, 0.20, 0.85)
+	sb_normal.border_color = Color(0.3, 0.6, 1.0, 0.6)
+	sb_normal.border_width_left = 1
+	sb_normal.border_width_top = 1
+	sb_normal.border_width_right = 1
+	sb_normal.border_width_bottom = 1
+	sb_normal.corner_radius_top_left = 3
+	sb_normal.corner_radius_top_right = 3
+	sb_normal.corner_radius_bottom_left = 3
+	sb_normal.corner_radius_bottom_right = 3
+
+	var sb_hover = StyleBoxFlat.new()
+	sb_hover.bg_color = Color(0.10, 0.20, 0.40, 0.95)
+	sb_hover.border_color = Color(0.4, 0.7, 1.0, 1.0)
+	sb_hover.border_width_left = 1
+	sb_hover.border_width_top = 1
+	sb_hover.border_width_right = 1
+	sb_hover.border_width_bottom = 1
+	sb_hover.corner_radius_top_left = 3
+	sb_hover.corner_radius_top_right = 3
+	sb_hover.corner_radius_bottom_left = 3
+	sb_hover.corner_radius_bottom_right = 3
+
 	# Botão Tentar Novamente
 	var retry_btn = Button.new()
 	retry_btn.text = "Tentar Novamente" if is_pt else "Try Again"
-	retry_btn.custom_minimum_size = Vector2(200, 40)
-	if font_bold:
-		retry_btn.add_theme_font_override("font", font_bold)
-	retry_btn.add_theme_font_size_override("font_size", 12)
-	var sb = StyleBoxFlat.new()
-	sb.bg_color = DAMAGE_COLOR.darkened(0.5)
-	sb.border_width_left = 2
-	sb.border_width_top = 2
-	sb.border_width_right = 2
-	sb.border_width_bottom = 2
-	sb.border_color = DAMAGE_COLOR
-	sb.corner_radius_top_left = 6
-	sb.corner_radius_top_right = 6
-	sb.corner_radius_bottom_left = 6
-	sb.corner_radius_bottom_right = 6
-	retry_btn.add_theme_stylebox_override("normal", sb)
-	var sb_h = sb.duplicate()
-	sb_h.bg_color = DAMAGE_COLOR.darkened(0.3)
-	retry_btn.add_theme_stylebox_override("hover", sb_h)
-	retry_btn.add_theme_color_override("font_color", Color.WHITE)
+	retry_btn.custom_minimum_size = Vector2(300, 36)
+	if font_reg:
+		retry_btn.add_theme_font_override("font", font_reg)
+	retry_btn.add_theme_font_size_override("font_size", 13)
+	retry_btn.add_theme_stylebox_override("normal", sb_normal)
+	retry_btn.add_theme_stylebox_override("hover", sb_hover)
+	retry_btn.add_theme_stylebox_override("focus", sb_hover)
+	retry_btn.add_theme_color_override("font_color", Color(0.9, 0.95, 1.0, 1.0))
 	retry_btn.pressed.connect(func():
 		get_tree().change_scene_to_file("res://scenes/thor_jormungandr/thor_battle.tscn")
 	)
@@ -1677,23 +1755,14 @@ func _show_defeat_screen():
 	# Botão Menu
 	var menu_btn = Button.new()
 	menu_btn.text = "Voltar à Biblioteca" if is_pt else "Return to Library"
-	menu_btn.custom_minimum_size = Vector2(200, 40)
-	if font_bold:
-		menu_btn.add_theme_font_override("font", font_bold)
-	menu_btn.add_theme_font_size_override("font_size", 12)
-	var sb2 = StyleBoxFlat.new()
-	sb2.bg_color = Color(0.3, 0.3, 0.3, 0.8)
-	sb2.border_width_left = 1
-	sb2.border_width_top = 1
-	sb2.border_width_right = 1
-	sb2.border_width_bottom = 1
-	sb2.border_color = Color(0.5, 0.5, 0.5)
-	sb2.corner_radius_top_left = 6
-	sb2.corner_radius_top_right = 6
-	sb2.corner_radius_bottom_left = 6
-	sb2.corner_radius_bottom_right = 6
-	menu_btn.add_theme_stylebox_override("normal", sb2)
-	menu_btn.add_theme_color_override("font_color", Color.WHITE)
+	menu_btn.custom_minimum_size = Vector2(300, 36)
+	if font_reg:
+		menu_btn.add_theme_font_override("font", font_reg)
+	menu_btn.add_theme_font_size_override("font_size", 13)
+	menu_btn.add_theme_stylebox_override("normal", sb_normal)
+	menu_btn.add_theme_stylebox_override("hover", sb_hover)
+	menu_btn.add_theme_stylebox_override("focus", sb_hover)
+	menu_btn.add_theme_color_override("font_color", Color(0.9, 0.95, 1.0, 1.0))
 	menu_btn.pressed.connect(func():
 		if GameGlobals:
 			GameGlobals.thor_run_active = false # Reset run
@@ -1704,6 +1773,12 @@ func _show_defeat_screen():
 			get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
 	)
 	vbox.add_child(menu_btn)
+	
+	if GameGlobals:
+		retry_btn.mouse_entered.connect(GameGlobals.play_hover_sound)
+		retry_btn.pressed.connect(GameGlobals.play_click_sound)
+		menu_btn.mouse_entered.connect(GameGlobals.play_hover_sound)
+		menu_btn.pressed.connect(GameGlobals.play_click_sound)
 
 # =============================================================================
 # UI DE CARTAS (CONSTRUÇÃO DINÂMICA)

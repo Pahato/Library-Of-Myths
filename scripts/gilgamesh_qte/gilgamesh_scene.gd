@@ -400,6 +400,7 @@ func _play_intro():
 	]
 	box.dialogue_finished.connect(func():
 		get_tree().paused = false
+		process_mode = Node.PROCESS_MODE_PAUSABLE
 		game_active = true
 		intro_done = true
 		_set_hud_visible(true)
@@ -408,6 +409,8 @@ func _play_intro():
 	add_child(box)
 
 func _trigger_victory() -> void:
+	if not game_active:
+		return
 	game_active = false
 	qte_container.visible = false
 	_set_hud_visible(false)
@@ -415,6 +418,7 @@ func _trigger_victory() -> void:
 	# Parar música de batalha
 	if GameGlobals:
 		GameGlobals.stop_music()
+		GameGlobals.play_victory_sound()
 		
 	# Limpar precision targets
 	for child in precision_container.get_children():
@@ -440,15 +444,157 @@ func _trigger_victory() -> void:
 			{"name": "char_narrator", "text": "dialogue_narrator_gilgamesh_victory_2"}
 		]
 		box.dialogue_finished.connect(func():
-			# Volta ao menu principal
-			var transition = get_node_or_null("/root/SceneTransition")
-			if transition:
-				transition.fade_to("res://scenes/main_menu.tscn")
-			else:
-				get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+			_show_victory_screen()
 		)
 		add_child(box)
 	)
+
+func _show_victory_screen() -> void:
+	var is_pt = GameGlobals and GameGlobals.current_language == GameGlobals.Language.PT
+	
+	# CanvasLayer de alta prioridade (cima de tudo)
+	var canvas := CanvasLayer.new()
+	canvas.layer = 100
+	canvas.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(canvas)
+	
+	# Overlay escuro semitransparente
+	var overlay := ColorRect.new()
+	overlay.color = Color(0.0, 0.0, 0.0, 0.85)
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	canvas.add_child(overlay)
+	
+	# Partículas de ouro a cair (vitória épica de Gilgamesh)
+	var particles := CPUParticles2D.new()
+	particles.amount = 40
+	particles.lifetime = 3.5
+	particles.preprocess = 1.0
+	particles.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	particles.emission_rect_extents = Vector2(600.0, 10.0)
+	particles.direction = Vector2(0.0, 1.0)
+	particles.spread = 30.0
+	particles.gravity = Vector2(0.0, 80.0)
+	particles.initial_velocity_min = 40.0
+	particles.initial_velocity_max = 100.0
+	particles.scale_amount_min = 2.0
+	particles.scale_amount_max = 5.0
+	particles.color = Color(1.0, 0.85, 0.25, 0.9)
+	var pg := Gradient.new()
+	pg.colors = [Color(1.0, 0.9, 0.4, 0.9), Color(0.9, 0.7, 0.1, 0.5), Color(0.8, 0.6, 0.0, 0.0)]
+	pg.offsets = [0.0, 0.6, 1.0]
+	particles.color_ramp = pg
+	particles.position = Vector2(640.0, 0.0)
+	particles.emitting = true
+	overlay.add_child(particles)
+	
+	# CenterContainer para centrar o painel
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(center)
+	
+	# Painel decorado — bronze/dourado imperial de Gilgamesh
+	var panel := Panel.new()
+	panel.custom_minimum_size = Vector2(460.0, 280.0)
+	var ps := StyleBoxFlat.new()
+	ps.bg_color = Color(0.06, 0.04, 0.01, 0.97)      # Bronze escuro/preto imperial
+	ps.border_width_left = 3
+	ps.border_width_top = 3
+	ps.border_width_right = 3
+	ps.border_width_bottom = 3
+	ps.border_color = Color(0.85, 0.62, 0.18, 1.0)   # Borda bronze/dourado de Gilgamesh
+	ps.corner_radius_top_left = 8
+	ps.corner_radius_top_right = 8
+	ps.corner_radius_bottom_left = 8
+	ps.corner_radius_bottom_right = 8
+	ps.shadow_size = 20
+	ps.shadow_color = Color(0.8, 0.6, 0.1, 0.5)      # Sombra dourada
+	panel.add_theme_stylebox_override("panel", ps)
+	center.add_child(panel)
+	
+	var vbox := VBoxContainer.new()
+	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_theme_constant_override("separation", 16)
+	panel.add_child(vbox)
+	
+	# Emoji troféu
+	var trophy := Label.new()
+	trophy.text = "🏆"
+	trophy.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	trophy.add_theme_font_size_override("font_size", 42)
+	vbox.add_child(trophy)
+	
+	# Título de vitória
+	var title := Label.new()
+	title.text = "🔱 VITÓRIA DE GILGAMESH! 🔱" if is_pt else "🔱 GILGAMESH VICTORIOUS! 🔱"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var font_bold = _load_font(true)
+	if font_bold:
+		title.add_theme_font_override("font", font_bold)
+	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_color_override("font_color", Color(1.0, 0.88, 0.35, 1.0))
+	title.add_theme_constant_override("outline_size", 4)
+	title.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 1.0))
+	vbox.add_child(title)
+	
+	# Descrição
+	var desc := Label.new()
+	desc.text = "O Touro dos Céus foi derrotado.\nGilgamesh prova ao mundo que é mais do que um herói — é uma lenda." if is_pt else "The Bull of Heaven has fallen.\nGilgamesh proves to the world he is more than a hero — he is a legend."
+	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var font_reg = _load_font(false)
+	if font_reg:
+		desc.add_theme_font_override("font", font_reg)
+	desc.add_theme_font_size_override("font_size", 13)
+	desc.add_theme_color_override("font_color", Color(0.88, 0.82, 0.70, 1.0))
+	vbox.add_child(desc)
+	
+	# Separador decorativo
+	var sep := HSeparator.new()
+	sep.add_theme_color_override("color", Color(0.85, 0.62, 0.18, 0.5))
+	sep.add_theme_constant_override("separation", 6)
+	vbox.add_child(sep)
+	
+	# Botão de voltar ao menu
+	var btn := Button.new()
+	btn.text = "🏠  Voltar ao Menu" if is_pt else "🏠  Back to Menu"
+	if font_reg:
+		btn.add_theme_font_override("font", font_reg)
+	btn.add_theme_font_size_override("font_size", 14)
+	btn.custom_minimum_size = Vector2(200.0, 40.0)
+	
+	var sb_n := StyleBoxFlat.new()
+	sb_n.bg_color = Color(0.15, 0.10, 0.03, 1.0)
+	sb_n.border_width_left = 1; sb_n.border_width_top = 1
+	sb_n.border_width_right = 1; sb_n.border_width_bottom = 1
+	sb_n.border_color = Color(0.75, 0.55, 0.18, 0.8)
+	sb_n.corner_radius_top_left = 5; sb_n.corner_radius_top_right = 5
+	sb_n.corner_radius_bottom_left = 5; sb_n.corner_radius_bottom_right = 5
+	var sb_h := StyleBoxFlat.new()
+	sb_h.bg_color = Color(0.25, 0.18, 0.05, 1.0)
+	sb_h.border_width_left = 1; sb_h.border_width_top = 1
+	sb_h.border_width_right = 1; sb_h.border_width_bottom = 1
+	sb_h.border_color = Color(1.0, 0.80, 0.30, 1.0)
+	sb_h.corner_radius_top_left = 5; sb_h.corner_radius_top_right = 5
+	sb_h.corner_radius_bottom_left = 5; sb_h.corner_radius_bottom_right = 5
+	btn.add_theme_stylebox_override("normal", sb_n)
+	btn.add_theme_stylebox_override("hover", sb_h)
+	btn.add_theme_stylebox_override("pressed", sb_h)
+	btn.add_theme_color_override("font_color", Color(0.95, 0.88, 0.65, 1.0))
+	btn.add_theme_color_override("font_hover_color", Color(1.0, 0.95, 0.5, 1.0))
+	btn.process_mode = Node.PROCESS_MODE_ALWAYS
+	btn.pressed.connect(func():
+		get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+	)
+	vbox.add_child(btn)
+	
+	# Anima a entrada do painel (escala de 0 → 1 com bounce)
+	panel.scale = Vector2.ZERO
+	panel.pivot_offset = panel.custom_minimum_size / 2.0
+	var tw := create_tween()
+	tw.tween_property(panel, "scale", Vector2(1.0, 1.0), 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
 
 # ---------------------------------------------------------------------------
 # Lógica da Fase de Defesa (QTE e Precision Clicker)
@@ -954,6 +1100,8 @@ func _fire_golden_weapon():
 
 func _on_weapon_impact(weapon: Sprite2D, _impact_pos: Vector2):
 	weapon.queue_free()
+	if not game_active:
+		return
 	
 	# Som de clink e flash
 	_play_sfx("clink", randf_range(0.9, 1.2), -5.0)
@@ -1035,8 +1183,9 @@ func _trigger_game_over():
 	if GameGlobals:
 		GameGlobals.stop_music()
 		
-	# Toca som de derrota
-	_play_sfx("explosion", 0.7, 4.0)
+	# Toca som de derrota temático (substitui o explosion manual)
+	if GameGlobals:
+		GameGlobals.play_defeat_sound()
 	
 	# Pausar a árvore de jogo para parar toda a física/ataques sob o Game Over
 	get_tree().paused = true
@@ -1050,52 +1199,95 @@ func _trigger_game_over():
 	
 	var overlay = ColorRect.new()
 	overlay.name = "GameOverOverlay"
-	overlay.color = Color(0.08, 0.02, 0.02, 0.8)
+	overlay.color = Color(0.0, 0.0, 0.0, 0.75)
 	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	go_layer.add_child(overlay)
-	
+
+	# CenterContainer para centrar tudo perfeitamente
+	var center_container := CenterContainer.new()
+	center_container.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(center_container)
+
+	# Painel decorado premium
 	game_over_panel = Panel.new()
 	game_over_panel.name = "GameOverPanel"
-	game_over_panel.size = Vector2(380, 240)
-	game_over_panel.set_anchors_preset(Control.PRESET_CENTER)
-	game_over_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	game_over_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
-	game_over_panel.position = -game_over_panel.size / 2.0
-	game_over_panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	
+	game_over_panel.custom_minimum_size = Vector2(420.0, 240.0)
 	var sb_go = StyleBoxFlat.new()
-	sb_go.bg_color = Color(0.12, 0.03, 0.03, 0.95)
-	sb_go.border_width_left = 3
-	sb_go.border_width_top = 3
-	sb_go.border_width_right = 3
-	sb_go.border_width_bottom = 3
-	sb_go.border_color = Color(0.95, 0.15, 0.15, 1.0)
-	sb_go.corner_radius_top_left = 12
-	sb_go.corner_radius_top_right = 12
-	sb_go.corner_radius_bottom_left = 12
-	sb_go.corner_radius_bottom_right = 12
+	sb_go.bg_color = Color(0.08, 0.06, 0.03, 0.96) # Castanho bronze/ouro de Gilgamesh
+	sb_go.border_width_left = 2
+	sb_go.border_width_top = 2
+	sb_go.border_width_right = 2
+	sb_go.border_width_bottom = 2
+	sb_go.border_color = Color(1.0, 0.75, 0.1, 1.0) # Borda de ouro brilhante de Babilónia
+	sb_go.corner_radius_top_left = 6
+	sb_go.corner_radius_top_right = 6
+	sb_go.corner_radius_bottom_left = 6
+	sb_go.corner_radius_bottom_right = 6
+	sb_go.shadow_size = 15
+	sb_go.shadow_color = Color(0, 0, 0, 0.8)
 	game_over_panel.add_theme_stylebox_override("panel", sb_go)
-	overlay.add_child(game_over_panel)
+	center_container.add_child(game_over_panel)
+
+	# Container vertical centrado
+	var vbox := VBoxContainer.new()
+	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_theme_constant_override("separation", 12)
+	game_over_panel.add_child(vbox)
 	
 	var go_lbl = Label.new()
 	go_lbl.text = GameGlobals.get_text("gameover_title")
 	go_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	go_lbl.size = Vector2(380, 40)
-	go_lbl.position = Vector2(0, 30)
 	go_lbl.add_theme_font_override("font", _load_font(true))
-	go_lbl.add_theme_font_size_override("font_size", 28)
-	go_lbl.add_theme_color_override("font_color", Color(1.0, 0.25, 0.25, 1.0))
-	game_over_panel.add_child(go_lbl)
+	go_lbl.add_theme_font_size_override("font_size", 24)
+	go_lbl.add_theme_color_override("font_color", Color(1.0, 0.75, 0.1, 1.0))
+	go_lbl.add_theme_constant_override("outline_size", 3)
+	go_lbl.add_theme_color_override("font_outline_color", Color.BLACK)
+	vbox.add_child(go_lbl)
 	
+	# Espaçador.
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0.0, 10.0)
+	vbox.add_child(spacer)
+
+	# Estilos para os botões
+	var sb_normal = StyleBoxFlat.new()
+	sb_normal.bg_color = Color(0.18, 0.12, 0.05, 0.85)
+	sb_normal.border_color = Color(1.0, 0.75, 0.1, 0.6)
+	sb_normal.border_width_left = 1
+	sb_normal.border_width_top = 1
+	sb_normal.border_width_right = 1
+	sb_normal.border_width_bottom = 1
+	sb_normal.corner_radius_top_left = 3
+	sb_normal.corner_radius_top_right = 3
+	sb_normal.corner_radius_bottom_left = 3
+	sb_normal.corner_radius_bottom_right = 3
+
+	var sb_hover = StyleBoxFlat.new()
+	sb_hover.bg_color = Color(0.35, 0.22, 0.08, 0.95)
+	sb_hover.border_color = Color(1.0, 0.85, 0.2, 1.0)
+	sb_hover.border_width_left = 1
+	sb_hover.border_width_top = 1
+	sb_hover.border_width_right = 1
+	sb_hover.border_width_bottom = 1
+	sb_hover.corner_radius_top_left = 3
+	sb_hover.corner_radius_top_right = 3
+	sb_hover.corner_radius_bottom_left = 3
+	sb_hover.corner_radius_bottom_right = 3
+
 	# Botão Recomentar (Retry)
 	var btn_retry = Button.new()
 	btn_retry.name = "RetryButton"
 	btn_retry.text = GameGlobals.get_text("gameover_retry")
-	btn_retry.size = Vector2(240, 40)
-	btn_retry.position = Vector2(70, 100)
+	btn_retry.custom_minimum_size = Vector2(300, 36)
 	btn_retry.add_theme_font_override("font", _load_font(false))
-	game_over_panel.add_child(btn_retry)
+	btn_retry.add_theme_font_size_override("font_size", 13)
+	btn_retry.add_theme_stylebox_override("normal", sb_normal)
+	btn_retry.add_theme_stylebox_override("hover", sb_hover)
+	btn_retry.add_theme_stylebox_override("focus", sb_hover)
+	btn_retry.add_theme_color_override("font_color", Color(1.0, 0.95, 0.85, 1.0))
+	vbox.add_child(btn_retry)
 	_setup_hover_events(btn_retry)
 	btn_retry.pressed.connect(func():
 		get_tree().paused = false
@@ -1106,10 +1298,14 @@ func _trigger_game_over():
 	var btn_menu = Button.new()
 	btn_menu.name = "MenuButton"
 	btn_menu.text = GameGlobals.get_text("gameover_menu")
-	btn_menu.size = Vector2(240, 40)
-	btn_menu.position = Vector2(70, 160)
+	btn_menu.custom_minimum_size = Vector2(300, 36)
 	btn_menu.add_theme_font_override("font", _load_font(false))
-	game_over_panel.add_child(btn_menu)
+	btn_menu.add_theme_font_size_override("font_size", 13)
+	btn_menu.add_theme_stylebox_override("normal", sb_normal)
+	btn_menu.add_theme_stylebox_override("hover", sb_hover)
+	btn_menu.add_theme_stylebox_override("focus", sb_hover)
+	btn_menu.add_theme_color_override("font_color", Color(1.0, 0.95, 0.85, 1.0))
+	vbox.add_child(btn_menu)
 	_setup_hover_events(btn_menu)
 	btn_menu.pressed.connect(func():
 		get_tree().paused = false

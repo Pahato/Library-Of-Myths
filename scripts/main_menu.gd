@@ -1,15 +1,9 @@
 extends Control
 class_name MainMenu
 
-@onready var book_apolo      = $HBoxContainer/VBoxApolo/BookApolo
-@onready var book_shiva      = $HBoxContainer/VBoxShiva/BookShiva
-@onready var book_thor       = $HBoxContainer/VBoxThor/BookThor
-@onready var book_susanoo    = $HBoxContainer/VBoxSusanoo/BookSusanoo
-
-@onready var label_apolo     = $HBoxContainer/VBoxApolo/LabelApolo
-@onready var label_shiva     = $HBoxContainer/VBoxShiva/LabelShiva
-@onready var label_thor      = $HBoxContainer/VBoxThor/LabelThor
-@onready var label_susanoo   = $HBoxContainer/VBoxSusanoo/LabelSusanoo
+# Estes @onready só referenciam nós que ainda existem na cena (.tscn).
+# Os livros antigos (BookApolo, BookShiva, BookThor, BookSusanoo) foram removidos
+# da cena e são agora construídos dinamicamente pelo carrossel em código.
 @onready var status_label    = $StatusLabel
 @onready var diff_label      = $DifficultyLabel
 @onready var diff_easy_btn   = $DiffHBoxContainer/DiffEasyButton
@@ -20,7 +14,6 @@ class_name MainMenu
 # Referências para animações de fade-in
 @onready var title_label     = $TitleLabel
 @onready var subtitle_label  = $SubtitleLabel
-@onready var hbox_container  = $HBoxContainer
 @onready var diff_hbox       = $DiffHBoxContainer
 
 var player_instance: CharacterBody2D = null
@@ -60,6 +53,8 @@ var carousel_btn_left: Button = null
 var carousel_btn_right: Button = null
 var carousel_btn_play: Button = null
 var _is_ui_enabled: bool = false
+# Proteção contra re-abertura acidental do tutorial no mesmo frame
+var _tutorial_is_open: bool = false
 
 
 func _ready():
@@ -84,10 +79,33 @@ func _ready():
 	add_child(new_bg)
 	move_child(new_bg, 0) # Colocar no fundo
 
+	# Criar o painel de fundo para os títulos de forma dinâmica para melhorar a legibilidade
+	var header_bg = Panel.new()
+	header_bg.name = "HeaderBG"
+	header_bg.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	header_bg.offset_left = -330.0
+	header_bg.offset_top = 28.0
+	header_bg.offset_right = 330.0
+	header_bg.offset_bottom = 142.0
+	
+	var sb = StyleBoxFlat.new()
+	sb.bg_color = Color(0.04, 0.03, 0.02, 0.6) # Fundo escuro translúcido premium
+	sb.corner_radius_top_left = 8
+	sb.corner_radius_top_right = 8
+	sb.corner_radius_bottom_left = 8
+	sb.corner_radius_bottom_right = 8
+	sb.border_width_bottom = 2
+	sb.border_color = Color(0.85, 0.65, 0.25, 0.4)
+	header_bg.add_theme_stylebox_override("panel", sb)
+	
+	add_child(header_bg)
+	move_child(header_bg, 1) # Colocar atrás dos labels de texto (TitleLabel e SubtitleLabel)
+	header_bg.modulate.a = 0.0
+
 	# Inicialmente esconde a UI para a introdução
 	if title_label: title_label.modulate.a = 0.0
 	if subtitle_label: subtitle_label.modulate.a = 0.0
-	if hbox_container: hbox_container.modulate.a = 0.0
+	# hbox_container foi removido da cena; não há nada para ocultar aqui
 	if diff_label: diff_label.modulate.a = 0.0
 	if diff_hbox: diff_hbox.modulate.a = 0.0
 	if credits_btn: credits_btn.modulate.a = 0.0
@@ -110,70 +128,6 @@ func _ready():
 	
 	# Mostra a dificuldade atual e inicializa traduções
 	update_translations()
-	
-	# Conectar sinais de cliques nos livros e aplicar a capa fantástica ao Livro de Apolo
-	if book_apolo:
-		book_apolo.pressed.connect(_on_book_apolo_pressed)
-		var cover_tex = load("res://assets/sprites/ApoloPython_bg.png")
-		if cover_tex:
-			book_apolo.text = "" # Limpa o texto original para focar 100% na arte
-			
-			var rect = TextureRect.new()
-			rect.name = "CoverTexture"
-			rect.texture = cover_tex
-			rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			rect.stretch_mode = TextureRect.STRETCH_SCALE
-			rect.set_anchors_preset(Control.PRESET_FULL_RECT)
-			rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			rect.texture_filter = Control.TEXTURE_FILTER_NEAREST
-			book_apolo.add_child(rect)
-			
-	if book_shiva:
-		book_shiva.pressed.connect(_on_book_shiva_pressed)
-		var cover_tex = load("res://assets/sprites/ShivaRudra_bg.png")
-		if cover_tex:
-			book_shiva.text = "" # Limpa o texto original para focar 100% na arte
-			
-			var rect = TextureRect.new()
-			rect.name = "CoverTexture"
-			rect.texture = cover_tex
-			rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			rect.stretch_mode = TextureRect.STRETCH_SCALE
-			rect.set_anchors_preset(Control.PRESET_FULL_RECT)
-			rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			rect.texture_filter = Control.TEXTURE_FILTER_NEAREST
-			book_shiva.add_child(rect)
-			
-	if book_thor:
-		book_thor.pressed.connect(_on_book_thor_pressed)
-		var cover_tex = load("res://assets/sprites/ThorJormungandr_bg.png")
-		if cover_tex:
-			book_thor.text = "" 
-			var rect = TextureRect.new()
-			rect.name = "CoverTexture"
-			rect.texture = cover_tex
-			rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			rect.stretch_mode = TextureRect.STRETCH_SCALE
-			rect.set_anchors_preset(Control.PRESET_FULL_RECT)
-			rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			rect.texture_filter = Control.TEXTURE_FILTER_NEAREST
-			book_thor.add_child(rect)
-			
-	if book_susanoo:
-		book_susanoo.pressed.connect(_on_book_susanoo_pressed)
-		var cover_tex = load("res://assets/sprites/SusanoYamatoNoOroshi_bg.png")
-		if cover_tex:
-			book_susanoo.text = "" 
-			var rect = TextureRect.new()
-			rect.name = "CoverTexture"
-			rect.texture = cover_tex
-			rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			rect.stretch_mode = TextureRect.STRETCH_SCALE
-			rect.set_anchors_preset(Control.PRESET_FULL_RECT)
-			rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			rect.texture_filter = Control.TEXTURE_FILTER_NEAREST
-			book_susanoo.add_child(rect)
-
 	
 	# Conectar botões de dificuldade
 	if GameGlobals:
@@ -210,11 +164,7 @@ func _ready():
 				get_tree().change_scene_to_file("res://scenes/credits.tscn")
 		)
 	
-	# Conectar efeitos de hover (passar o rato por cima)
-	if book_apolo: _setup_hover_events(book_apolo)
-	if book_shiva: _setup_hover_events(book_shiva)
-	if book_thor: _setup_hover_events(book_thor)
-	if book_susanoo: _setup_hover_events(book_susanoo)
+	# Conectar efeitos de hover (passar o rato por cima) nos botões estáticos da cena
 	if diff_easy_btn: _setup_hover_events(diff_easy_btn)
 	if diff_normal_btn: _setup_hover_events(diff_normal_btn)
 	if diff_hard_btn: _setup_hover_events(diff_hard_btn)
@@ -248,74 +198,94 @@ func _create_options_button():
 	options_btn.pressed.connect(_on_options_pressed)
 
 func _setup_book_carousel():
-	# 1. Ocultar o HBoxContainer original
-	if hbox_container:
-		hbox_container.visible = false
-		hbox_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	
-	# 2. Criar o CarouselContainer
+	# O HBoxContainer original com os livros antigos foi removido da cena.
+	# O carrossel é construído inteiramente em código, usando coordenadas
+	# absolutas baseadas no viewport para evitar problemas de layout.
 	carousel_container = Control.new()
 	carousel_container.name = "CarouselContainer"
-	carousel_container.set_anchors_preset(Control.PRESET_CENTER)
-	carousel_container.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	carousel_container.grow_vertical = Control.GROW_DIRECTION_BOTH
-	carousel_container.size = Vector2(800, 480)
-	carousel_container.position = -carousel_container.size / 2.0
-	carousel_container.position.y -= 20.0
-	carousel_container.modulate.a = 0.0 # Começa invisível para animação
+	carousel_container.set_anchors_preset(Control.PRESET_FULL_RECT)
+	carousel_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	carousel_container.modulate.a = 0.0
 	add_child(carousel_container)
 	
-	# 3. Criar os dados do carrossel
+	# 3. Criar os dados do carrossel com descrições para cada livro
 	carousel_books = [
 		{
 			"id": 1,
 			"cover_path": "res://assets/sprites/Trocas/nova_CapaApollo.png",
 			"title_key": "menu_book_apolo",
+			"desc_pt": "Purifica o solo sagrado de Delfos e derrota a terrível serpente Píton.",
+			"desc_en": "Purify the sacred ground of Delphi and defeat the terrible serpent Python.",
 			"pressed_func": _on_book_apolo_pressed
 		},
 		{
 			"id": 2,
 			"cover_path": "res://assets/sprites/Trocas/nova_CapaShiva.png",
 			"title_key": "menu_book_shiva",
+			"desc_pt": "Dança o Tandava sob o ritmo do cosmos para acalmar a fúria de Rudra.",
+			"desc_en": "Dance the Tandava to the cosmic rhythm to calm the fury of Rudra.",
 			"pressed_func": _on_book_shiva_pressed
 		},
 		{
 			"id": 3,
 			"cover_path": "res://assets/sprites/Trocas/nova_CapaThor.png",
 			"title_key": "menu_book_thor",
+			"desc_pt": "Enfrenta a temível Serpente do Mundo e os lobos de Hel no crepúsculo.",
+			"desc_en": "Face the fearsome World Serpent and the wolves of Hel at twilight.",
 			"pressed_func": _on_book_thor_pressed
 		},
 		{
 			"id": 4,
 			"cover_path": "res://assets/sprites/Trocas/nova_CapaSusanoo.png",
 			"title_key": "menu_book_susanoo",
+			"desc_pt": "Usa astúcia, sake e a lendária espada Totsuka para banir o Orochi.",
+			"desc_en": "Use cunning, sake and the legendary Totsuka sword to banish the Orochi.",
 			"pressed_func": _on_book_susanoo_pressed
 		},
 		{
 			"id": 5,
 			"cover_path": "res://assets/sprites/Trocas/nova_CapaGilgamesh.png",
 			"title_key": "menu_book_gilgamesh",
+			"desc_pt": "Defende Uruk do lendário Touro dos Céus enviado pelos deuses.",
+			"desc_en": "Defend Uruk from the legendary Bull of Heaven sent by the gods.",
 			"pressed_func": _on_book_gilgamesh_pressed
 		}
 	]
 	
-	# 4. Criar a capa do livro central (TextureButton)
+	# Dimensões fixas dos elementos do carrossel
+	const COVER_W  := 480.0
+	const COVER_H  := 300.0
+	const ARROW_SZ := 50.0
+	const LABEL_H  := 30.0
+	const PLAY_H   := 40.0
+	
+	# Centro real do ecrã — get_viewport_rect().size está disponível em _ready()
+	# ao contrário do tamanho do parent Control, que só fica correto após layout.
+	var vp   := get_viewport_rect().size
+	var cx   := vp.x * 0.5
+	var cy   := vp.y * 0.5 - 30.0  # ligeiramente acima do centro
+	
+	var cover_x := cx - COVER_W * 0.5
+	var cover_y := cy - COVER_H * 0.5
+	var label_y := cover_y + COVER_H + 10.0
+	var play_y  := label_y + LABEL_H + 8.0
+	
+	# 4. Capa do livro central (TextureButton)
 	carousel_cover = TextureButton.new()
 	carousel_cover.name = "CarouselCover"
-	carousel_cover.custom_minimum_size = Vector2(480, 300)
-	carousel_cover.size = Vector2(480, 300)
-	carousel_cover.position = Vector2(
-		(carousel_container.size.x - carousel_cover.size.x) / 2.0,
-		20.0
-	)
+	carousel_cover.custom_minimum_size = Vector2(COVER_W, COVER_H)
+	carousel_cover.size = Vector2(COVER_W, COVER_H)
+	carousel_cover.position = Vector2(cover_x, cover_y)
 	carousel_cover.ignore_texture_size = true
 	carousel_cover.stretch_mode = TextureButton.STRETCH_SCALE
 	carousel_cover.texture_filter = Control.TEXTURE_FILTER_NEAREST
+	# Começa com IGNORE; _set_buttons_enabled(true) activa depois da animação
+	carousel_cover.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	carousel_container.add_child(carousel_cover)
 	carousel_cover.pressed.connect(_on_carousel_cover_pressed)
 	
 	# Hover effects na capa
-	carousel_cover.pivot_offset = carousel_cover.size / 2.0
+	carousel_cover.pivot_offset = Vector2(COVER_W * 0.5, COVER_H * 0.5)
 	carousel_cover.mouse_entered.connect(func():
 		var tween = create_tween()
 		tween.tween_property(carousel_cover, "scale", Vector2(1.05, 1.05), 0.15).set_trans(Tween.TRANS_SINE)
@@ -326,34 +296,32 @@ func _setup_book_carousel():
 		tween.tween_property(carousel_cover, "scale", Vector2(1.0, 1.0), 0.15).set_trans(Tween.TRANS_SINE)
 	)
 	
-	# 5. Criar Seta Esquerda
+	# 5. Seta Esquerda
 	carousel_btn_left = Button.new()
 	carousel_btn_left.name = "CarouselLeft"
 	carousel_btn_left.text = "◀"
 	carousel_btn_left.add_theme_font_size_override("font_size", 28)
-	carousel_btn_left.custom_minimum_size = Vector2(50, 50)
-	carousel_btn_left.position = Vector2(
-		carousel_cover.position.x - 70.0,
-		carousel_cover.position.y + (carousel_cover.size.y - 50.0) / 2.0
-	)
+	carousel_btn_left.custom_minimum_size = Vector2(ARROW_SZ, ARROW_SZ)
+	carousel_btn_left.size = Vector2(ARROW_SZ, ARROW_SZ)
+	carousel_btn_left.position = Vector2(cover_x - 70.0, cover_y + (COVER_H - ARROW_SZ) * 0.5)
 	carousel_btn_left.flat = true
+	carousel_btn_left.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	carousel_btn_left.add_theme_color_override("font_color", Color(0.9, 0.8, 0.6, 1.0))
 	carousel_btn_left.add_theme_color_override("font_hover_color", Color(1.0, 0.95, 0.4, 1.0))
 	carousel_container.add_child(carousel_btn_left)
 	carousel_btn_left.pressed.connect(func(): _navigate_carousel(-1))
 	_setup_hover_events(carousel_btn_left)
 	
-	# 6. Criar Seta Direita
+	# 6. Seta Direita
 	carousel_btn_right = Button.new()
 	carousel_btn_right.name = "CarouselRight"
 	carousel_btn_right.text = "▶"
 	carousel_btn_right.add_theme_font_size_override("font_size", 28)
-	carousel_btn_right.custom_minimum_size = Vector2(50, 50)
-	carousel_btn_right.position = Vector2(
-		carousel_cover.position.x + carousel_cover.size.x + 20.0,
-		carousel_cover.position.y + (carousel_cover.size.y - 50.0) / 2.0
-	)
+	carousel_btn_right.custom_minimum_size = Vector2(ARROW_SZ, ARROW_SZ)
+	carousel_btn_right.size = Vector2(ARROW_SZ, ARROW_SZ)
+	carousel_btn_right.position = Vector2(cover_x + COVER_W + 20.0, cover_y + (COVER_H - ARROW_SZ) * 0.5)
 	carousel_btn_right.flat = true
+	carousel_btn_right.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	carousel_btn_right.add_theme_color_override("font_color", Color(0.9, 0.8, 0.6, 1.0))
 	carousel_btn_right.add_theme_color_override("font_hover_color", Color(1.0, 0.95, 0.4, 1.0))
 	carousel_container.add_child(carousel_btn_right)
@@ -366,10 +334,9 @@ func _setup_book_carousel():
 	carousel_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	carousel_label.add_theme_font_size_override("font_size", 18)
 	carousel_label.add_theme_color_override("font_color", Color(0.96, 0.87, 0.70, 1.0))
-	carousel_label.position = Vector2(0, carousel_cover.position.y + carousel_cover.size.y + 10.0)
-	carousel_label.size = Vector2(carousel_container.size.x, 30.0)
-	
-	# Aplicar fonte Cinzel
+	carousel_label.position = Vector2(cx - 400.0, label_y)
+	carousel_label.size = Vector2(800.0, LABEL_H)
+	carousel_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var cinzel = _load_font(true)
 	if cinzel:
 		carousel_label.add_theme_font_override("font", cinzel)
@@ -378,11 +345,10 @@ func _setup_book_carousel():
 	# 8. Botão "JOGAR"
 	carousel_btn_play = Button.new()
 	carousel_btn_play.name = "CarouselPlay"
-	carousel_btn_play.custom_minimum_size = Vector2(180, 40)
-	carousel_btn_play.position = Vector2(
-		(carousel_container.size.x - 180.0) / 2.0,
-		carousel_label.position.y + 40.0
-	)
+	carousel_btn_play.custom_minimum_size = Vector2(180.0, PLAY_H)
+	carousel_btn_play.size = Vector2(180.0, PLAY_H)
+	carousel_btn_play.position = Vector2(cx - 90.0, play_y)
+	carousel_btn_play.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	carousel_btn_play.pressed.connect(_on_carousel_cover_pressed)
 	carousel_container.add_child(carousel_btn_play)
 	_setup_hover_events(carousel_btn_play)
@@ -401,8 +367,75 @@ func _update_carousel_ui():
 		
 	carousel_label.text = GameGlobals.get_text(book_data["title_key"])
 	
+	# Determinar cor de destaque temática por livro
+	var accent_color: Color
+	match book_data["id"]:
+		1: accent_color = Color(1.0, 0.85, 0.25, 1.0)   # Apolo (Dourado solar)
+		2: accent_color = Color(0.7, 0.3, 1.0, 1.0)     # Shiva (Roxo cósmico)
+		3: accent_color = Color(0.3, 0.6, 1.0, 1.0)     # Thor (Azul elétrico)
+		4: accent_color = Color(0.9, 0.15, 0.15, 1.0)   # Susanoo (Vermelho japonês)
+		5: accent_color = Color(1.0, 0.75, 0.1, 1.0)    # Gilgamesh (Ouro Babilónia)
+		_: accent_color = Color(1.0, 0.85, 0.25, 1.0)
+		
+	carousel_label.add_theme_color_override("font_color", accent_color)
+	
+	# Atualizar o título principal com a cor temática correspondente
+	if title_label:
+		title_label.add_theme_color_override("font_color", accent_color)
+		
+	# Atualizar o painel de fundo (HeaderBG) com a borda e fundo temáticos
+	var header_bg = get_node_or_null("HeaderBG")
+	if header_bg:
+		var sb = header_bg.get_theme_stylebox("panel") as StyleBoxFlat
+		if sb:
+			var new_sb = sb.duplicate() as StyleBoxFlat
+			new_sb.border_color = Color(accent_color.r, accent_color.g, accent_color.b, 0.45)
+			new_sb.bg_color = Color(0.04 + accent_color.r * 0.02, 0.03 + accent_color.g * 0.02, 0.02 + accent_color.b * 0.02, 0.62)
+			header_bg.add_theme_stylebox_override("panel", new_sb)
+	
+	# Atualizar o subtítulo dinâmico (descrição e cor do livro selecionado)
+	if subtitle_label:
+		var is_pt = true
+		if GameGlobals:
+			is_pt = (GameGlobals.current_language == GameGlobals.Language.PT)
+		subtitle_label.text = book_data.get("desc_pt", "") if is_pt else book_data.get("desc_en", "")
+		# Cores atenuadas a 85% para excelente hierarquia de texto no ecrã
+		subtitle_label.add_theme_color_override("font_color", Color(accent_color.r * 0.9, accent_color.g * 0.9, accent_color.b * 0.9, 0.85))
+	
 	if carousel_btn_play:
 		carousel_btn_play.text = GameGlobals.get_text("tutorial_play")
+		
+		# Criar StyleBoxes premium personalizados para o botão "JOGAR" correspondendo ao livro ativo
+		var sb_normal = StyleBoxFlat.new()
+		sb_normal.bg_color = Color(accent_color.r * 0.15, accent_color.g * 0.15, accent_color.b * 0.15, 0.85)
+		sb_normal.border_width_left = 2
+		sb_normal.border_width_top = 2
+		sb_normal.border_width_right = 2
+		sb_normal.border_width_bottom = 2
+		sb_normal.border_color = accent_color
+		sb_normal.corner_radius_top_left = 6
+		sb_normal.corner_radius_top_right = 6
+		sb_normal.corner_radius_bottom_left = 6
+		sb_normal.corner_radius_bottom_right = 6
+		
+		var sb_hover = sb_normal.duplicate()
+		sb_hover.bg_color = Color(accent_color.r * 0.25, accent_color.g * 0.25, accent_color.b * 0.25, 0.95)
+		sb_hover.border_color = accent_color.lightened(0.2)
+		
+		var sb_pressed = sb_normal.duplicate()
+		sb_pressed.bg_color = Color(accent_color.r * 0.08, accent_color.g * 0.08, accent_color.b * 0.08, 0.9)
+		sb_pressed.border_color = accent_color.darkened(0.2)
+		
+		carousel_btn_play.add_theme_stylebox_override("normal", sb_normal)
+		carousel_btn_play.add_theme_stylebox_override("hover", sb_hover)
+		carousel_btn_play.add_theme_stylebox_override("pressed", sb_pressed)
+		carousel_btn_play.add_theme_color_override("font_color", Color.WHITE)
+		carousel_btn_play.add_theme_color_override("font_hover_color", Color.WHITE)
+		
+		var cinzel = _load_font(true)
+		if cinzel:
+			carousel_btn_play.add_theme_font_override("font", cinzel)
+		carousel_btn_play.add_theme_font_size_override("font_size", 14)
 
 func _navigate_carousel(direction: int):
 	if not _is_ui_enabled:
@@ -415,12 +448,16 @@ func _navigate_carousel(direction: int):
 	var tween = create_tween().set_parallel(true)
 	tween.tween_property(carousel_cover, "modulate:a", 0.0, 0.12)
 	tween.tween_property(carousel_label, "modulate:a", 0.0, 0.12)
+	if subtitle_label:
+		tween.tween_property(subtitle_label, "modulate:a", 0.0, 0.12)
 	
 	tween.chain().tween_callback(func():
 		_update_carousel_ui()
 		var fade_in_tween = create_tween().set_parallel(true)
 		fade_in_tween.tween_property(carousel_cover, "modulate:a", 1.0, 0.18)
 		fade_in_tween.tween_property(carousel_label, "modulate:a", 1.0, 0.18)
+		if subtitle_label:
+			fade_in_tween.tween_property(subtitle_label, "modulate:a", 1.0, 0.18)
 	)
 	
 	if GameGlobals:
@@ -428,6 +465,9 @@ func _navigate_carousel(direction: int):
 
 func _on_carousel_cover_pressed():
 	if not _is_ui_enabled:
+		return
+	# Impede re-abertura se o tutorial já está aberto
+	if _tutorial_is_open:
 		return
 	var book_data = carousel_books[carousel_index]
 	book_data["pressed_func"].call()
@@ -490,6 +530,10 @@ func _run_intro_animation():
 func _fade_in_ui():
 	var fade_tween = create_tween().set_parallel(true)
 	
+	var header_bg = get_node_or_null("HeaderBG")
+	if header_bg:
+		fade_tween.tween_property(header_bg, "modulate:a", 1.0, 0.6)
+		
 	if title_label:
 		title_label.position.y -= 20.0 # Começa ligeiramente acima para fazer slide down
 		fade_tween.tween_property(title_label, "modulate:a", 1.0, 0.6)
@@ -521,10 +565,6 @@ func _fade_in_ui():
 func _set_buttons_enabled(enabled: bool):
 	_is_ui_enabled = enabled
 	var filter = Control.MOUSE_FILTER_STOP if enabled else Control.MOUSE_FILTER_IGNORE
-	if book_apolo: book_apolo.mouse_filter = filter
-	if book_shiva: book_shiva.mouse_filter = filter
-	if book_thor: book_thor.mouse_filter = filter
-	if book_susanoo: book_susanoo.mouse_filter = filter
 	if diff_easy_btn: diff_easy_btn.mouse_filter = filter
 	if diff_normal_btn: diff_normal_btn.mouse_filter = filter
 	if diff_hard_btn: diff_hard_btn.mouse_filter = filter
@@ -560,14 +600,14 @@ func _setup_hover_events(button: Button):
 		button.pivot_offset = button.size / 2
 		var tween = create_tween()
 		tween.tween_property(button, "scale", Vector2(1.1, 1.1), 0.15).set_trans(Tween.TRANS_SINE)
-		if button != book_apolo and button != book_shiva and button != book_thor and button != book_susanoo:
+		if button != carousel_btn_play:
 			button.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3, 1.0))
 	)
 	
 	button.mouse_exited.connect(func():
 		var tween = create_tween()
 		tween.tween_property(button, "scale", Vector2(1.0, 1.0), 0.15).set_trans(Tween.TRANS_SINE)
-		if button != book_apolo and button != book_shiva and button != book_thor and button != book_susanoo:
+		if button != carousel_btn_play:
 			button.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
 	)
 
@@ -587,9 +627,14 @@ func _on_book_gilgamesh_pressed():
 	_show_tutorial(5, "res://scenes/gilgamesh_qte/gilgamesh_scene.tscn")
 
 func _show_tutorial(book: int, scene: String):
+	# Evita abrir dois tutoriais ao mesmo tempo
+	if _tutorial_is_open:
+		return
+	_tutorial_is_open = true
+	
 	var tutorial_scene = load("res://scenes/tutorial_screen.tscn")
 	if not tutorial_scene:
-		# Fallback direto se a cena não existir
+		_tutorial_is_open = false
 		var transition = get_node_or_null("/root/SceneTransition")
 		if transition:
 			transition.fade_to(scene)
@@ -601,6 +646,8 @@ func _show_tutorial(book: int, scene: String):
 	tutorial.book_type = book
 	tutorial._scene_to_load = scene
 	add_child(tutorial)
+	# Repor a flag quando o tutorial for removido da árvore
+	tutorial.tree_exited.connect(func(): _tutorial_is_open = false)
 
 
 func _show_status(text: String):
@@ -666,11 +713,7 @@ func _add_stone_texture(panel: Panel) -> void:
 # --- Carrega a fonte Cinzel (estilo épico/mitológico) ---
 func _load_font(bold: bool = false) -> FontFile:
 	var path = "res://assets/fonts/Cinzel-Bold.ttf" if bold else "res://assets/fonts/Cinzel-Regular.ttf"
-	var f = FontFile.new()
-	var err = f.load_dynamic_font(path)
-	if err != OK:
-		return null
-	return f
+	return load(path) as FontFile
 
 func _on_options_pressed():
 	# Inicializar as variáveis temporárias com as opções atuais
@@ -693,6 +736,11 @@ func _on_options_pressed():
 		keybinds_vbox.hide()
 		main_options_vbox.show()
 		_update_options_labels()
+		
+		# Forçar foco no primeiro botão para permitir navegação com comando/teclado
+		var opt_btn = main_options_vbox.get_node_or_null("KeystrokeButton")
+		if opt_btn:
+			opt_btn.grab_focus()
 
 func _create_options_overlay():
 	if options_overlay:
@@ -852,6 +900,8 @@ func _create_options_overlay():
 	var actions = {
 		"move_left": "keybinds_move_left",
 		"move_right": "keybinds_move_right",
+		"move_up": "keybinds_move_up",
+		"move_down": "keybinds_move_down",
 		"jump": "keybinds_jump",
 		"parry": "keybinds_parry",
 		"shoot": "keybinds_shoot"
@@ -1092,6 +1142,11 @@ func _on_keybinds_menu_pressed():
 	main_options_vbox.hide()
 	keybinds_vbox.show()
 	_update_options_labels()
+	
+	# Focar no botão "Voltar" do submenu de keybinds para controlo simples
+	var kb_back = keybinds_vbox.get_node_or_null("KeybindsBackButton")
+	if kb_back:
+		kb_back.grab_focus()
 
 func _on_keybinds_back_pressed():
 	rebinding_action = ""
@@ -1101,21 +1156,38 @@ func _on_keybinds_back_pressed():
 	keybinds_vbox.hide()
 	main_options_vbox.show()
 	_update_options_labels()
+	
+	# Devolver foco ao botão do menu de opções
+	var kb_btn = main_options_vbox.get_node_or_null("KeybindsMenuButton")
+	if kb_btn:
+		kb_btn.grab_focus()
 
 func _on_audio_menu_pressed():
 	main_options_vbox.hide()
 	audio_vbox.show()
 	_update_options_labels()
+	
+	# Focar no botão "Voltar" do submenu de áudio
+	var a_back = audio_vbox.get_node_or_null("AudioBackButton")
+	if a_back:
+		a_back.grab_focus()
 
 func _on_audio_back_pressed():
 	audio_vbox.hide()
 	main_options_vbox.show()
 	_update_options_labels()
+	
+	# Devolver foco ao botão do menu de opções
+	var a_btn = main_options_vbox.get_node_or_null("AudioMenuButton")
+	if a_btn:
+		a_btn.grab_focus()
 
 func _on_keybinds_reset_pressed():
 	# Resetar apenas temporariamente
 	temp_keybinds["move_left"] = [_create_key_event(KEY_A)]
 	temp_keybinds["move_right"] = [_create_key_event(KEY_D)]
+	temp_keybinds["move_up"] = [_create_key_event(KEY_W)]
+	temp_keybinds["move_down"] = [_create_key_event(KEY_S)]
 	temp_keybinds["jump"] = [_create_key_event(KEY_SPACE)]
 	temp_keybinds["parry"] = [_create_key_event(KEY_C)]
 	temp_keybinds["shoot"] = [_create_mouse_event(MOUSE_BUTTON_LEFT)]
@@ -1411,10 +1483,7 @@ func _update_confirmation_popup_labels():
 func update_translations():
 	if title_label: title_label.text = GameGlobals.get_text("menu_title")
 	if subtitle_label: subtitle_label.text = GameGlobals.get_text("menu_subtitle")
-	if label_apolo: label_apolo.text = GameGlobals.get_text("menu_book_apolo")
-	if label_shiva: label_shiva.text = GameGlobals.get_text("menu_book_shiva")
-	if label_thor: label_thor.text = GameGlobals.get_text("menu_book_thor")
-	if label_susanoo: label_susanoo.text = GameGlobals.get_text("menu_book_susanoo")
+	# Labels dos livros antigos foram removidos da cena; o carrossel usa _update_carousel_ui()
 	if diff_easy_btn: diff_easy_btn.text = GameGlobals.get_text("menu_diff_easy")
 	if diff_normal_btn: diff_normal_btn.text = GameGlobals.get_text("menu_diff_normal")
 	if diff_hard_btn: diff_hard_btn.text = GameGlobals.get_text("menu_diff_hard")
@@ -1439,6 +1508,23 @@ func _create_mouse_event(code: int) -> InputEventMouseButton:
 
 func _input(event):
 	if rebinding_action == "":
+		# Ignorar cliques do rato na navegação global de teclas/comando.
+		# O rato é tratado de forma nativa e direta pelos próprios botões.
+		if event is InputEventMouseButton:
+			return
+			
+		# Navegação no menu principal com comando/teclado (quando opções estão fechadas)
+		if _is_ui_enabled and (options_overlay == null or not options_overlay.visible):
+			if event.is_pressed() and not event.is_echo():
+				if event.is_action_pressed("move_left") or event.is_action_pressed("ui_left"):
+					_navigate_carousel(-1)
+					get_viewport().set_input_as_handled()
+				elif event.is_action_pressed("move_right") or event.is_action_pressed("ui_right"):
+					_navigate_carousel(1)
+					get_viewport().set_input_as_handled()
+				elif event.is_action_pressed("ui_accept") or event.is_action_pressed("jump") or event.is_action_pressed("shoot"):
+					_on_carousel_cover_pressed()
+					get_viewport().set_input_as_handled()
 		return
 		
 	if not event.is_pressed():

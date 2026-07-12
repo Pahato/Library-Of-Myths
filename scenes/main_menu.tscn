@@ -50,86 +50,6 @@ theme_override_font_sizes/font_size = 12
 text = "Escolhe um livro para ler e reviver a lenda"
 horizontal_alignment = 1
 
-[node name="HBoxContainer" type="HBoxContainer" parent="."]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -250.0
-offset_top = -90.0
-offset_right = 250.0
-offset_bottom = 90.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_constants/separation = 40
-alignment = 1
-
-[node name="VBoxApolo" type="VBoxContainer" parent="HBoxContainer"]
-layout_mode = 2
-theme_override_constants/separation = 10
-alignment = 1
-
-[node name="BookApolo" type="Button" parent="HBoxContainer/VBoxApolo"]
-custom_minimum_size = Vector2(130, 180)
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-
-[node name="LabelApolo" type="Label" parent="HBoxContainer/VBoxApolo"]
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 14
-horizontal_alignment = 1
-
-[node name="VBoxShiva" type="VBoxContainer" parent="HBoxContainer"]
-layout_mode = 2
-theme_override_constants/separation = 10
-alignment = 1
-
-[node name="BookShiva" type="Button" parent="HBoxContainer/VBoxShiva"]
-custom_minimum_size = Vector2(130, 180)
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-
-[node name="LabelShiva" type="Label" parent="HBoxContainer/VBoxShiva"]
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 14
-horizontal_alignment = 1
-
-[node name="VBoxThor" type="VBoxContainer" parent="HBoxContainer"]
-layout_mode = 2
-theme_override_constants/separation = 10
-alignment = 1
-
-[node name="BookThor" type="Button" parent="HBoxContainer/VBoxThor"]
-custom_minimum_size = Vector2(130, 180)
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-
-[node name="LabelThor" type="Label" parent="HBoxContainer/VBoxThor"]
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 14
-horizontal_alignment = 1
-
-[node name="VBoxSusanoo" type="VBoxContainer" parent="HBoxContainer"]
-layout_mode = 2
-theme_override_constants/separation = 10
-alignment = 1
-
-[node name="BookSusanoo" type="Button" parent="HBoxContainer/VBoxSusanoo"]
-custom_minimum_size = Vector2(130, 180)
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-
-[node name="LabelSusanoo" type="Label" parent="HBoxContainer/VBoxSusanoo"]
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 14
-horizontal_alignment = 1
-
 [node name="StatusLabel" type="Label" parent="."]
 layout_mode = 1
 anchors_preset = 7
@@ -178,7 +98,7 @@ theme_override_constants/separation = 10
 [node name="DiffEasyButton" type="Button" parent="DiffHBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
-text = "Fácil"
+text = "Facil"
 
 [node name="DiffNormalButton" type="Button" parent="DiffHBoxContainer"]
 layout_mode = 2
@@ -188,7 +108,7 @@ text = "Normal"
 [node name="DiffHardButton" type="Button" parent="DiffHBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
-text = "Difícil"
+text = "Dificil"
 
 [node name="CreditsButton" type="Button" parent="."]
 layout_mode = 1
@@ -204,4 +124,4 @@ offset_bottom = -25.0
 grow_horizontal = 0
 grow_vertical = 0
 theme_override_font_sizes/font_size = 12
-text = "Créditos"
+text = "Creditos"

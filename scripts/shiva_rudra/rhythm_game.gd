@@ -471,8 +471,8 @@ func _draw_hud():
 		hud_node.draw_circle(Vector2(split_x - 20, icon_y + 20), 20.0, Color(0.15, 0.04, 0.04, 0.65)) # Rudra BG
 		
 		# Shiva fica na direita, Rudra na esquerda do divisor
-		# Shiva (Pato Amarelo, virado para a esquerda)
-		var shiva_icon_rect = Rect2(split_x + 40, icon_y, -40, 40)
+		# Shiva (Pato Amarelo, virado para a esquerda, compensado em X para centrar)
+		var shiva_icon_rect = Rect2(split_x + 32, icon_y, -40, 40)
 		# Rudra (Lorde da Tempestade, virado para a direita)
 		var rudra_icon_rect = Rect2(split_x - 40, icon_y, 40, 40)
 		
@@ -846,17 +846,23 @@ func _input(event):
 	if not is_playing or cutscene_active or stun_timer > 0.0:
 		return
 		
-	if event is InputEventKey and event.is_pressed() and not event.is_echo():
-		var lane_pressed = -1
+	if event.is_echo() or not event.is_pressed():
+		return
 		
-		match event.physical_keycode:
-			KEY_LEFT, KEY_A: lane_pressed = 0
-			KEY_DOWN, KEY_S: lane_pressed = 1
-			KEY_UP, KEY_W: lane_pressed = 2
-			KEY_RIGHT, KEY_D: lane_pressed = 3
-			
-		if lane_pressed != -1:
-			_on_player_key_pressed(lane_pressed)
+	var lane_pressed = -1
+	
+	if event.is_action_pressed("move_left"):
+		lane_pressed = 0
+	elif event.is_action_pressed("move_down"):
+		lane_pressed = 1
+	elif event.is_action_pressed("move_up") or event.is_action_pressed("jump"):
+		lane_pressed = 2
+	elif event.is_action_pressed("move_right"):
+		lane_pressed = 3
+		
+	if lane_pressed != -1:
+		_on_player_key_pressed(lane_pressed)
+		get_viewport().set_input_as_handled()
 
 func _on_player_key_pressed(lane: int):
 	shiva_receptors[lane].pulse()
@@ -1001,13 +1007,19 @@ func _toggle_pause():
 	if is_instance_valid(pause_menu_instance):
 		return
 	get_tree().paused = true
+	if is_instance_valid(audio_player):
+		audio_player.stream_paused = true
 	pause_start_time = Time.get_ticks_usec()
 	pause_menu_instance = pause_menu_scene.instantiate()
 	# Corrigir bug de desfasamento temporal ao despausar (Microsegundos)
 	pause_menu_instance.tree_exited.connect(func():
 		pause_menu_instance = null
+		if is_instance_valid(audio_player):
+			audio_player.stream_paused = false
 		var pause_duration = Time.get_ticks_usec() - pause_start_time
 		time_begin += pause_duration
+		# Garantir que despausa a árvore ao voltar do menu de pausa
+		get_tree().paused = false
 	)
 	get_parent().add_child(pause_menu_instance)
 

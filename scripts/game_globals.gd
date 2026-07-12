@@ -130,6 +130,8 @@ var translations: Dictionary = {
 		"keybinds_jump": "Saltar / Jump",
 		"keybinds_parry": "Parry / Defesa",
 		"keybinds_shoot": "Disparar / Tiro",
+		"keybinds_move_up": "Mover Cima",
+		"keybinds_move_down": "Mover Baixo",
 		"keybinds_press_any_key": "Pressione uma tecla...",
 		"keybinds_duplicate": "Tecla já está em uso!",
 		"keybinds_reset": "Restaurar Padrão",
@@ -162,15 +164,15 @@ var translations: Dictionary = {
 		"char_python": "Píton",
 		
 		# Dialogue - Intro
-		"dialogue_narrator_1": "De todos os deuses do Olimpo, Apolo destaca-se como o senhor da luz, da verdade e da profecia...",
-		"dialogue_narrator_2": "Enviado pelos céus para pôr fim às sombras, o jovem arqueiro solar desce à terra de Delfos...",
-		"dialogue_apolo_reflect_1": "Delfos... Este solo outrora sagrado está frio, corrompido pela presença do mal.",
-		"dialogue_apolo_reflect_2": "A terrível serpente Píton deve estar por perto. Tenho de a purificar com as minhas flechas de luz!",
-		"dialogue_apolo_python_1": "Píton! O teu veneno não vai mais corromper esta terra sagrada!",
-		"dialogue_python_apolo_1": "Sssss... Outro deus tolo em forma de pato que ousa desafiar-me!",
-		"dialogue_apolo_python_2": "Eu trago as flechas de luz do Sol! Prepara-te para a tua queda!",
-		"dialogue_apolo_victory_1": "Está feito. A luz do Sol triunfou sobre as trevas!",
-		"dialogue_apolo_victory_2": "Delfos está salva. Que a profecia se cumpra!",
+		"dialogue_narrator_1": "O Monte Parnaso treme. Hera, com inveja de Leto (mãe de Apolo), enviou a monstruosa serpente Píton para persegui-la...",
+		"dialogue_narrator_2": "Mas agora, apenas quatro dias após nascer, o jovem deus solar Apolo desce a Delfos para caçar a besta e reclamar o Oráculo!",
+		"dialogue_apolo_reflect_1": "Delfos... o 'umbigo do mundo' (Omphalos) está envolto em vapores venenosos do abismo.",
+		"dialogue_apolo_reflect_2": "A Píton esconde-se nesta fenda sagrada. Vou purificar este templo e fundar os meus Jogos Píticos!",
+		"dialogue_apolo_python_1": "Besta ctónica! O teu reinado de terror sobre o oráculo de Gaia termina hoje!",
+		"dialogue_python_apolo_1": "Sssss... Apolo! És apenas uma cria divina em forma de pato. O meu veneno dissolverá a tua luz!",
+		"dialogue_apolo_python_2": "Cria ou não, as minhas flechas douradas foram forjadas por Hefesto! Sente o calor de mil sóis! QUACK!",
+		"dialogue_apolo_victory_1": "A Píton jaz derrotada. O sangue da serpente sagrada deu poder às profecias da Pitonisa!",
+		"dialogue_apolo_victory_2": "Delfos agora é a terra da verdade e da luz. Que comecem os Jogos Píticos!",
 		
 		# Game UI
 		"ui_recharging": "FLECHAS: Recarregando...",
@@ -192,15 +194,15 @@ var translations: Dictionary = {
 		"char_rudra": "Rudra",
 		
 		# Dialogue - Book 2 Intro
-		"dialogue_narrator_shiva_1": "No topo do sagrado Monte Kailash, o universo treme sob o som de tambores distantes...",
-		"dialogue_narrator_shiva_2": "Shiva, o deus da dança e da transformação, prepara-se para enfrentar a ira da tempestade...",
-		"dialogue_shiva_reflect_1": "Esta montanha é o pilar do cosmos. Rudra deseja trazer a destruição antes do tempo.",
-		"dialogue_shiva_reflect_2": "Devo dançar o ritmo da criação para harmonizar a sua fúria destrutiva!",
-		"dialogue_shiva_rudra_1": "Rudra! Controla a tua fúria! A dança cósmica restabelecerá o equilíbrio.",
-		"dialogue_rudra_shiva_1": "ROOOAAR! A tua dança é fraca, Shiva! Deixa que a tempestade consuma tudo!",
-		"dialogue_shiva_rudra_2": "QUACK! Então sente o compasso do universo! Segue o meu ritmo!",
-		"dialogue_shiva_victory_1": "A tempestade acalmou... O equilíbrio do cosmos foi restaurado.",
-		"dialogue_shiva_victory_2": "Que a paz reine sobre Kailash.",
+		"dialogue_narrator_shiva_1": "Nas neves eternas do Monte Kailash, Rudra, a face tempestuosa do vento e da caça, ruge com fúria cega...",
+		"dialogue_narrator_shiva_2": "Para evitar que o cosmos seja reduzido a cinzas antes do ciclo terminar, Shiva Mahadeva deve iniciar a dança da criação!",
+		"dialogue_shiva_reflect_1": "Esta montanha sagrada sustenta os céus. A fúria descontrolada de Rudra vai desalinhar o equilíbrio cósmico.",
+		"dialogue_shiva_reflect_2": "Vou tocar o meu tambor Damaru e dançar o Tandava para canalizar este caos numa nova criação!",
+		"dialogue_shiva_rudra_1": "Rudra! O som do meu Damaru rege o batimento do universo. Junta-te à harmonia cósmica!",
+		"dialogue_rudra_shiva_1": "ROOOAAR! A tua ordem é ilusória, Shiva! A minha tempestade vai soprar as estrelas para o esquecimento!",
+		"dialogue_shiva_rudra_2": "QUACK! A destruição sem criação é apenas vazio. Sente o compasso eterno da minha dança!",
+		"dialogue_shiva_victory_1": "O Tandava dissipou os ventos da destruição. Rudra foi pacificado sob a harmonia das esferas.",
+		"dialogue_shiva_victory_2": "Kailash permanece em paz. O ciclo cósmico continua em perfeito equilíbrio.",
 		
 		# Rhythm UI & Settings
 		"ui_rhythm_combo": "Combo: ",
@@ -231,19 +233,19 @@ var translations: Dictionary = {
 		"char_jormungandr": "Jörmungandr",
 		
 		# Dialogue - Book 3 Intro
-		"dialogue_thor_story_intro_1": "Midgard, o reino dos homens, foi assolado pelo frio do Fimbulwinter. Das profundezas do oceano, a Serpente do Mundo acordou, espalhando o seu veneno pelos reinos nórdicos...",
-		"dialogue_thor_story_intro_2": "O Ragnarök aproxima-se. Para salvar os nove reinos, Thor deve marchar até à batalha final contra Jörmungandr.",
-		"dialogue_thor_story_intro_3": "Mjölnir clama pelo trovão. Nenhum lobo, gigante ou esqueleto de Helheim ficará de pé!",
-		"dialogue_thor_intro_1": "O Ragnarök aproxima-se... Sinto o veneno da serpente no ar de Midgard.",
+		"dialogue_thor_story_intro_1": "O Fimbulwinter cobriu Midgard de gelo. A Serpente de Midgard, Jörmungandr, acordou nas profundezas do oceano, cuspindo veneno nos céus...",
+		"dialogue_thor_story_intro_2": "O Ragnarök chegou. Profetizou-se que o Deus do Trovão cairia após dar nove passos devido ao veneno da serpente. Thor ergue o Mjölnir para desafiar o destino!",
+		"dialogue_thor_story_intro_3": "Mjölnir clama pelo trovão. Nenhum lobo de Fenrir, gigante ou esqueleto de Helheim ficará de pé!",
+		"dialogue_thor_intro_1": "O Ragnarök aproxima-se... Sinto o veneno da serpente corromper o ar de Midgard.",
 		"dialogue_thor_intro_2": "Mjölnir guiará o meu caminho. Nenhuma fera de Helheim me impedirá!",
-		"dialogue_draugr_intro": "Gggrrr... Carnes vivas... Não passarás por Midgard!",
-		"dialogue_generic_thor_fight_1": "Aparece, criatura! Sente o trovão de Asgard!",
-		"dialogue_generic_monster_growl": "Roaar! O monstro avança ferozmente!",
-		"dialogue_thor_jormungandr_1": "Jörmungandr! A nossa batalha final é hoje! Pelo destino dos nove reinos!",
-		"dialogue_jormungandr_thor_1": "ROOOAAR! Deus do Trovão... O teu corpo cairá no oceano e o teu martelo afundará no abismo!",
-		"dialogue_thor_jormungandr_2": "Veremos se o teu veneno é mais forte que o relâmpago divino! QUACK!",
-		"dialogue_thor_victory_1": "Jörmungandr foi derrotada... O Ragnarök foi travado e a serpente jaz nas profundezas.",
-		"dialogue_thor_victory_2": "Midgard está salva! O trovão de Asgard triunfa uma vez mais!",
+		"dialogue_draugr_intro": "Gggrrr... O Ragnarök consome a carne dos deuses! O teu martelo cairá hoje!",
+		"dialogue_generic_thor_fight_1": "Pela glória de Asgard e Midgard! Sente a força de Mjölnir e o estalar do trovão!",
+		"dialogue_generic_monster_growl": "ROOOAAR! A criatura ruge, erguendo garras cobertas de gelo e escudos quebrados!",
+		"dialogue_thor_jormungandr_1": "Jörmungandr! Monstro de Loki! A nossa antiga disputa pesqueira termina hoje na praia do fim do mundo!",
+		"dialogue_jormungandr_thor_1": "ROOOAAR! Filho de Odin... O teu escudo partirá sob as minhas presas, e o teu sangue envenenará o oceano!",
+		"dialogue_thor_jormungandr_2": "Veremos se o teu veneno aguenta dez mil raios invocados do próprio Asgard! QUACK!",
+		"dialogue_thor_victory_1": "A Serpente do Mundo cai sem vida. A profecia foi desafiada e os nove reinos respiram novamente.",
+		"dialogue_thor_victory_2": "Midgard está a salvo! Mesmo o veneno do Ragnarök recua perante o poder do trovão! Odin orgulha-se!",
 		
 		# Enemy Names
 		"draugr": "Draugr",
@@ -286,17 +288,17 @@ var translations: Dictionary = {
 		"char_orochi": "Yamata no Orochi",
 		
 		# Diálogo — Intro do Livro IV
-		"dialogue_narrator_susanoo_1": "Nas terras de Izumo, uma besta de oito cabeças aterrorizava o povo...",
-		"dialogue_narrator_susanoo_2": "Yamata no Orochi — a grande serpente — devorava uma donzela por ano. A última estava condenada...",
-		"dialogue_narrator_susanoo_3": "Susanoo, deus da tempestade, fez um trato: salvar a donzela Kushinada-hime em troca da sua mão em casamento.",
-		"dialogue_narrator_susanoo_4": "O seu plano não era força bruta. Era astúcia. Sake. E paciência.",
+		"dialogue_narrator_susanoo_1": "Expulso dos céus, o deus da tempestade Susanoo desceu à província de Izumo e encontrou um casal de idosos em prantos...",
+		"dialogue_narrator_susanoo_2": "A terrível serpente de oito cabeças Yamata-no-Orochi já havia devorado sete das suas filhas, e a última, Kushinada, seria a próxima.",
+		"dialogue_narrator_susanoo_3": "Susanoo transformou a donzela num pente para o seu cabelo e ordenou ao povo que preparasse sake refinado oito vezes.",
+		"dialogue_narrator_susanoo_4": "O plano era simples mas genial: atrair a besta colossal com o sake para beber em oito taças, embebedá-la e atacar!",
 		
 		# Diálogo — Vitória Livro IV
-		"dialogue_narrator_susanoo_victory_1": "O Orochi bebeu todo o sake... e adormeceu profundamente.",
-		"dialogue_narrator_susanoo_victory_2": "Susanoo ergueu a sua espada Totsuka-no-Tsurugi e cortou as oito cabeças da besta. Izumo estava salva.",
+		"dialogue_narrator_susanoo_victory_1": "O Orochi colocou cada uma das suas cabeças nas taças de sake, bebeu avidamente e adormeceu profundamente.",
+		"dialogue_narrator_susanoo_victory_2": "Susanoo desembainhou a sua espada Totsuka-no-Tsurugi e cortou a besta em pedaços! Na cauda do Orochi, descobriu a lendária espada Kusanagi!",
 		
 		# Diálogo — Game Over Livro IV
-		"dialogue_narrator_susanoo_caught": "Uma das cabeças do Orochi detetou Susanoo! O plano foi descoberto...",
+		"dialogue_narrator_susanoo_caught": "Uma das oito cabeças farejou o teu rasto e virou os olhos brilhantes na tua direção! O plano falhou!",
 		
 		# HUD — Livro IV
 		"ui_susanoo_barrels": "Barris colocados: ",
@@ -320,14 +322,14 @@ var translations: Dictionary = {
 		"char_touro": "O Touro dos Céus",
 		
 		# Diálogo — Intro do Livro V
-		"dialogue_narrator_gilgamesh_1": "Na cidade de Uruk, Gilgamesh, o lendário rei dos heróis, desafiava a fúria dos próprios deuses...",
-		"dialogue_narrator_gilgamesh_2": "Para punir a sua audácia, a deusa Ishtar enviou o Touro dos Céus — uma besta colossal de destruição.",
-		"dialogue_narrator_gilgamesh_3": "O sismo dos seus passos abre fendas na terra. A tempestade segue o seu rasto. Uruk está prestes a cair.",
-		"dialogue_narrator_gilgamesh_4": "But Gilgamesh não recua. Com o seu Portão da Babilónia pronto, ele vai subjugar a criatura divina!",
+		"dialogue_narrator_gilgamesh_1": "Após Gilgamesh rejeitar a deusa Ishtar, ela exigiu ao seu pai Anu que libertasse o Touro dos Céus (Gugalanna) para destruir Uruk...",
+		"dialogue_narrator_gilgamesh_2": "Os passos da besta colossal causaram sismos que abriram fendas na terra, engolindo centenas de cidadãos.",
+		"dialogue_narrator_gilgamesh_3": "Mas Gilgamesh, o Rei dos Heróis, ao lado do seu fiel companheiro Enkidu, ergueu o Portão da Babilónia para defender o seu povo!",
+		"dialogue_narrator_gilgamesh_4": "Não é apenas uma batalha por honra: é o confronto definitivo da humanidade contra a opressão dos próprios deuses!",
 		
 		# Diálogo — Vitória Livro V
-		"dialogue_narrator_gilgamesh_victory_1": "Sob uma chuva interminável de lanças e espadas douradas, o Touro dos Céus desabou derrotado.",
-		"dialogue_narrator_gilgamesh_victory_2": "Gilgamesh provou que mesmo a ira divina não é páreo para o Rei dos Heróis. Uruk celebra a vitória eterna!",
+		"dialogue_narrator_gilgamesh_victory_1": "Enkidu imobilizou o touro pelos cornos, permitindo a Gilgamesh trespassar a criatura divina com as suas espadas lendárias.",
+		"dialogue_narrator_gilgamesh_victory_2": "O Touro dos Céus foi derrotado. Gilgamesh provou que o orgulho de Uruk e a união dos mortais podem superar a fúria do Olimpo e dos deuses!",
 		
 		# Tutorial — Livro V
 		"tutorial_title_book5": "📖 LIVRO V — Gilgamesh vs O Touro dos Céus",
@@ -378,6 +380,8 @@ var translations: Dictionary = {
 		"keybinds_jump": "Jump",
 		"keybinds_parry": "Parry / Block",
 		"keybinds_shoot": "Shoot / Fire",
+		"keybinds_move_up": "Move Up",
+		"keybinds_move_down": "Move Down",
 		"keybinds_press_any_key": "Press any key...",
 		"keybinds_duplicate": "Key already in use!",
 		"keybinds_reset": "Reset Default",
@@ -409,15 +413,15 @@ var translations: Dictionary = {
 		"char_python": "Python",
 		
 		# Dialogue - Intro
-		"dialogue_narrator_1": "Of all the gods of Olympus, Apollo stands out as the lord of light, truth, and prophecy...",
-		"dialogue_narrator_2": "Sent by the heavens to put an end to the shadows, the young solar archer descends to Delphi...",
-		"dialogue_apolo_reflect_1": "Delphi... This once sacred ground is cold, corrupted by the presence of evil.",
-		"dialogue_apolo_reflect_2": "The terrible serpent Python must be nearby. I must purify it with my arrows of light!",
-		"dialogue_apolo_python_1": "Python! Your venom will no longer corrupt this sacred land!",
-		"dialogue_python_apolo_1": "Sssss... Another foolish duck-shaped god who dares to challenge me!",
-		"dialogue_apolo_python_2": "I bring the solar arrows of light! Prepare for your fall!",
-		"dialogue_apolo_victory_1": "It is done. The light of the Sun has triumphed over darkness!",
-		"dialogue_apolo_victory_2": "Delphi is saved. Let the prophecy be fulfilled!",
+		"dialogue_narrator_1": "Mount Parnassus trembles. Hera, jealous of Leto (mother of Apollo), sent the monstrous serpent Python to hunt her...",
+		"dialogue_narrator_2": "But now, just four days after his birth, the young solar god Apollo descends to Delphi to slay the beast and claim the Oracle!",
+		"dialogue_apolo_reflect_1": "Delphi... the 'navel of the world' (Omphalos) is shrouded in toxic, poisonous vapors from the abyss.",
+		"dialogue_apolo_reflect_2": "Python hides within this sacred chasm. I shall purify this temple and establish my Pythian Games!",
+		"dialogue_apolo_python_1": "Chthonic beast! Your reign of terror over Gaia's sacred oracle ends today!",
+		"dialogue_python_apolo_1": "Sssss... Apollo! You are but a newborn divine duckling. My venom shall dissolve your light!",
+		"dialogue_apolo_python_2": "Newborn or not, my golden arrows were forged by Hephaestus himself! Feel the heat of a thousand suns! QUACK!",
+		"dialogue_apolo_victory_1": "Python lies defeated. The blood of the sacred serpent has empowered the Pythia's prophecies!",
+		"dialogue_apolo_victory_2": "Delphi is now the land of light and truth. Let the Pythian Games begin!",
 		
 		# Game UI
 		"ui_recharging": "ARROWS: Recharging...",
@@ -439,15 +443,15 @@ var translations: Dictionary = {
 		"char_rudra": "Rudra",
 		
 		# Dialogue - Book 2 Intro
-		"dialogue_narrator_shiva_1": "Atop the sacred Mount Kailash, the universe trembles under the sound of distant drums...",
-		"dialogue_narrator_shiva_2": "Shiva, the god of dance and transformation, prepares to face the wrath of the storm...",
-		"dialogue_shiva_reflect_1": "This mountain is the pillar of the cosmos. Rudra wishes to bring destruction before its time.",
-		"dialogue_shiva_reflect_2": "I must dance the rhythm of creation to harmonize his destructive fury!",
-		"dialogue_shiva_rudra_1": "Rudra! Control your fury! The cosmic dance will restore balance.",
-		"dialogue_rudra_shiva_1": "ROOOAAR! Your dance is weak, Shiva! Let the storm consume everything!",
-		"dialogue_shiva_rudra_2": "QUACK! Then feel the beat of the universe! Follow my rhythm!",
-		"dialogue_shiva_victory_1": "The storm has calmed... The balance of the cosmos has been restored.",
-		"dialogue_shiva_victory_2": "Let peace reign over Kailash.",
+		"dialogue_narrator_shiva_1": "In the eternal snows of Mount Kailash, Rudra, the stormy face of wind and hunt, roars with blind fury...",
+		"dialogue_narrator_shiva_2": "To prevent the cosmos from burning to ashes before the cycle ends, Shiva Mahadeva must begin the dance of creation!",
+		"dialogue_shiva_reflect_1": "This sacred mountain supports the heavens. Rudra's untamed anger will throw off the cosmic balance.",
+		"dialogue_shiva_reflect_2": "I shall beat my Damaru drum and dance the Tandava to channel this chaos into new creation!",
+		"dialogue_shiva_rudra_1": "Rudra! The sound of my Damaru beats the pulse of the universe. Align with the cosmic harmony!",
+		"dialogue_rudra_shiva_1": "ROOOAAR! Your dance is but a flutter, Shiva! My storm shall blow the stars into oblivion!",
+		"dialogue_shiva_rudra_2": "QUACK! Destruction without creation is but void. Feel the eternal rhythm of my dance!",
+		"dialogue_shiva_victory_1": "The Tandava has dissolved the winds of ruin. Rudra has been pacified under the harmony of the spheres.",
+		"dialogue_shiva_victory_2": "Kailash remains at peace. The cosmic cycle continues in perfect balance.",
 		
 		# Rhythm UI & Settings
 		"ui_rhythm_combo": "Combo: ",
@@ -478,19 +482,19 @@ var translations: Dictionary = {
 		"char_jormungandr": "Jörmungandr",
 		
 		# Dialogue - Book 3 Intro
-		"dialogue_thor_story_intro_1": "Midgard, the realm of men, has been plagued by the cold of Fimbulwinter. From the depths of the ocean, the World Serpent awakened, spreading its poison across the Norse realms...",
-		"dialogue_thor_story_intro_2": "Ragnarök draws near. To save the nine realms, Thor must march towards the final battle against Jörmungandr.",
-		"dialogue_thor_story_intro_3": "Mjölnir calls for the thunder. No wolf, giant, or skeleton of Helheim shall stand!",
-		"dialogue_thor_intro_1": "Ragnarök draws near... I feel the serpent's poison in Midgard's air.",
+		"dialogue_thor_story_intro_1": "Fimbulwinter has covered Midgard in ice. The Midgard Serpent, Jörmungandr, awakened in the ocean depths, spitting poison into the skies...",
+		"dialogue_thor_story_intro_2": "Ragnarök has arrived. It is prophesied that the Thunder God will fall after taking nine steps due to the serpent's venom. Thor raises Mjölnir to defy fate!",
+		"dialogue_thor_story_intro_3": "Mjölnir calls for the thunder. No wolf of Fenrir, giant, or skeleton of Helheim shall stand!",
+		"dialogue_thor_intro_1": "Ragnarök draws near... I feel the serpent's poison corrupting the air of Midgard.",
 		"dialogue_thor_intro_2": "Mjölnir will guide my way. No beast of Helheim shall stop me!",
-		"dialogue_draugr_intro": "Gggrrr... Living flesh... You shall not pass through Midgard!",
-		"dialogue_generic_thor_fight_1": "Face me, creature! Feel the thunder of Asgard!",
-		"dialogue_generic_monster_growl": "Roaar! The monster lunges fiercely!",
-		"dialogue_thor_jormungandr_1": "Jörmungandr! Our final battle is today! For the fate of the nine realms!",
-		"dialogue_jormungandr_thor_1": "ROOOAAR! God of Thunder... Your body shall fall into the ocean, and your hammer will sink into the abyss!",
-		"dialogue_thor_jormungandr_2": "We shall see if your poison is stronger than the divine lightning! QUACK!",
-		"dialogue_thor_victory_1": "Jörmungandr has been defeated... Ragnarök has been halted and the serpent lies in the depths.",
-		"dialogue_thor_victory_2": "Midgard is saved! The thunder of Asgard triumphs once more!",
+		"dialogue_draugr_intro": "Gggrrr... Ragnarök consumes the flesh of gods! Your hammer falls today!",
+		"dialogue_generic_thor_fight_1": "For the glory of Asgard and Midgard! Feel the might of Mjölnir and the crackle of thunder!",
+		"dialogue_generic_monster_growl": "ROOOAAR! The creature bellows, raising claws covered in frost and broken shields!",
+		"dialogue_thor_jormungandr_1": "Jörmungandr! Spawn of Loki! Our old fishing feud ends today on the shores of the end of the world!",
+		"dialogue_jormungandr_thor_1": "ROOOAAR! Son of Odin... Your shield will shatter under my fangs, and your blood shall poison the ocean!",
+		"dialogue_thor_jormungandr_2": "We shall see if your poison can withstand ten thousand lightning bolts summoned from Asgard! QUACK!",
+		"dialogue_thor_victory_1": "The World Serpent falls lifeless. Prophecy has been defied, and the nine realms breathe once more.",
+		"dialogue_thor_victory_2": "Midgard is saved! Even the poison of Ragnarök retreats before the power of thunder! Odin is proud!",
 		
 		# Enemy Names
 		"draugr": "Draugr",
@@ -533,17 +537,17 @@ var translations: Dictionary = {
 		"char_orochi": "Yamata no Orochi",
 		
 		# Dialogue — Book IV Intro
-		"dialogue_narrator_susanoo_1": "In the lands of Izumo, an eight-headed beast terrorized the people...",
-		"dialogue_narrator_susanoo_2": "Yamata no Orochi — the great serpent — devoured a maiden every year. The last one was doomed...",
-		"dialogue_narrator_susanoo_3": "Susanoo, god of the storm, struck a deal: save the maiden Kushinada-hime in exchange for her hand in marriage.",
-		"dialogue_narrator_susanoo_4": "His plan was not brute force. It was cunning. Sake. And patience.",
+		"dialogue_narrator_susanoo_1": "Banished from heaven, the storm god Susanoo descended to the province of Izumo and found an elderly couple weeping...",
+		"dialogue_narrator_susanoo_2": "The terrifying eight-headed serpent Yamata-no-Orochi had already devoured seven of their daughters, and Kushinada was next.",
+		"dialogue_narrator_susanoo_3": "Susanoo transformed the maiden into a comb for his hair and ordered the people to brew sake refined eight times.",
+		"dialogue_narrator_susanoo_4": "The plan was simple yet brilliant: lure the colossal beast with sake in eight bowls, get it drunk, and strike!",
 		
 		# Dialogue — Book IV Victory
-		"dialogue_narrator_susanoo_victory_1": "The Orochi drank all the sake... and fell into a deep slumber.",
-		"dialogue_narrator_susanoo_victory_2": "Susanoo raised his sword Totsuka-no-Tsurugi and severed the eight heads of the beast. Izumo was saved.",
+		"dialogue_narrator_susanoo_victory_1": "The Orochi placed each of its heads into the sake bowls, drank greedily, and fell into a deep slumber.",
+		"dialogue_narrator_susanoo_victory_2": "Susanoo raised his sword Totsuka-no-Tsurugi and severed the eight heads of the beast. Izumo was saved and the legendary Kusanagi sword was found inside!",
 		
 		# Dialogue — Book IV Game Over
-		"dialogue_narrator_susanoo_caught": "One of Orochi's heads spotted Susanoo! The plan has been discovered...",
+		"dialogue_narrator_susanoo_caught": "One of the eight heads caught your scent and turned its glowing eyes towards you! The plan has failed!",
 		
 		# HUD — Book IV
 		"ui_susanoo_barrels": "Barrels placed: ",
@@ -567,14 +571,14 @@ var translations: Dictionary = {
 		"char_touro": "The Bull of Heaven",
 		
 		# Dialogue — Book V Intro
-		"dialogue_narrator_gilgamesh_1": "In the city of Uruk, Gilgamesh, the legendary king of heroes, challenged the wrath of the gods themselves...",
-		"dialogue_narrator_gilgamesh_2": "To punish his audacity, the goddess Ishtar unleashed the Bull of Heaven — a colossal beast of absolute destruction.",
-		"dialogue_narrator_gilgamesh_3": "The earthquake of its footsteps rips rifts in the earth. The storm follows in its wake. Uruk is about to fall.",
-		"dialogue_narrator_gilgamesh_4": "But Gilgamesh does not back down. With his Gate of Babylon ready, he will subdue the divine creature!",
+		"dialogue_narrator_gilgamesh_1": "After Gilgamesh rejected the goddess Ishtar, she demanded that her father Anu release the Bull of Heaven (Gugalanna) to destroy Uruk...",
+		"dialogue_narrator_gilgamesh_2": "The colossal beast's footsteps caused massive earthquakes that split the earth, swallowing hundreds of citizens.",
+		"dialogue_narrator_gilgamesh_3": "But Gilgamesh, the King of Heroes, alongside his loyal companion Enkidu, raised the Gate of Babylon to defend his people!",
+		"dialogue_narrator_gilgamesh_4": "This is not just a battle for honor: it is humanity's ultimate stand against the oppression of the gods themselves!",
 		
 		# Dialogue — Book V Victory
-		"dialogue_narrator_gilgamesh_victory_1": "Under an endless rain of golden spears and swords, the Bull of Heaven collapsed in defeat.",
-		"dialogue_narrator_gilgamesh_victory_2": "Gilgamesh proved that even divine wrath is no match for the King of Heroes. Uruk celebrates eternal victory!",
+		"dialogue_narrator_gilgamesh_victory_1": "Enkidu grabbed the bull by its horns, allowing Gilgamesh to pierce the divine beast with a barrage of legendary weapons.",
+		"dialogue_narrator_gilgamesh_victory_2": "The Bull of Heaven lies defeated. Gilgamesh proved that Uruk's pride and mortal bonds can overcome the fury of the heavens!",
 		
 		# Tutorial — Book V
 		"tutorial_title_book5": "📖 BOOK V — Gilgamesh vs The Bull of Heaven",
@@ -656,7 +660,7 @@ func save_settings():
 	config.set_value("settings", "sfx_volume", sfx_volume)
 
 	
-	for action in ["move_left", "move_right", "jump", "parry", "shoot"]:
+	for action in ["move_left", "move_right", "move_up", "move_down", "jump", "parry", "shoot"]:
 		var events = InputMap.action_get_events(action)
 		if not events.is_empty():
 			var event = events[0]
@@ -673,7 +677,7 @@ func reset_to_defaults():
 	if config.load(SAVE_PATH) == OK:
 		config.erase_section("keybinds")
 		config.save(SAVE_PATH)
-	for action in ["move_left", "move_right", "jump", "parry", "shoot"]:
+	for action in ["move_left", "move_right", "move_up", "move_down", "jump", "parry", "shoot"]:
 		InputMap.action_erase_events(action)
 	_setup_default_controls()
 	print("[SETTINGS] Controlos padrão restaurados!")
@@ -700,7 +704,7 @@ func load_settings():
 		_detect_recommended_resolution()
 	apply_resolution(current_resolution_index)
 	
-	for action in ["move_left", "move_right", "jump", "parry", "shoot"]:
+	for action in ["move_left", "move_right", "move_up", "move_down", "jump", "parry", "shoot"]:
 		if config.has_section_key("keybinds", action):
 			var data = config.get_value("keybinds", action)
 			InputMap.action_erase_events(action)
@@ -777,9 +781,8 @@ func _setup_default_controls():
 	# 4. parry
 	_ensure_action("parry", [
 		{"type": "key", "code": KEY_C},
-		{"type": "key", "code": KEY_SHIFT},
-		{"type": "joy_button", "code": JOY_BUTTON_B},
-		{"type": "joy_button", "code": JOY_BUTTON_X}
+		{"type": "joy_button", "code": JOY_BUTTON_Y},
+		{"type": "joy_button", "code": JOY_BUTTON_LEFT_SHOULDER}
 	])
 	
 	# 5. shoot
@@ -808,7 +811,14 @@ func _setup_default_controls():
 	# 8. ui_susanoo_place — colocar barril de sake (Livro IV)
 	_ensure_action("ui_susanoo_place", [
 		{"type": "key", "code": KEY_E},
-		{"type": "joy_button", "code": JOY_BUTTON_Y}
+		{"type": "joy_button", "code": JOY_BUTTON_Y},
+		{"type": "joy_button", "code": JOY_BUTTON_RIGHT_SHOULDER}
+	])
+
+	# 9. dash
+	_ensure_action("dash", [
+		{"type": "key", "code": KEY_SHIFT},
+		{"type": "joy_button", "code": JOY_BUTTON_B}
 	])
 
 func _ensure_action(action_name: String, bindings: Array):
@@ -882,6 +892,48 @@ func play_hover_sound():
 	sfx.stream = load("res://assets/sounds/click.wav")
 	sfx.pitch_scale = 0.85
 	sfx.volume_db = -14.0
+	sfx.bus = "SFX"
+	sfx.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(sfx)
+	sfx.play()
+	sfx.finished.connect(sfx.queue_free)
+
+
+# Toca efeito sonoro dramático de derrota (para a música, pitch grave e lento)
+func play_defeat_sound():
+	stop_music()
+	# Tom grave e pesado — soa a tragédia épica
+	var sfx1 = AudioStreamPlayer.new()
+	sfx1.stream = load("res://assets/sounds/explosion.wav")
+	sfx1.pitch_scale = 0.45
+	sfx1.volume_db = -4.0
+	sfx1.bus = "SFX"
+	sfx1.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(sfx1)
+	sfx1.play()
+	sfx1.finished.connect(sfx1.queue_free)
+
+	# Segundo som de dano em cima, ligeiramente atrasado
+	await get_tree().create_timer(0.35).timeout
+	if not is_inside_tree():
+		return
+	var sfx2 = AudioStreamPlayer.new()
+	sfx2.stream = load("res://assets/sounds/hurt.wav")
+	sfx2.pitch_scale = 0.5
+	sfx2.volume_db = -6.0
+	sfx2.bus = "SFX"
+	sfx2.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(sfx2)
+	sfx2.play()
+	sfx2.finished.connect(sfx2.queue_free)
+
+# Toca efeito sonoro triunfante de vitória (para a música, pitch agudo e vibrante)
+func play_victory_sound():
+	stop_music()
+	var sfx = AudioStreamPlayer.new()
+	sfx.stream = load("res://assets/sounds/power_up.wav")
+	sfx.pitch_scale = 1.25
+	sfx.volume_db = -3.0
 	sfx.bus = "SFX"
 	sfx.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(sfx)

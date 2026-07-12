@@ -90,6 +90,9 @@ var sound_clink: AudioStreamPlayer
 var sound_hurt: AudioStreamPlayer
 var sound_jump: AudioStreamPlayer
 
+# Partículas de pó dourado ao correr no chão
+var run_dust: CPUParticles2D = null
+
 # --- Referências ---
 @onready var sprite = $AnimatedSprite2D
 
@@ -109,19 +112,13 @@ func _ready():
 	# Animações do pato rodam mesmo com o jogo pausado
 	sprite.process_mode = Node.PROCESS_MODE_ALWAYS
 	
-	# Setup programático da ação "dash" caso não esteja no InputMap
-	if not InputMap.has_action("dash"):
-		InputMap.add_action("dash")
-		var ev_key = InputEventKey.new()
-		ev_key.physical_keycode = KEY_SHIFT
-		InputMap.action_add_event("dash", ev_key)
-		var ev_joy = InputEventJoypadButton.new()
-		ev_joy.button_index = JOY_BUTTON_B
-		InputMap.action_add_event("dash", ev_joy)
+
 	
 	camera = get_node_or_null("Camera2D")
-	if camera and not is_cutscene:
-		camera.limit_bottom = 55
+	if camera:
+		camera.limit_bottom = 48
+		camera.limit_left = -560
+		camera.limit_right = 560
 	
 	# Instanciar a UI do jogo automaticamente (apenas na fase de jogo, não no menu principal)
 	if not is_cutscene:
@@ -151,6 +148,27 @@ func _ready():
 	sound_jump.volume_db = -8.0
 	sound_jump.bus = "SFX"
 	add_child(sound_jump)
+
+	# Partículas de pó solar ao correr (Apolo)
+	run_dust = CPUParticles2D.new()
+	run_dust.amount = 10
+	run_dust.lifetime = 0.4
+	run_dust.emission_shape = CPUParticles2D.EMISSION_SHAPE_POINT
+	run_dust.direction = Vector2(-1.0, -0.3)
+	run_dust.spread = 25.0
+	run_dust.gravity = Vector2(0.0, 60.0)
+	run_dust.initial_velocity_min = 30.0
+	run_dust.initial_velocity_max = 65.0
+	run_dust.scale_amount_min = 1.5
+	run_dust.scale_amount_max = 3.0
+	run_dust.color = Color(1.0, 0.88, 0.3, 0.75)  # Pó solar dourado
+	var dg = Gradient.new()
+	dg.colors = [Color(1.0, 0.9, 0.4, 0.8), Color(1.0, 0.85, 0.25, 0.4), Color(0.9, 0.7, 0.1, 0.0)]
+	dg.offsets = [0.0, 0.55, 1.0]
+	run_dust.color_ramp = dg
+	run_dust.position = Vector2(0.0, 14.0)    # Pés do pato
+	run_dust.emitting = false
+	add_child(run_dust)
 
 func instantiate_ui():
 	var parent = get_parent()
@@ -247,6 +265,14 @@ func _physics_process(delta):
 	
 	_update_animation()
 	move_and_slide()
+	
+	# Controlo das partículas de pó solar ao correr no chão
+	if run_dust and not is_cutscene:
+		var running_on_floor = is_on_floor() and abs(velocity.x) > 20.0 and not is_dashing
+		run_dust.emitting = running_on_floor
+		if running_on_floor:
+			# Direccão do pó oposta ao movimento
+			run_dust.direction = Vector2(-1.0 if velocity.x > 0 else 1.0, -0.25)
 	
 	# Atualiza tremor e movimento suave da câmara
 	_process_camera(delta)

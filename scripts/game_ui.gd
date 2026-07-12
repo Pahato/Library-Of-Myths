@@ -58,6 +58,7 @@ func _ready():
 		retry_button.text = GameGlobals.get_text("gameover_retry")
 		$VictoryScreen/Panel/TitleLabel.text = GameGlobals.get_text("victory_title")
 		menu_button.text = GameGlobals.get_text("victory_menu")
+		_apply_apollo_hud_styles()
 	
 	# Ligar botões base
 	retry_button.pressed.connect(_on_retry_pressed)
@@ -75,6 +76,9 @@ func _ready():
 	
 	# Inicializar Keystroke HUD
 	_setup_keystroke_hud()
+	
+	# Inicializar fundos das HUDs para legibilidade
+	_setup_hud_backgrounds(is_rhythm)
 	
 	# Procurar e conectar-se ao Jogador
 	_setup_player()
@@ -216,6 +220,9 @@ func _on_player_health_changed(health: int):
 
 func _on_player_died():
 	print("[DEATH DEBUG] Player died. Setting up game over screen...")
+	# Toca som de derrota temático antes de pausar
+	if GameGlobals:
+		GameGlobals.play_defeat_sound()
 	get_tree().paused = true
 	game_over_screen.show()
 	
@@ -248,6 +255,9 @@ func _on_boss_died():
 			var dialogue = victory_dialogue_scene.instantiate()
 			dialogue.dialogue_list = victory_lines
 			dialogue.dialogue_finished.connect(func():
+				# Toca som de vitória triunfante
+				if GameGlobals:
+					GameGlobals.play_victory_sound()
 				get_tree().paused = true
 				victory_screen.show()
 				victory_screen.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -438,6 +448,39 @@ func _setup_keystroke_hud():
 	keystroke_container.offset_right = -4.0
 	keystroke_container.offset_bottom = 115.0
 	add_child(keystroke_container)
+	
+	# Determinar cor temática baseada na cena ativa
+	var accent_color = Color(1.0, 0.85, 0.25, 1.0)
+	var scene_name = ""
+	if get_tree().current_scene:
+		scene_name = get_tree().current_scene.name
+	if "Rhythm" in scene_name or "Shiva" in scene_name:
+		accent_color = Color(0.7, 0.3, 1.0, 1.0)
+	elif "Thor" in scene_name or "Battle" in scene_name:
+		accent_color = Color(0.3, 0.6, 1.0, 1.0)
+	elif "Susano" in scene_name or "Orochi" in scene_name:
+		accent_color = Color(0.9, 0.15, 0.15, 1.0)
+	elif "Gilgamesh" in scene_name:
+		accent_color = Color(1.0, 0.75, 0.1, 1.0)
+		
+	# Adicionar painel de fundo para o Keystroke HUD
+	var keystroke_bg = Panel.new()
+	keystroke_bg.name = "KeystrokeBG"
+	keystroke_bg.position = Vector2(8, -4)
+	keystroke_bg.size = Vector2(94, 94)
+	
+	var sb_bg = StyleBoxFlat.new()
+	sb_bg.bg_color = Color(0.04, 0.03, 0.02, 0.58)
+	sb_bg.corner_radius_top_left = 6
+	sb_bg.corner_radius_top_right = 6
+	sb_bg.corner_radius_bottom_left = 6
+	sb_bg.corner_radius_bottom_right = 6
+	sb_bg.border_width_bottom = 2
+	sb_bg.border_color = Color(accent_color.r, accent_color.g, accent_color.b, 0.38)
+	keystroke_bg.add_theme_stylebox_override("panel", sb_bg)
+	keystroke_container.add_child(keystroke_bg)
+	# Garante que desenha atrás das teclas
+	keystroke_container.move_child(keystroke_bg, 0)
 	
 	# Layout das teclas: { nome: [texto, size, position] }
 	# Coordenadas ajustadas para ficarem compactas e proporcionais
@@ -648,7 +691,154 @@ func _style_rhythm_hud_button(btn: Button, font: FontFile, border_color: Color, 
 
 func _load_font(bold: bool = false) -> FontFile:
 	var path = "res://assets/fonts/Cinzel-Bold.ttf" if bold else "res://assets/fonts/Cinzel-Regular.ttf"
-	var f = FontFile.new()
-	if f.load_dynamic_font(path) != OK:
-		return null
-	return f
+	return load(path) as FontFile
+
+func _setup_hud_backgrounds(is_rhythm: bool):
+	if is_rhythm:
+		if ammo_label: ammo_label.hide()
+		if dash_label: dash_label.hide()
+		return
+		
+	# Criar painel de fundo para o HUD do jogador (corações, munição, dash) no canto superior esquerdo
+	var player_hud_bg = Panel.new()
+	player_hud_bg.name = "PlayerHUDBG"
+	player_hud_bg.position = Vector2(10, 10)
+	
+	# Ajustar largura do painel dinamicamente consoante a vida máxima (dificuldade) do jogador
+	var max_hp = 6
+	if GameGlobals:
+		max_hp = GameGlobals.get_player_max_health()
+		
+	var panel_width = 290.0
+	match max_hp:
+		8: panel_width = 370.0 # Fácil: mais corações
+		6: panel_width = 290.0 # Normal: padrão
+		4: panel_width = 210.0 # Difícil: menos corações
+		_: panel_width = 290.0
+		
+	player_hud_bg.size = Vector2(panel_width, 78)
+	
+	# Determinar cor de destaque temática baseada na cena ativa
+	var accent_color = Color(1.0, 0.85, 0.25, 1.0) # Apolo por defeito
+	
+	var sb = StyleBoxFlat.new()
+	sb.bg_color = Color(0.04, 0.03, 0.02, 0.58) # Translúcido escuro premium
+	sb.corner_radius_top_left = 6
+	sb.corner_radius_top_right = 6
+	sb.corner_radius_bottom_left = 6
+	sb.corner_radius_bottom_right = 6
+	sb.border_width_bottom = 2
+	sb.border_color = Color(accent_color.r, accent_color.g, accent_color.b, 0.38)
+	player_hud_bg.add_theme_stylebox_override("panel", sb)
+	
+	add_child(player_hud_bg)
+	move_child(player_hud_bg, 0) # Desenha por trás de tudo
+
+func _apply_apollo_hud_styles():
+	var font_bold = _load_font(true)
+	var font_reg = _load_font(false)
+	
+	# 1. Cores de fundo (ColorRect)
+	var go_color_rect = $GameOverScreen/ColorRect
+	if go_color_rect:
+		go_color_rect.color = Color(0.08, 0.05, 0.03, 0.75) # Castanho dourado escuro
+		
+	var vic_color_rect = $VictoryScreen/ColorRect
+	if vic_color_rect:
+		vic_color_rect.color = Color(0.08, 0.05, 0.03, 0.75)
+		
+	# 2. Painel de GameOver
+	var go_panel = $GameOverScreen/Panel
+	if go_panel:
+		var sb = StyleBoxFlat.new()
+		sb.bg_color = Color(0.08, 0.05, 0.03, 0.97) # Castanho rústico antigo
+		sb.border_width_left = 2
+		sb.border_width_top = 2
+		sb.border_width_right = 2
+		sb.border_width_bottom = 2
+		sb.border_color = Color(0.85, 0.65, 0.25, 1.0) # Dourado de Apolo
+		sb.corner_radius_top_left = 6
+		sb.corner_radius_top_right = 6
+		sb.corner_radius_bottom_left = 6
+		sb.corner_radius_bottom_right = 6
+		sb.shadow_size = 15
+		sb.shadow_color = Color(0, 0, 0, 0.8)
+		go_panel.add_theme_stylebox_override("panel", sb)
+		
+	# 3. Painel de Vitória
+	var vic_panel = $VictoryScreen/Panel
+	if vic_panel:
+		var sb = StyleBoxFlat.new()
+		sb.bg_color = Color(0.08, 0.05, 0.03, 0.97)
+		sb.border_width_left = 2
+		sb.border_width_top = 2
+		sb.border_width_right = 2
+		sb.border_width_bottom = 2
+		sb.border_color = Color(0.85, 0.65, 0.25, 1.0)
+		sb.corner_radius_top_left = 6
+		sb.corner_radius_top_right = 6
+		sb.corner_radius_bottom_left = 6
+		sb.corner_radius_bottom_right = 6
+		sb.shadow_size = 15
+		sb.shadow_color = Color(0, 0, 0, 0.8)
+		vic_panel.add_theme_stylebox_override("panel", sb)
+		
+	# 4. Título de GameOver
+	var go_label = $GameOverScreen/Panel/TitleLabel
+	if go_label:
+		if font_bold: go_label.add_theme_font_override("font", font_bold)
+		go_label.add_theme_font_size_override("font_size", 22)
+		go_label.add_theme_color_override("font_color", Color(0.9, 0.2, 0.2, 1.0)) # Vermelho solar de perigo
+		go_label.add_theme_constant_override("outline_size", 3)
+		go_label.add_theme_color_override("font_outline_color", Color.BLACK)
+		
+	# Título de Vitória
+	var vic_label = $VictoryScreen/Panel/TitleLabel
+	if vic_label:
+		if font_bold: vic_label.add_theme_font_override("font", font_bold)
+		vic_label.add_theme_font_size_override("font_size", 22)
+		vic_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.25, 1.0)) # Dourado de Apolo
+		vic_label.add_theme_constant_override("outline_size", 3)
+		vic_label.add_theme_color_override("font_outline_color", Color.BLACK)
+		
+	# 5. Botões
+	_style_apollo_hud_button(retry_button, font_reg)
+	_style_apollo_hud_button(menu_button, font_reg)
+	if is_instance_valid(go_menu_button):
+		_style_apollo_hud_button(go_menu_button, font_reg)
+
+func _style_apollo_hud_button(btn: Button, font: FontFile):
+	if not btn: return
+	if font: btn.add_theme_font_override("font", font)
+	btn.add_theme_font_size_override("font_size", 13)
+	btn.add_theme_color_override("font_color", Color(0.92, 0.85, 0.70, 1.0))
+	btn.add_theme_color_override("font_hover_color", Color(1.0, 0.95, 0.6, 1.0))
+	btn.add_theme_color_override("font_pressed_color", Color(1.0, 1.0, 1.0, 1.0))
+	
+	var sb_normal = StyleBoxFlat.new()
+	sb_normal.bg_color = Color(0.14, 0.09, 0.05, 0.85)
+	sb_normal.border_color = Color(0.55, 0.42, 0.18, 0.7)
+	sb_normal.border_width_left = 1
+	sb_normal.border_width_top = 1
+	sb_normal.border_width_right = 1
+	sb_normal.border_width_bottom = 1
+	sb_normal.corner_radius_top_left = 3
+	sb_normal.corner_radius_top_right = 3
+	sb_normal.corner_radius_bottom_left = 3
+	sb_normal.corner_radius_bottom_right = 3
+	
+	var sb_hover = StyleBoxFlat.new()
+	sb_hover.bg_color = Color(0.30, 0.18, 0.05, 0.95)
+	sb_hover.border_color = Color(0.9, 0.72, 0.3, 1.0)
+	sb_hover.border_width_left = 1
+	sb_hover.border_width_top = 1
+	sb_hover.border_width_right = 1
+	sb_hover.border_width_bottom = 1
+	sb_hover.corner_radius_top_left = 3
+	sb_hover.corner_radius_top_right = 3
+	sb_hover.corner_radius_bottom_left = 3
+	sb_hover.corner_radius_bottom_right = 3
+	
+	btn.add_theme_stylebox_override("normal", sb_normal)
+	btn.add_theme_stylebox_override("hover", sb_hover)
+	btn.add_theme_stylebox_override("focus", sb_hover)

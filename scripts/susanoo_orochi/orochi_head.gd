@@ -75,6 +75,13 @@ const CONE_COLOR_ALERT  := Color(1.0, 0.0, 0.0, 0.40)
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_PAUSABLE
 
+	# A textura do Orochi está virada para a esquerda por defeito, mas o código de visão 
+	# e rotação do nó assume que aponta para a direita (eixo X local).
+	# Rodamos a Sprite em 180 graus (PI) para que alinhe com a física e o cone de visão!
+	var sprite = get_node_or_null("Sprite")
+	if sprite:
+		sprite.rotation = PI
+
 	# Caso não haja pontos de patrulha definidos, a cabeça fica estática.
 	if patrol_points.is_empty():
 		patrol_points.append(global_position)
