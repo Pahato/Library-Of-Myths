@@ -1,0 +1,3171 @@
+extends Control
+class_name ThorBattle
+
+# =============================================================================
+# THOR BATTLE — Motor de Combate RPG por Turnos (Slay the Spire)
+# Livro III: Thor vs Jörmungandr
+# =============================================================================
+
+# --- Estados ---
+enum BattleState { INTRO, PLAYER_TURN, ENEMY_TURN, ANIMATION, REWARD, VICTORY, DEFEAT, CINEMATIC_DEATH, CINEMATIC_AWAKENING, PHASE_2_START }
+var state: BattleState = BattleState.INTRO
+
+# --- Configuração da Cinemática do Jörmungandr ---
+var jormungandr_cinematic_trigger_turn: int = 4  # Turno em que a cinemática começa (ajustável)
+var jormungandr_cinematic_triggered: bool = false  # Se a cinemática já foi disparada
+var jormungandr_cinematic_phase: int = 0  # 0=normal, 1=ataque normal, 2=diálogo, 3=999 intent, 4=execução
+var jormungandr_phase_2: bool = false  # Se estamos na 2ª fase
+var jormungandr_turn_count: int = 0  # Contador de turnos do jogador contra Jörmungandr
+var jormungandr_original_max_hp: int = 0  # HP máximo original do boss
+var jormungandr_original_deck: Array = []  # Deck original salvo para referência
+var awakening_cinematic_step: int = 0  # Passo atual da cinemática de despertar
+var cinematic_overlay: Control = null  # Overlay para a cinemática
+var last_enemy_intent_type: int = -1  # Tipo da última intenção do inimigo (para IA contextual)
+var enemy_skip_turn: int = 0  # Contador de turnos do inimigo a pular (Cadeia de Fenrir)
+
+# --- Dados do Jogador (Thor) ---
+# Serão puxados do GameGlobals no _ready()
+var player_hp: int = 80
+var player_max_hp: int = 80
+var player_block: int = 0
+var player_energy: int = 3
+var player_max_energy: int = 3
+var player_strength: int = 0
+var player_draw_count: int = 5
+var player_block_per_turn: int = 0
+var player_draw_bonus: int = 0
+var player_gold: int = 0
+var player_relics: Array = []
+
+# --- Deck ---
+var deck: Array = []          # Deck completo (referência)
+var draw_pile: Array = []     # Pilha de compra
+var hand: Array = []          # Mão do jogador
+var discard_pile: Array = []  # Pilha de descarte
+var powers_active: Array = [] # Poderes ativos (permanentes)
+var combat_waves: Array = []  # Reforços / inimigos adicionais nesta fase
+var current_wave: int = 1
+var total_waves: int = 1
+
+# --- Dados do Inimigo ---
+var enemy_data: Dictionary = {}
+var enemy_hp: int = 0
+var enemy_max_hp: int = 0
+var enemy_block: int = 0
+var enemy_strength: int = 0
+var enemy_vulnerable: int = 0
+var enemy_intent: Dictionary = {}
+
+# --- Referências de UI (criadas programaticamente) ---
+var bg_rect: TextureRect = null
+var player_sprite: TextureRect = null
+var player_node: CharacterBody2D = null
+var player_container: VBoxContainer = null
+var enemy_container: VBoxContainer = null
+var enemy_texture_rect: TextureRect = null
+var dialogue_scene = preload("res://scenes/dialogue_box.tscn")
+var player_vulnerable: int = 0
+var anim_time: float = 0.0
+var enemy_panel: Panel = null
+var enemy_icon_label: Label = null
+
+var player_hp_bar: ProgressBar = null
+var player_hp_label: Label = null
+var player_block_label: Label = null
+var enemy_hp_bar: ProgressBar = null
+var enemy_hp_label: Label = null
+var enemy_block_label: Label = null
+var enemy_name_label: Label = null
+var enemy_intent_label: Label = null
+var wave_label: Label = null
+
+var energy_label: Label = null
+var end_turn_btn: Button = null
+var card_container: HBoxContainer = null
+var info_label: Label = null        # Feedback de ação (ex: "PERFEITO!", "-12 HP")
+var deck_count_label: Label = null
+
+# --- Configuração ---
+var font_bold: FontFile = null
+var font_reg: FontFile = null
+
+const CARD_WIDTH: int = 110
+const CARD_HEIGHT: int = 155
+const ACCENT_COLOR = Color(0.3, 0.6, 1.0, 1.0)       # Azul elétrico
+const GOLD_COLOR = Color(1.0, 0.85, 0.25, 1.0)         # Dourado
+const DAMAGE_COLOR = Color(1.0, 0.3, 0.3, 1.0)         # Vermelho
+const HEAL_COLOR = Color(0.3, 1.0, 0.5, 1.0)           # Verde
+const BLOCK_COLOR = Color(0.5, 0.7, 1.0, 1.0)          # Azul claro
+const ENERGY_COLOR = Color(1.0, 0.8, 0.2, 1.0)         # Amarelo energia
+
+# Referência às partículas de faiscas elétricas do Thor
+var thunder_particles: CPUParticles2D = null
+
+# =============================================================================
+# INICIALIZAÇÃO
+# =============================================================================
+
+func _ready():
+	if GameGlobals:
+		GameGlobals.current_book = 3
+	# Carregar fontes
+	font_bold = _load_font(true)
+	font_reg = _load_font(false)
+	
+	# Inicializar deck starter
+	_init_deck()
+	
+	# Inicializar inimigo do nó atual do mapa (ou draugr por padrão)
+	_init_enemy("")
+	
+	# Construir toda a UI
+	_build_ui()
+	_update_all_ui()
+	
+	# Música temática do Thor
+	if GameGlobals:
+		GameGlobals.play_music("res://assets/music/time_for_adventure.wav", -8.0)
+	
+	# Começar com a animação de entrada e história
+	_play_intro_animation()
+
+func _get_trans(pt: String, en: String) -> String:
+	var is_pt = true
+	if GameGlobals:
+		is_pt = GameGlobals.current_language == GameGlobals.Language.PT
+	return pt if is_pt else en
+
+func _process(delta):
+	anim_time += delta
+	if enemy_panel and enemy_panel.visible:
+		# Breathing pulse scale (wiggle)
+		var pulse = 1.0 + sin(anim_time * 3.5) * 0.03
+		enemy_panel.scale = Vector2(pulse, pulse)
+		enemy_panel.pivot_offset = enemy_panel.size / 2
+		
+		# Slight slither tilt rotation
+		var tilt = sin(anim_time * 2.2) * 2.0
+		enemy_panel.rotation_degrees = tilt
+	
+	# Faiscas elétricas ativas só no turno do jogador
+	if thunder_particles:
+		thunder_particles.emitting = (state == BattleState.PLAYER_TURN)
+
+func _load_font(bold: bool = false) -> FontFile:
+	var path = "res://assets/fonts/Cinzel-Bold.ttf" if bold else "res://assets/fonts/Cinzel-Regular.ttf"
+	var f = FontFile.new()
+	if f.load_dynamic_font(path) != OK:
+		return null
+	return f
+
+# Cria a rampa de cor das faíscas elétricas azuis do Thor
+func _make_blue_spark_gradient() -> Gradient:
+	var g = Gradient.new()
+	g.colors = [Color(0.5, 0.85, 1.0, 0.95), Color(0.2, 0.6, 1.0, 0.6), Color(0.1, 0.3, 0.8, 0.0)]
+	g.offsets = [0.0, 0.5, 1.0]
+	return g
+
+
+func _init_deck():
+	if GameGlobals and GameGlobals.thor_run_active:
+		# Puxar dados da run atual
+		player_hp = GameGlobals.thor_hp
+		player_max_hp = GameGlobals.thor_max_hp
+		player_gold = GameGlobals.thor_gold
+		deck = GameGlobals.thor_deck.duplicate()
+	else:
+		# Teste isolado (fallback)
+		player_hp = 80
+		player_max_hp = 80
+		player_gold = 0
+		deck = ThorCardDatabase.get_starter_deck()
+	
+	draw_pile = deck.duplicate()
+	draw_pile.shuffle()
+	hand.clear()
+	discard_pile.clear()
+
+func _init_enemy(enemy_id: String = ""):
+	var id_to_spawn = enemy_id
+	var _is_elite = false
+	var _is_boss = false
+	combat_waves.clear()
+	
+	if id_to_spawn == "" and GameGlobals and GameGlobals.thor_run_active:
+		# Encontrar o nó atual no mapa
+		var current_node = null
+		if not GameGlobals.thor_map_data.is_empty():
+			for layer_idx in GameGlobals.thor_map_data:
+				var layer = GameGlobals.thor_map_data[layer_idx]
+				for node in layer:
+					if node.id == GameGlobals.thor_node_id:
+						current_node = node
+						break
+				if current_node: break
+			
+		if current_node:
+			# Deriva o ato a partir da layer atual para progressão de dificuldade
+			# Layers 1-5 = Ato 1 (Midgard), 6-10 = Ato 2 (Jotunheim), 11-14 = Ato 3 (Helheim)
+			var layer_num = current_node.layer
+			var act: int
+			if layer_num <= 5:
+				act = 1
+			elif layer_num <= 10:
+				act = 2
+			else:
+				act = 3
+			
+			# 0 = COMBAT, 1 = ELITE, 2 = REST, 3 = SHOP, 4 = BOSS
+			if current_node.type == 4: # BOSS
+				_is_boss = true
+				id_to_spawn = "jormungandr"
+			elif current_node.type == 1: # ELITE — usa o elite específico do nó
+				_is_elite = true
+				if GameGlobals.thor_current_elite != "":
+					id_to_spawn = GameGlobals.thor_current_elite
+				else:
+					# Fallback para escolha aleatória se não houver elite definido
+					var elites_for_act = ThorEnemyDatabase.get_elites_for_act(act)
+					if elites_for_act.is_empty():
+						elites_for_act = ["hel_rainha", "fenrir_gigante", "gigante_gelo"]
+					id_to_spawn = elites_for_act.pick_random()
+			else:
+				# COMBAT normal — inimigo aleatório do ato atual com probabilidades ponderadas
+				id_to_spawn = ThorEnemyDatabase.get_weighted_normal_enemy(act)
+				# 45% de chance de ter um segundo inimigo diferente como onda de reforço
+				var normals = ThorEnemyDatabase.get_enemies_for_act(act)
+				if normals.size() > 0:
+					if randf() < 0.45:
+						var wave_candidates = []
+						for e in normals:
+							if e != id_to_spawn:
+								wave_candidates.append(e)
+						if not wave_candidates.is_empty():
+							combat_waves = [wave_candidates.pick_random()]
+				else:
+					id_to_spawn = "draugr"
+		else:
+			id_to_spawn = "draugr"
+	elif id_to_spawn == "":
+		id_to_spawn = "draugr"
+		
+	current_wave = 1
+	total_waves = 1 + combat_waves.size()
+		
+	enemy_data = ThorEnemyDatabase.get_enemy(id_to_spawn)
+	var diff_mult = 1.0
+	if GameGlobals:
+		match GameGlobals.current_difficulty:
+			GameGlobals.Difficulty.EASY: diff_mult = 0.8
+			GameGlobals.Difficulty.HARD: diff_mult = 1.25
+			
+	var hp = int(randi_range(enemy_data.hp_min, enemy_data.hp_max) * diff_mult)
+	enemy_hp = hp
+	enemy_max_hp = hp
+	enemy_block = 0
+	enemy_strength = 0
+	enemy_vulnerable = 0
+	enemy_intent = ThorEnemyDatabase.get_random_intent(id_to_spawn, player_vulnerable, -1)
+	last_enemy_intent_type = enemy_intent.get("type", -1)
+	
+	# Inicializar variáveis da cinemática do Jörmungandr
+	if id_to_spawn == "jormungandr":
+		jormungandr_turn_count = 0
+		jormungandr_cinematic_triggered = false
+		jormungandr_phase_2 = false
+		jormungandr_original_max_hp = enemy_max_hp
+		jormungandr_original_deck = deck.duplicate()
+	else:
+		jormungandr_cinematic_triggered = false
+		jormungandr_phase_2 = false
+
+# =============================================================================
+# CONSTRUÇÃO DA UI (100% PROGRAMÁTICA)
+# =============================================================================
+
+func _build_ui():
+	# --- Fundo ---
+	var bg_color = ColorRect.new()
+	bg_color.color = Color(0.05, 0.07, 0.12, 1.0) # Azul escuro nórdico
+	bg_color.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(bg_color)
+	
+	# Tentar carregar o fundo dinâmico por inimigo (Cenários folder) ou fallback geral
+	var enemy_bg_map = {
+		"draugr": "draugr_bg",
+		"lobo_fenrir": "loboFenrir_bg",
+		"gigante_gelo": "giganteGelo_bg",
+		"corvos_hel": "corvosHel_bg",
+		"esqueleto_viking": "esqueletoViking_bg",
+		"hel_rainha": "helRainhaBoss_bg",
+		"fenrir_gigante": "fenrirGignateBoss_bg",
+		"jormungandr": "serpenteDoMundo_bg"
+	}
+	var bg_file = enemy_bg_map.get(enemy_data.get("id", ""), "")
+	var bg_tex = null
+	if bg_file != "":
+		var cenario_path = "res://assets/sprites/Sprites Thor/Cenários/" + bg_file + ".png"
+		if ResourceLoader.exists(cenario_path):
+			bg_tex = load(cenario_path)
+	if bg_tex == null:
+		bg_tex = load("res://assets/sprites/ThorJormungandr_bg.png")
+	if bg_tex:
+		bg_rect = TextureRect.new()
+		bg_rect.texture = bg_tex
+		bg_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		bg_rect.stretch_mode = TextureRect.STRETCH_SCALE
+		bg_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg_rect.modulate = Color(1, 1, 1, 0.45)
+		bg_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(bg_rect)
+		
+	# Vignette para profundidade e atmosfera premium
+	var vignette = TextureRect.new()
+	vignette.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
+	var grad = Gradient.new()
+	grad.colors = [Color(0, 0, 0, 0.0), Color(0, 0, 0, 0.85)]
+	grad.offsets = [0.0, 1.0]
+	
+	var grad_tex = GradientTexture2D.new()
+	grad_tex.gradient = grad
+	grad_tex.fill = GradientTexture2D.FILL_RADIAL
+	grad_tex.fill_from = Vector2(0.5, 0.5)
+	grad_tex.fill_to = Vector2(1.2, 1.2)
+	
+	vignette.texture = grad_tex
+	add_child(vignette)
+	
+	# Plataformas Nórdicas de Basalto com brilho elétrico
+	var sb_platform = StyleBoxFlat.new()
+	sb_platform.bg_color = Color(0.08, 0.1, 0.14, 1.0) # Basalto azul-escuro nórdico
+	sb_platform.border_width_top = 3
+	sb_platform.border_color = Color(0.3, 0.75, 1.0, 0.85) # Carga elétrica/relâmpago
+	sb_platform.corner_radius_top_left = 6
+	sb_platform.corner_radius_top_right = 6
+	sb_platform.shadow_size = 12
+	sb_platform.shadow_color = Color(0.2, 0.6, 0.9, 0.35) # Glow ciano
+	
+	var player_platform = Panel.new()
+	player_platform.size = Vector2(180, 20)
+	player_platform.position = Vector2(180, 370)
+	player_platform.add_theme_stylebox_override("panel", sb_platform)
+	add_child(player_platform)
+	
+	var enemy_platform = Panel.new()
+	enemy_platform.size = Vector2(180, 20)
+	enemy_platform.position = Vector2(792, 370)
+	enemy_platform.add_theme_stylebox_override("panel", sb_platform)
+	add_child(enemy_platform)
+	
+	# --- Área de Combate (centro) ---
+	_build_player_area()
+	_build_enemy_area()
+	
+	# --- Barra inferior (cartas + energia) ---
+	_build_bottom_bar()
+	
+	# --- Info Label (feedback central) ---
+	info_label = Label.new()
+	info_label.set_anchors_preset(Control.PRESET_CENTER)
+	info_label.anchor_left = 0.5
+	info_label.anchor_top = 0.35
+	info_label.anchor_right = 0.5
+	info_label.anchor_bottom = 0.35
+	info_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	info_label.grow_vertical = Control.GROW_DIRECTION_BOTH
+	info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	info_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	if font_bold:
+		info_label.add_theme_font_override("font", font_bold)
+	info_label.add_theme_font_size_override("font_size", 28)
+	info_label.add_theme_color_override("font_color", GOLD_COLOR)
+	info_label.add_theme_constant_override("outline_size", 6)
+	info_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	info_label.modulate.a = 0.0
+	info_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(info_label)
+
+func _build_player_area():
+	# Container do jogador (lado esquerdo) - Posicionado de forma absoluta sobre a cabeça (estilo HSR)
+	player_container = VBoxContainer.new()
+	player_container.position = Vector2(170, 195) # Posicionado 15px mais alto (Y=195) para ficar perfeitamente acima da cabeça sem sobrepor
+	player_container.size = Vector2(200, 100)
+	player_container.add_theme_constant_override("separation", 2)
+	player_container.alignment = BoxContainer.ALIGNMENT_BEGIN
+	add_child(player_container)
+	
+	# Nome "THOR"
+	var name_lbl = Label.new()
+	name_lbl.text = "⚡ THOR"
+	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if font_bold:
+		name_lbl.add_theme_font_override("font", font_bold)
+	name_lbl.add_theme_font_size_override("font_size", 16)
+	name_lbl.add_theme_color_override("font_color", ACCENT_COLOR)
+	name_lbl.add_theme_constant_override("outline_size", 3)
+	name_lbl.add_theme_color_override("font_outline_color", Color.BLACK)
+	player_container.add_child(name_lbl)
+	
+	player_sprite = TextureRect.new() # Mantido apenas para compatibilidade
+	
+	# HP Bar
+	player_hp_bar = ProgressBar.new()
+	player_hp_bar.custom_minimum_size = Vector2(140, 16)
+	player_hp_bar.max_value = player_max_hp
+	player_hp_bar.value = player_hp
+	player_hp_bar.show_percentage = false
+	
+	# Estilo premium da barra de vida com moldura dourada
+	var hp_sb = StyleBoxFlat.new()
+	hp_sb.bg_color = Color(0.04, 0.04, 0.06, 0.85)
+	hp_sb.border_width_left = 1
+	hp_sb.border_width_top = 1
+	hp_sb.border_width_right = 1
+	hp_sb.border_width_bottom = 1
+	hp_sb.border_color = GOLD_COLOR
+	hp_sb.corner_radius_top_left = 5
+	hp_sb.corner_radius_top_right = 5
+	hp_sb.corner_radius_bottom_left = 5
+	hp_sb.corner_radius_bottom_right = 5
+	player_hp_bar.add_theme_stylebox_override("background", hp_sb)
+	
+	var hp_fill = StyleBoxFlat.new()
+	hp_fill.bg_color = Color(0.12, 0.75, 0.35, 1.0) # Emerald Green
+	hp_fill.corner_radius_top_left = 4
+	hp_fill.corner_radius_top_right = 4
+	hp_fill.corner_radius_bottom_left = 4
+	hp_fill.corner_radius_bottom_right = 4
+	player_hp_bar.add_theme_stylebox_override("fill", hp_fill)
+	hp_fill.corner_radius_bottom_left = 4
+	hp_fill.corner_radius_bottom_right = 4
+	player_hp_bar.add_theme_stylebox_override("fill", hp_fill)
+	player_hp_bar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	player_container.add_child(player_hp_bar)
+	
+	# HP Label
+	player_hp_label = Label.new()
+	player_hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if font_reg:
+		player_hp_label.add_theme_font_override("font", font_reg)
+	player_hp_label.add_theme_font_size_override("font_size", 11)
+	player_hp_label.add_theme_color_override("font_color", Color.WHITE)
+	player_container.add_child(player_hp_label)
+	
+	# Block Label
+	player_block_label = Label.new()
+	player_block_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if font_reg:
+		player_block_label.add_theme_font_override("font", font_reg)
+	player_block_label.add_theme_font_size_override("font_size", 11)
+	player_block_label.add_theme_color_override("font_color", BLOCK_COLOR)
+	player_container.add_child(player_block_label)
+
+func _build_enemy_area():
+	# Jogador Visível (Pato - player.tscn)
+	var player_scene = preload("res://scenes/apolo_python/player.tscn")
+	player_node = player_scene.instantiate()
+	player_node.name = "Player"
+	player_node.is_cutscene = true
+	player_node.current_god_mode = 2 # GodMode.THOR = 2
+	player_node.position = Vector2(270, 328) # Alinhado com a plataforma (pés assentam no rebordo)
+	
+	# Desativar física, inputs da cena e UI padrão do jogador
+	player_node.set_physics_process(false)
+	player_node.set_process(false)
+	player_node.set_process_input(false)
+	player_node.set_process_unhandled_input(false)
+	
+	# Remover a câmara se ela existir para não chocar com a UI
+	for child in player_node.get_children():
+		if child is Camera2D:
+			child.queue_free()
+			
+	add_child(player_node)
+	
+	# Iniciar animação Idle e definir escala
+	var anim_sprite = player_node.get_node_or_null("AnimatedSprite2D")
+	if anim_sprite:
+		anim_sprite.play("Idle")
+		anim_sprite.scale = Vector2(3.5, 3.5)
+		anim_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	
+	# Faiscas elétricas de Thor (CPUParticles2D)
+	thunder_particles = CPUParticles2D.new()
+	thunder_particles.amount = 12
+	thunder_particles.lifetime = 0.6
+	thunder_particles.preprocess = 0.0
+	thunder_particles.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	thunder_particles.emission_rect_extents = Vector2(18, 22)
+	thunder_particles.direction = Vector2(0.0, -1.0)
+	thunder_particles.spread = 50.0
+	thunder_particles.gravity = Vector2(0.0, -20.0)
+	thunder_particles.initial_velocity_min = 25.0
+	thunder_particles.initial_velocity_max = 55.0
+	thunder_particles.scale_amount_min = 1.5
+	thunder_particles.scale_amount_max = 3.5
+	thunder_particles.color = Color(0.35, 0.75, 1.0, 0.9)
+	thunder_particles.color_ramp = _make_blue_spark_gradient()
+	thunder_particles.position = Vector2(0.0, -30.0)  # Centrado no corpo do pato
+	thunder_particles.emitting = false
+	player_node.add_child(thunder_particles)
+	
+	# Painel visual do inimigo — posicionado sobre a plataforma (Y=370)
+	enemy_panel = Panel.new()
+	enemy_panel.custom_minimum_size = Vector2(140, 140)
+	enemy_panel.position = Vector2(812, 230)
+	enemy_panel.size = Vector2(140, 140)
+	enemy_panel.visible = false # Oculto por padrão até a animação de entrada iniciar
+	add_child(enemy_panel)
+	
+	# Sprite de textura (carregado dinamicamente)
+	enemy_texture_rect = TextureRect.new()
+	enemy_texture_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	enemy_texture_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	enemy_texture_rect.custom_minimum_size = Vector2(130, 130)
+	enemy_texture_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	enemy_panel.add_child(enemy_texture_rect)
+	
+	# Ícone do inimigo (emoji grande - fallback se não houver textura)
+	enemy_icon_label = Label.new()
+	enemy_icon_label.set_anchors_preset(Control.PRESET_CENTER)
+	enemy_icon_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	enemy_icon_label.grow_vertical = Control.GROW_DIRECTION_BOTH
+	enemy_icon_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	enemy_icon_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	enemy_icon_label.add_theme_font_size_override("font_size", 48)
+	enemy_panel.add_child(enemy_icon_label)
+	
+	# Container do inimigo (topo da tela - estilo Boss de Honkai Star Rail, perfeitamente centralizado)
+	enemy_container = VBoxContainer.new()
+	enemy_container.anchor_left = 0.5
+	enemy_container.anchor_right = 0.5
+	enemy_container.anchor_top = 0.0
+	enemy_container.anchor_bottom = 0.0
+	enemy_container.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	enemy_container.size = Vector2(320, 120)
+	enemy_container.offset_left = -160
+	enemy_container.offset_right = 160
+	enemy_container.offset_top = 25
+	enemy_container.offset_bottom = 145
+	enemy_container.add_theme_constant_override("separation", 2)
+	enemy_container.alignment = BoxContainer.ALIGNMENT_BEGIN
+	add_child(enemy_container)
+	
+	# Indicador de Ondas (ex: "⚔️ Onda 1/2")
+	wave_label = Label.new()
+	wave_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if font_bold:
+		wave_label.add_theme_font_override("font", font_bold)
+	wave_label.add_theme_font_size_override("font_size", 11)
+	wave_label.add_theme_color_override("font_color", GOLD_COLOR)
+	wave_label.add_theme_constant_override("outline_size", 2)
+	wave_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	wave_label.visible = false
+	enemy_container.add_child(wave_label)
+
+	# Nome do inimigo
+	enemy_name_label = Label.new()
+	enemy_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if font_bold:
+		enemy_name_label.add_theme_font_override("font", font_bold)
+	enemy_name_label.add_theme_font_size_override("font_size", 14)
+	enemy_name_label.add_theme_color_override("font_color", DAMAGE_COLOR)
+	enemy_name_label.add_theme_constant_override("outline_size", 3)
+	enemy_name_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	enemy_container.add_child(enemy_name_label)
+	
+	# HP Bar do inimigo (estilo boss HSR: larga no topo da tela, preenche os 320px do container)
+	enemy_hp_bar = ProgressBar.new()
+	enemy_hp_bar.custom_minimum_size = Vector2(320, 16)
+	enemy_hp_bar.max_value = enemy_max_hp
+	enemy_hp_bar.value = enemy_hp
+	enemy_hp_bar.show_percentage = false
+	
+	# Estilo premium da barra de vida com moldura vermelha
+	var enemy_hp_sb = StyleBoxFlat.new()
+	enemy_hp_sb.bg_color = Color(0.04, 0.04, 0.06, 0.85)
+	enemy_hp_sb.border_width_left = 1
+	enemy_hp_sb.border_width_top = 1
+	enemy_hp_sb.border_width_right = 1
+	enemy_hp_sb.border_width_bottom = 1
+	enemy_hp_sb.border_color = Color(0.8, 0.2, 0.2, 0.8) # Red border
+	enemy_hp_sb.corner_radius_top_left = 5
+	enemy_hp_sb.corner_radius_top_right = 5
+	enemy_hp_sb.corner_radius_bottom_left = 5
+	enemy_hp_sb.corner_radius_bottom_right = 5
+	enemy_hp_bar.add_theme_stylebox_override("background", enemy_hp_sb)
+	
+	var enemy_hp_fill = StyleBoxFlat.new()
+	enemy_hp_fill.bg_color = Color(0.85, 0.15, 0.15, 1.0) # Crimson Red
+	enemy_hp_fill.corner_radius_top_left = 4
+	enemy_hp_fill.corner_radius_top_right = 4
+	enemy_hp_fill.corner_radius_bottom_left = 4
+	enemy_hp_fill.corner_radius_bottom_right = 4
+	enemy_hp_bar.add_theme_stylebox_override("fill", enemy_hp_fill)
+	enemy_hp_bar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	enemy_container.add_child(enemy_hp_bar)
+	
+	# HP Label
+	enemy_hp_label = Label.new()
+	enemy_hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if font_reg:
+		enemy_hp_label.add_theme_font_override("font", font_reg)
+	enemy_hp_label.add_theme_font_size_override("font_size", 11)
+	enemy_hp_label.add_theme_color_override("font_color", Color.WHITE)
+	enemy_container.add_child(enemy_hp_label)
+	
+	# Block Label
+	enemy_block_label = Label.new()
+	enemy_block_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if font_reg:
+		enemy_block_label.add_theme_font_override("font", font_reg)
+	enemy_block_label.add_theme_font_size_override("font_size", 11)
+	enemy_block_label.add_theme_color_override("font_color", BLOCK_COLOR)
+	enemy_container.add_child(enemy_block_label)
+
+	# Intent Label — Próxima ação do inimigo (ex: "⚔️ Vai atacar por 12")
+	enemy_intent_label = Label.new()
+	enemy_intent_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	enemy_intent_label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	if font_bold:
+		enemy_intent_label.add_theme_font_override("font", font_bold)
+	enemy_intent_label.add_theme_font_size_override("font_size", 11)
+	enemy_intent_label.add_theme_constant_override("outline_size", 3)
+	enemy_intent_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	# Fundo semi-transparente para destacar
+	var intent_bg = StyleBoxFlat.new()
+	intent_bg.bg_color = Color(0.0, 0.0, 0.0, 0.55)
+	intent_bg.corner_radius_top_left = 6
+	intent_bg.corner_radius_top_right = 6
+	intent_bg.corner_radius_bottom_left = 6
+	intent_bg.corner_radius_bottom_right = 6
+	intent_bg.content_margin_left = 12
+	intent_bg.content_margin_right = 12
+	intent_bg.content_margin_top = 4
+	intent_bg.content_margin_bottom = 4
+	enemy_intent_label.add_theme_stylebox_override("normal", intent_bg)
+	enemy_container.add_child(enemy_intent_label)
+
+func _build_bottom_bar():
+	# Painel inferior escuro
+	var bottom_panel = Panel.new()
+	bottom_panel.anchor_left = 0.0
+	bottom_panel.anchor_top = 0.68
+	bottom_panel.anchor_right = 1.0
+	bottom_panel.anchor_bottom = 1.0
+	var sb = StyleBoxFlat.new()
+	sb.bg_color = Color(0.03, 0.04, 0.08, 0.92)
+	sb.border_width_top = 2
+	sb.border_color = ACCENT_COLOR.darkened(0.4)
+	bottom_panel.add_theme_stylebox_override("panel", sb)
+	add_child(bottom_panel)
+	
+	# --- Energia (lado esquerdo) ---
+	var energy_container = VBoxContainer.new()
+	energy_container.anchor_left = 0.02
+	energy_container.anchor_top = 0.1
+	energy_container.anchor_right = 0.12
+	energy_container.anchor_bottom = 0.9
+	energy_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	energy_container.add_theme_constant_override("separation", 4)
+	bottom_panel.add_child(energy_container)
+	
+	energy_label = Label.new()
+	energy_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if font_bold:
+		energy_label.add_theme_font_override("font", font_bold)
+	energy_label.add_theme_font_size_override("font_size", 28)
+	energy_label.add_theme_color_override("font_color", ENERGY_COLOR)
+	energy_label.add_theme_constant_override("outline_size", 4)
+	energy_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	energy_container.add_child(energy_label)
+	
+	var energy_title = Label.new()
+	energy_title.text = _get_trans("ENERGIA", "ENERGY")
+	energy_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if font_reg:
+		energy_title.add_theme_font_override("font", font_reg)
+	energy_title.add_theme_font_size_override("font_size", 9)
+	energy_title.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	energy_container.add_child(energy_title)
+	
+	# Deck count
+	deck_count_label = Label.new()
+	deck_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if font_reg:
+		deck_count_label.add_theme_font_override("font", font_reg)
+	deck_count_label.add_theme_font_size_override("font_size", 9)
+	deck_count_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+	energy_container.add_child(deck_count_label)
+	
+	# --- Container de Cartas (centro) ---
+	card_container = HBoxContainer.new()
+	card_container.anchor_left = 0.13
+	card_container.anchor_top = 0.05
+	card_container.anchor_right = 0.82
+	card_container.anchor_bottom = 0.95
+	card_container.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	card_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	card_container.add_theme_constant_override("separation", 8)
+	bottom_panel.add_child(card_container)
+	
+	# --- Botão Terminar Turno (lado direito) ---
+	var btn_container = VBoxContainer.new()
+	btn_container.anchor_left = 0.83
+	btn_container.anchor_top = 0.1
+	btn_container.anchor_right = 0.98
+	btn_container.anchor_bottom = 0.9
+	btn_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_container.add_theme_constant_override("separation", 8)
+	bottom_panel.add_child(btn_container)
+	
+	end_turn_btn = Button.new()
+	end_turn_btn.text = _get_trans("Terminar\nTurno", "End\nTurn")
+	end_turn_btn.custom_minimum_size = Vector2(100, 50)
+	if font_bold:
+		end_turn_btn.add_theme_font_override("font", font_bold)
+	end_turn_btn.add_theme_font_size_override("font_size", 11)
+	var btn_sb = StyleBoxFlat.new()
+	btn_sb.bg_color = ACCENT_COLOR.darkened(0.5)
+	btn_sb.border_width_left = 2
+	btn_sb.border_width_top = 2
+	btn_sb.border_width_right = 2
+	btn_sb.border_width_bottom = 2
+	btn_sb.border_color = ACCENT_COLOR
+	btn_sb.corner_radius_top_left = 6
+	btn_sb.corner_radius_top_right = 6
+	btn_sb.corner_radius_bottom_left = 6
+	btn_sb.corner_radius_bottom_right = 6
+	end_turn_btn.add_theme_stylebox_override("normal", btn_sb)
+	var btn_hover = btn_sb.duplicate()
+	btn_hover.bg_color = ACCENT_COLOR.darkened(0.3)
+	end_turn_btn.add_theme_stylebox_override("hover", btn_hover)
+	end_turn_btn.add_theme_color_override("font_color", Color.WHITE)
+	end_turn_btn.pressed.connect(_on_end_turn_pressed)
+	btn_container.add_child(end_turn_btn)
+	
+	# Discard count removido a pedido do usuário
+
+# =============================================================================
+# LÓGICA DE COMBATE
+# =============================================================================
+
+func _start_battle():
+	player_block = 0
+	player_energy = player_max_energy
+	_update_all_ui()
+	_start_player_turn()
+
+func _start_player_turn():
+	state = BattleState.PLAYER_TURN
+	
+	# Incrementar contador de turnos contra Jörmungandr (apenas na fase 1)
+	if not jormungandr_phase_2 and enemy_data.get("id", "") == "jormungandr":
+		jormungandr_turn_count += 1
+	
+	# Decrementar Vulnerável do jogador
+	if player_vulnerable > 0:
+		player_vulnerable -= 1
+	
+	# Reset block do jogador
+	player_block = 0
+	
+	# Aplicar poderes passivos
+	if player_block_per_turn > 0:
+		player_block += player_block_per_turn
+	
+	# Restaurar energia
+	player_energy = player_max_energy
+	
+	# Comprar cartas até atingir o limite da mão (draw_amount)
+	var draw_limit = player_draw_count + player_draw_bonus
+	while hand.size() < draw_limit:
+		if draw_pile.is_empty() and discard_pile.is_empty():
+			break
+		_draw_card()
+	
+	_update_all_ui()
+	_show_info(_get_trans("Teu Turno!", "Your Turn!"), ACCENT_COLOR)
+	
+	# Ativar botão
+	end_turn_btn.disabled = false
+
+func _draw_card():
+	if draw_pile.is_empty():
+		# Reciclar descarte
+		draw_pile = discard_pile.duplicate()
+		discard_pile.clear()
+		draw_pile.shuffle()
+	
+	if draw_pile.is_empty():
+		return  # Sem cartas
+	
+	var card_id = draw_pile.pop_back()
+	hand.append(card_id)
+
+func _play_card(index: int):
+	if state != BattleState.PLAYER_TURN:
+		return
+	if index < 0 or index >= hand.size():
+		return
+	
+	# Verificar se deve interromper para iniciar a cinemática do Jörmungandr
+	# Isso acontece quando: fase 1, turno do trigger, phase 1 (após ataque normal), primeira tentativa de jogar carta
+	if not jormungandr_phase_2 and enemy_data.get("id", "") == "jormungandr" and not jormungandr_cinematic_triggered:
+		if jormungandr_turn_count >= jormungandr_cinematic_trigger_turn and jormungandr_cinematic_phase == 1:
+			# Intercepta a primeira tentativa de jogar carta
+			_jormungandr_interrupt_turn()
+			return
+	
+	var card_id = hand[index]
+	var card = ThorCardDatabase.get_card(card_id)
+	
+	if card.is_empty():
+		return
+	
+	# Verificar energia
+	if card.cost > player_energy:
+		_show_info(_get_trans("Sem Energia!", "No Energy!"), DAMAGE_COLOR)
+		return
+	
+	# Gastar energia
+	player_energy -= card.cost
+	
+	# Impedir mais cliques durante a animação e processamento de hits
+	state = BattleState.ANIMATION
+	
+	# Aplicar efeitos
+	await _apply_card_effects(card)
+	
+	# Remover da mão e adicionar ao descarte (POWERs não vão para o descarte)
+	hand.remove_at(index)
+	if card.type != ThorCardDatabase.CardType.POWER:
+		discard_pile.append(card_id)
+	
+	# Verificar se inimigo morreu (ou se há reforços/ondas)
+	if enemy_hp <= 0:
+		if combat_waves.size() > 0:
+			_spawn_next_wave()
+		else:
+			_on_enemy_defeated()
+		return
+		
+	# Devolver o controlo ao jogador
+	state = BattleState.PLAYER_TURN
+	
+	# Atualizar UI
+	_rebuild_hand_ui()
+	_update_all_ui()
+	
+	# Feedback sonoro
+	if GameGlobals:
+		GameGlobals.play_click_sound()
+
+func _apply_card_effects(card: Dictionary):
+	var effect = card.get("effect", {})
+	
+	# --- Dano ---
+	if effect.has("damage"):
+		var base_dmg: int = effect.damage
+		var hits: int = effect.get("hits", 1)
+		
+		# Escalar com Força
+		if effect.has("damage_per_strength"):
+			base_dmg += player_strength * effect.damage_per_strength
+		else:
+			base_dmg += player_strength
+		
+		# Bonus especial: Mjölnir Desperto causa +20 dano com 3+ Força
+		if card.id == "mjolnir_desperto" and player_strength >= 3:
+			base_dmg += 20
+		
+		# Bonus especial: Golpe do Ragnarök escala com Vulnerável do inimigo
+		if effect.has("damage_per_vulnerable"):
+			var vuln_stacks = min(enemy_vulnerable, 3)
+			base_dmg += effect.damage_per_vulnerable * vuln_stacks
+		
+		# Vulnerável (2x de dano)
+		if enemy_vulnerable > 0:
+			base_dmg = int(base_dmg * 2.0)
+		
+		# Reproduzir SFX e VFX apropriados de acordo com a carta
+		var is_lightning = card.id.contains("trovao") or card.id.contains("relampago") or card.id.contains("tempestade") or card.id.contains("mjolnir") or card.id.contains("ragnarok")
+		if is_lightning:
+			_play_sfx("explosion", 0.95, -6.0) # Som de trovão
+			# _play_lightning_vfx() # Clarão removido para conforto visual
+		else:
+			_play_sfx("shoot", 1.25, -4.0) # Som de golpe normal
+		
+		for i in range(hits):
+			_deal_damage_to_enemy(base_dmg)
+			if hits > 1:
+				await get_tree().create_timer(0.12).timeout # Pequeno delay entre hits múltiplos
+	
+	# --- Escudo ---
+	if effect.has("block"):
+		player_block += effect.block
+		_show_info("🛡 +" + str(effect.block), BLOCK_COLOR)
+		_play_sfx("clink", 1.1, -4.0) # Clink metálico
+	
+	# --- Força ---
+	if effect.has("strength"):
+		player_strength += effect.strength
+		_show_info("💪 +" + str(effect.strength) + _get_trans(" Força", " Strength"), GOLD_COLOR)
+		_play_sfx("power_up", 1.2, -6.0)
+	
+	# --- Vulnerável (ao inimigo) ---
+	if effect.has("vulnerable"):
+		enemy_vulnerable += effect.vulnerable
+		_show_info(_get_trans("Vulnerável! (", "Vulnerable! (") + str(effect.vulnerable) + _get_trans(" turnos)", " turns)"), DAMAGE_COLOR)
+		_play_sfx("shoot", 0.8, -6.0)
+	
+	# --- Comprar cartas ---
+	if effect.has("draw"):
+		for i in range(effect.draw):
+			_draw_card()
+		_rebuild_hand_ui()
+	
+	# --- Cura ---
+	if effect.has("heal"):
+		player_hp = mini(player_hp + effect.heal, player_max_hp)
+		_show_info("❤️ +" + str(effect.heal) + " HP", HEAL_COLOR)
+		_play_sfx("power_up", 0.95, -6.0) # Cura som
+	
+	# --- Auto-dano ---
+	if effect.has("self_damage"):
+		player_hp -= effect.self_damage
+		_play_sfx("hurt", 1.1, -4.0)
+	
+	# --- Ganhar energia ---
+	if effect.has("energy"):
+		player_energy += effect.energy
+		_show_info("⚡ +" + str(effect.energy) + _get_trans(" Energia", " Energy"), ENERGY_COLOR)
+		_play_sfx("power_up", 1.3, -6.0)
+	
+	# --- Perder escudo ---
+	if effect.has("lose_block"):
+		player_block = maxi(0, player_block - effect.lose_block)
+	
+	# --- Enfraquecer inimigo ---
+	if effect.has("weaken"):
+		enemy_strength = maxi(0, enemy_strength - effect.weaken)
+		_show_info(_get_trans("👎 Inimigo -", "👎 Enemy -") + str(effect.weaken) + _get_trans(" Força", " Strength"), ACCENT_COLOR)
+		_play_sfx("clink", 0.75, -6.0)
+	
+	# --- Pular turno do inimigo (Skip Turn) ---
+	if effect.has("skip_enemy_turn"):
+		if enemy_skip_turn > 0:
+			_show_info(_get_trans("⛓️ Inimigo já está preso!", "⛓️ Enemy already bound!"), ACCENT_COLOR)
+			_play_sfx("clink", 0.7, -6.0)
+		else:
+			enemy_skip_turn = effect.skip_enemy_turn
+			_show_info(_get_trans("⛓️ Inimigo preso! Próximo turno cancelado.", "⛓️ Enemy bound! Next turn skipped."), ACCENT_COLOR)
+			_play_sfx("clink", 0.7, -6.0)
+	
+	# --- Remover debuffs do jogador ---
+	if effect.has("remove_debuffs"):
+		player_vulnerable = 0
+		# Se houver fraqueza (strength negativo) no jogador, resetar
+		if player_strength < 0:
+			player_strength = 0
+		_show_info(_get_trans("✨ Debuffs removidos!", "✨ Debuffs removed!"), HEAL_COLOR)
+		_play_sfx("power_up", 1.0, -6.0)
+	
+	# --- Poderes (efeitos permanentes) ---
+	if card.type == ThorCardDatabase.CardType.POWER:
+		if effect.has("block_per_turn"):
+			player_block_per_turn += effect.block_per_turn
+			_show_info("🛡 +" + str(effect.block_per_turn) + _get_trans(" Escudo/Turno", " Block/Turn"), BLOCK_COLOR)
+		if effect.has("draw_per_turn"):
+			player_draw_bonus += effect.draw_per_turn
+			_show_info(_get_trans("🃏 +1 Carta/Turno", "🃏 +1 Card/Turn"), GOLD_COLOR)
+		powers_active.append(card.id)
+
+func _deal_damage_to_enemy(damage: int):
+	var actual_dmg = damage
+	
+	# Aplicar contra escudo do inimigo
+	if enemy_block > 0:
+		if enemy_block >= actual_dmg:
+			enemy_block -= actual_dmg
+			actual_dmg = 0
+			_play_sfx("clink", 0.9, -2.0) # Defendido!
+		else:
+			actual_dmg -= enemy_block
+			enemy_block = 0
+			_play_sfx("clink", 0.9, -2.0) # Escudo quebra
+	
+	enemy_hp = maxi(0, enemy_hp - actual_dmg)
+	
+	# Proteção Fase 1: Jörmungandr não pode morrer antes da cinemática (turno 4)
+	if not jormungandr_phase_2 and enemy_data.get("id", "") == "jormungandr" and not jormungandr_cinematic_triggered:
+		enemy_hp = maxi(1, enemy_hp)
+	
+	if actual_dmg > 0:
+		_show_info("⚔️ " + str(actual_dmg) + _get_trans(" dano!", " damage!"), DAMAGE_COLOR)
+		_shake_node(enemy_panel)
+		_play_spark_vfx(enemy_panel.global_position + enemy_panel.size / 2) # Partículas!
+		
+	_update_all_ui()
+
+func _deal_damage_to_player(damage: int):
+	var actual_dmg = damage
+	
+	if player_vulnerable > 0:
+		actual_dmg = int(actual_dmg * 2.0)
+	
+	# Aplicar contra escudo do jogador
+	if player_block > 0:
+		if player_block >= actual_dmg:
+			player_block -= actual_dmg
+			actual_dmg = 0
+			_play_sfx("clink", 1.1, -2.0) # Defendido!
+		else:
+			actual_dmg -= player_block
+			player_block = 0
+			_play_sfx("clink", 1.1, -2.0) # Escudo quebra
+	
+	player_hp = maxi(0, player_hp - actual_dmg)
+	
+	# Proteção Fase 1: Thor não pode morrer para ataques normais antes da cinemática
+	if not jormungandr_phase_2 and enemy_data.get("id", "") == "jormungandr" and not jormungandr_cinematic_triggered:
+		player_hp = maxi(1, player_hp)
+	
+	if actual_dmg > 0:
+		_show_info("💥 -" + str(actual_dmg) + " HP!", DAMAGE_COLOR)
+		_play_sfx("hurt", 1.0, -2.0) # Som de dano sofrido
+		if player_node:
+			_shake_node(player_node)
+			
+	_update_all_ui()
+
+# =============================================================================
+# TURNO DO INIMIGO
+# =============================================================================
+
+func _on_end_turn_pressed():
+	if state != BattleState.PLAYER_TURN:
+		return
+	
+	if GameGlobals:
+		GameGlobals.play_click_sound()
+	
+	end_turn_btn.disabled = true
+	
+	# NÃO descartar a mão! O jogador mantém as cartas que não jogou para o próximo turno.
+	# Apenas atualiza a UI
+	_rebuild_hand_ui()
+	
+	# Iniciar turno do inimigo
+	_start_enemy_turn()
+
+func _start_enemy_turn():
+	state = BattleState.ENEMY_TURN
+	
+	# Reset block do inimigo
+	enemy_block = 0
+	
+	_show_info(_get_trans("Turno do Inimigo...", "Enemy Turn..."), DAMAGE_COLOR)
+	_update_all_ui()
+	
+	# Pequena pausa para feedback visual
+	var timer = get_tree().create_timer(0.8)
+	timer.timeout.connect(_execute_enemy_intent)
+
+func _execute_enemy_intent():
+	if state != BattleState.ENEMY_TURN:
+		return
+	
+	# Cinemática do Jörmungandr: turno 4 = ataque normal, depois sequência cinematográfica
+	# Ações narrativas (cinematic) nunca podem ser puladas
+	if not jormungandr_phase_2 and enemy_data.get("id", "") == "jormungandr":
+		if jormungandr_turn_count >= jormungandr_cinematic_trigger_turn:
+			if jormungandr_cinematic_phase == 0:
+				# Primeira vez no turno 4: Jörmungandr faz ataque normal
+				jormungandr_cinematic_phase = 1
+				# Não marca como triggered ainda - só marca quando a cinematic de 999 começar
+				# Não retorna - continua para executar o ataque normal normalmente
+			elif jormungandr_cinematic_phase == 1:
+				# Após ataque normal do turno 4: iniciar sequência cinematográfica
+				jormungandr_cinematic_phase = 2
+				jormungandr_cinematic_triggered = true
+				_start_jormungandr_cinematic_sequence()
+				return
+	
+	# Verificar se o inimigo deve pular o turno (Cadeia de Fenrir)
+	# Não pular turnos durante cinemáticas narrativas
+	if enemy_skip_turn > 0 and not (state == BattleState.CINEMATIC_DEATH or state == BattleState.CINEMATIC_AWAKENING):
+		enemy_skip_turn -= 1
+		_show_info(_get_trans("⛓️ Inimigo preso pelas correntes! Turno perdido.", "⛓️ Enemy bound by chains! Turn lost."), ACCENT_COLOR)
+		_play_sfx("clink", 0.6, -4.0)
+		# Não executar a intenção, pular direto para o turno do jogador
+		var timer = get_tree().create_timer(1.0)
+		timer.timeout.connect(_start_player_turn)
+		return
+	
+	var intent = enemy_intent
+	
+	match intent.type:
+		ThorEnemyDatabase.IntentType.ATTACK:
+			var dmg: int = intent.get("damage", 0) + enemy_strength
+			
+			# Dificuldade
+			if GameGlobals:
+				match GameGlobals.current_difficulty:
+					GameGlobals.Difficulty.EASY: dmg = int(dmg * 0.8)
+					GameGlobals.Difficulty.HARD: 
+						dmg = int(dmg * 1.25)
+						# Jörmungandr extra perigoso no Hard
+						if enemy_data.get("id", "") == "jormungandr":
+							dmg = int(dmg * 1.15)
+					
+			var hits: int = intent.get("hits", 1)
+			for i in range(hits):
+				_deal_damage_to_player(dmg)
+			if intent.has("vulnerable") and intent.vulnerable > 0:
+				player_vulnerable += intent.vulnerable
+				_show_info(_get_trans("Vulnerável! (", "Vulnerable! (") + str(intent.vulnerable) + _get_trans(" turnos)", " turns)"), DAMAGE_COLOR)
+		
+		ThorEnemyDatabase.IntentType.DEFEND:
+			var block_val: int = intent.get("block", 0)
+			enemy_block += block_val
+			_show_info(_get_trans("🛡 Inimigo +", "🛡 Enemy +") + str(block_val) + _get_trans(" Escudo", " Block"), BLOCK_COLOR)
+		
+		ThorEnemyDatabase.IntentType.BUFF:
+			if intent.has("strength") and intent.strength > 0:
+				enemy_strength += intent.strength
+				_show_info(_get_trans("💪 Inimigo +", "💪 Enemy +") + str(intent.strength) + _get_trans(" Força!", " Strength!"), DAMAGE_COLOR)
+			if intent.has("heal") and intent.heal > 0:
+				enemy_hp = mini(enemy_hp + intent.heal, enemy_max_hp)
+				_show_info(_get_trans("❤️ Inimigo curou ", "❤️ Enemy healed ") + str(intent.heal) + " HP!", HEAL_COLOR)
+		
+		ThorEnemyDatabase.IntentType.ATTACK_DEFEND:
+			var dmg: int = intent.get("damage", 0) + enemy_strength
+			
+			# Dificuldade
+			if GameGlobals:
+				match GameGlobals.current_difficulty:
+					GameGlobals.Difficulty.EASY: dmg = int(dmg * 0.8)
+					GameGlobals.Difficulty.HARD: 
+						dmg = int(dmg * 1.25)
+						# Jörmungandr extra perigoso no Hard
+						if enemy_data.get("id", "") == "jormungandr":
+							dmg = int(dmg * 1.15)
+					
+			_deal_damage_to_player(dmg)
+			var block_val: int = intent.get("block", 0)
+			enemy_block += block_val
+			_show_info(_get_trans("🛡 Inimigo +", "🛡 Enemy +") + str(block_val) + _get_trans(" Escudo", " Block"), BLOCK_COLOR)
+		
+		ThorEnemyDatabase.IntentType.DEBUFF:
+			if intent.has("vulnerable") and intent.vulnerable > 0:
+				player_vulnerable += intent.vulnerable
+				_show_info(_get_trans("Vulnerável! (", "Vulnerable! (") + str(intent.vulnerable) + _get_trans(" turnos)", " turns)"), DAMAGE_COLOR)
+	
+	# Reduzir vulnerável do inimigo
+	if enemy_vulnerable > 0:
+		enemy_vulnerable -= 1
+	
+	_update_all_ui()
+	
+	# Verificar se jogador morreu
+	if player_hp <= 0:
+		_on_player_defeated()
+		return
+	
+	# Novo intent para o próximo turno
+	enemy_intent = ThorEnemyDatabase.get_random_intent(enemy_data.id, player_vulnerable, last_enemy_intent_type)
+	last_enemy_intent_type = enemy_intent.get("type", -1)
+	_update_all_ui()
+	
+	# Pausa antes de passar turno ao jogador
+	var timer = get_tree().create_timer(0.6)
+	timer.timeout.connect(_start_player_turn)
+
+# =============================================================================
+# CINEMÁTICA DO JÖRMUNGANDR — MORTE E DESPERTAR
+# =============================================================================
+
+func _trigger_jormungandr_cinematic_death():
+	jormungandr_cinematic_triggered = true
+	state = BattleState.CINEMATIC_DEATH
+	
+	# Desabilitar botão de terminar turno
+	end_turn_btn.disabled = true
+	
+	# Definir intenção especial: 999 DANO + 999 CURA (apenas visual)
+	enemy_intent = {
+		"type": ThorEnemyDatabase.IntentType.ATTACK,
+		"damage": 999,
+		"heal": 999,
+		"cinematic_execution": true
+	}
+	_update_all_ui()
+	
+	# Mostrar mensagem dramática
+	_show_info(_get_trans("⚡ JÖRMUNGANDR DESFERE O GOLPE FINAL! ⚡", "⚡ JÖRMUNGANDR UNLEASHES THE FINAL BLOW! ⚡"), DAMAGE_COLOR)
+	
+	# Tocar som dramático de trovão
+	_play_sfx("explosion", 0.6, -2.0)
+	
+	# Screen shake forte
+	_shake_node(player_node)
+	_shake_node(enemy_panel)
+	
+	# Aplicar 999 de dano (ignora block, vulnerável, etc. - dano narrativo)
+	var timer = get_tree().create_timer(1.0)
+	timer.timeout.connect(func():
+		_deal_narrative_damage(999)
+	)
+
+# Nova sequência cinematográfica: ataque normal -> diálogo -> 999 intent -> execução
+func _start_jormungandr_cinematic_sequence():
+	state = BattleState.CINEMATIC_DEATH
+	end_turn_btn.disabled = true
+	
+	# Pequena pausa dramática antes do diálogo
+	var timer = get_tree().create_timer(0.8)
+	timer.timeout.connect(_jormungandr_cinematic_step_1_dialogue)
+
+# Interrupção quando o jogador tenta jogar a primeira carta no turno da cinematic
+func _jormungandr_interrupt_turn():
+	state = BattleState.CINEMATIC_DEATH
+	end_turn_btn.disabled = true
+	
+	# Jörmungandr interrompe: "Fraco demais... nem mereces um turno."
+	var d = dialogue_scene.instantiate()
+	d.dialogue_list = [
+		{"name": "char_jormungandr", "text": "dialogue_awakening_jormungandr_1"}
+	]
+	d.dialogue_finished.connect(_jormungandr_cinematic_step_2_show_999_intent)
+	add_child(d)
+
+func _jormungandr_cinematic_step_1_dialogue():
+	# Jörmungandr fala: "Fraco demais... nem mereces um turno."
+	var d = dialogue_scene.instantiate()
+	d.dialogue_list = [
+		{"name": "char_jormungandr", "text": "dialogue_awakening_jormungandr_1"}
+	]
+	d.dialogue_finished.connect(_jormungandr_cinematic_step_2_show_999_intent)
+	add_child(d)
+
+func _jormungandr_cinematic_step_2_show_999_intent():
+	# Mostrar intenção 999/999 com destaque visual
+	enemy_intent = {
+		"type": ThorEnemyDatabase.IntentType.ATTACK,
+		"damage": 999,
+		"heal": 999,
+		"cinematic_execution": true,
+		"cinematic_highlight": true  # Flag para destaque visual extra
+	}
+	_update_all_ui()
+	
+	# Efeitos visuais: screen shake, som, flash
+	_play_sfx("explosion", 0.5, -4.0)
+	_shake_node(enemy_panel)
+	_shake_node(player_node)
+	
+	# Flash rápido na tela
+	var flash = ColorRect.new()
+	flash.color = Color(1, 0.2, 0.2, 0.6)
+	flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(flash)
+	var tween = create_tween()
+	tween.tween_property(flash, "modulate:a", 0.0, 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_callback(func(): flash.queue_free())
+	
+	# Pequena pausa para o jogador ver o 999/999, depois executar
+	var timer = get_tree().create_timer(1.5)
+	timer.timeout.connect(func():
+		_deal_narrative_damage(999)
+	)
+
+func _deal_narrative_damage(amount: int):
+	# Dano narrativo que ignora block e vulnerável - garante morte
+	player_hp = 0
+	_update_all_ui()
+	
+	# Mostrar número de dano massivo
+	_show_info(str(amount), DAMAGE_COLOR)
+	_play_sfx("hurt", 0.8, 0.0)
+	
+	# Trigger defeat sequence
+	_on_player_defeated_cinematic()
+
+func _on_player_defeated_cinematic():
+	state = BattleState.DEFEAT
+	_show_info(_get_trans("DERROTA...", "DEFEAT..."), DAMAGE_COLOR)
+	_update_all_ui()
+	
+	# Jörmungandr recupera vida totalmente
+	enemy_hp = enemy_max_hp
+	_update_all_ui()
+	
+	var timer = get_tree().create_timer(1.5)
+	timer.timeout.connect(_show_defeat_screen_cinematic)
+
+# =============================================================================
+# VITÓRIA / DERROTA
+# =============================================================================
+
+func _on_enemy_defeated():
+	state = BattleState.VICTORY
+	_show_info(_get_trans("VITÓRIA!", "VICTORY!"), GOLD_COLOR)
+	_update_all_ui()
+	
+	# Pausa e depois mostrar ecrã de vitória (ou diálogo final se for Boss)
+	if enemy_data.get("type", 0) == ThorEnemyDatabase.EnemyType.BOSS:
+		var timer = get_tree().create_timer(1.5)
+		timer.timeout.connect(func():
+			var d = dialogue_scene.instantiate()
+			d.dialogue_list = [
+				{"name": "char_narrator", "text": "dialogue_thor_victory_1"},
+				{"name": "char_thor", "text": "dialogue_thor_victory_2"}
+			]
+			d.dialogue_finished.connect(_show_victory_screen)
+			add_child(d)
+		)
+	else:
+		var timer = get_tree().create_timer(1.5)
+		timer.timeout.connect(_show_victory_screen)
+
+func _show_victory_screen():
+	# Toca som de vitória triunfante
+	if GameGlobals:
+		GameGlobals.play_victory_sound()
+	var is_boss = (enemy_data.get("type", 0) == ThorEnemyDatabase.EnemyType.BOSS)
+	var is_pt = true
+	if GameGlobals:
+		is_pt = GameGlobals.current_language == GameGlobals.Language.PT
+		
+	# Overlay escuro
+	var overlay = ColorRect.new()
+	overlay.color = Color(0, 0, 0, 0.85)
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(overlay)
+	
+	var vbox = VBoxContainer.new()
+	vbox.set_anchors_preset(Control.PRESET_CENTER)
+	vbox.anchor_left = 0.1
+	vbox.anchor_top = 0.1
+	vbox.anchor_right = 0.9
+	vbox.anchor_bottom = 0.9
+	vbox.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	vbox.grow_vertical = Control.GROW_DIRECTION_BOTH
+	vbox.add_theme_constant_override("separation", 24)
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	overlay.add_child(vbox)
+	
+	var title = Label.new()
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if font_bold:
+		title.add_theme_font_override("font", font_bold)
+	title.add_theme_font_size_override("font_size", 28)
+	title.add_theme_color_override("font_color", GOLD_COLOR)
+	title.add_theme_constant_override("outline_size", 5)
+	title.add_theme_color_override("font_outline_color", Color.BLACK)
+	vbox.add_child(title)
+	
+	if is_boss:
+		title.text = "🏆 VITÓRIA DE THOR! 🏆" if is_pt else "🏆 THOR'S VICTORY! 🏆"
+		
+		var desc = Label.new()
+		desc.text = "Concluíste a lenda de Thor e salvaste Midgard do Ragnarök!" if is_pt else "You have completed the legend of Thor and saved Midgard from Ragnarök!"
+		desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		if font_reg:
+			desc.add_theme_font_override("font", font_reg)
+		desc.add_theme_font_size_override("font_size", 16)
+		desc.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
+		vbox.add_child(desc)
+	else:
+		title.text = "⚡ VITÓRIA! ⚡" if is_pt else "⚡ VICTORY! ⚡"
+		
+		# Determinar Recompensas (Rebalanceado: mais ouro para run mais curta)
+		var reward_gold = randi_range(35, 55)
+		if enemy_data.get("type", 0) == ThorEnemyDatabase.EnemyType.ELITE:
+			reward_gold = randi_range(70, 95)
+			
+		var reward_cards = _generate_card_rewards()
+		
+		# Recompensas Label
+		var rewards_title = Label.new()
+		rewards_title.text = "Recompensas:" if is_pt else "Rewards:"
+		rewards_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		if font_reg:
+			rewards_title.add_theme_font_override("font", font_reg)
+		rewards_title.add_theme_font_size_override("font_size", 16)
+		rewards_title.add_theme_color_override("font_color", Color.WHITE)
+		vbox.add_child(rewards_title)
+		
+		# Ouro (Adicionado Automaticamente)
+		player_gold += reward_gold
+		_play_sfx("power_up", 1.25, -4.0)
+		
+		var gold_btn = Button.new()
+		gold_btn.text = "+ " + str(reward_gold) + " Ouro (Adicionado)" if is_pt else "+ " + str(reward_gold) + " Gold (Added)"
+		gold_btn.custom_minimum_size = Vector2(250, 40)
+		gold_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		if font_bold:
+			gold_btn.add_theme_font_override("font", font_bold)
+		gold_btn.add_theme_font_size_override("font_size", 14)
+		gold_btn.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+		var sb = StyleBoxFlat.new()
+		sb.bg_color = Color(0.1, 0.08, 0.04, 0.85)
+		sb.border_width_left = 2
+		sb.border_width_top = 2
+		sb.border_width_right = 2
+		sb.border_width_bottom = 2
+		sb.border_color = Color(0.5, 0.45, 0.25, 0.8)
+		sb.corner_radius_top_left = 6
+		sb.corner_radius_top_right = 6
+		sb.corner_radius_bottom_left = 6
+		sb.corner_radius_bottom_right = 6
+		gold_btn.add_theme_stylebox_override("normal", sb)
+		gold_btn.disabled = true
+		vbox.add_child(gold_btn)
+		
+		# Container das cartas
+		var card_title = Label.new()
+		card_title.text = "Escolhe 1 carta:" if is_pt else "Choose 1 card:"
+		card_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		if font_reg:
+			card_title.add_theme_font_override("font", font_reg)
+		card_title.add_theme_font_size_override("font_size", 14)
+		card_title.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
+		vbox.add_child(card_title)
+		
+		var cards_hbox = HBoxContainer.new()
+		cards_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+		cards_hbox.add_theme_constant_override("separation", 20)
+		vbox.add_child(cards_hbox)
+		
+		var card_buttons = []
+		for card_id in reward_cards:
+			var card = ThorCardDatabase.get_card(card_id)
+			var c_btn = _create_reward_card_button(card)
+			cards_hbox.add_child(c_btn)
+			card_buttons.append(c_btn)
+			
+			# Conectar clique para escolher
+			c_btn.get_child(c_btn.get_child_count() - 1).pressed.connect(func():
+				deck.append(card_id)
+				if GameGlobals:
+					GameGlobals.play_click_sound()
+				# Desabilitar todas
+				for b in card_buttons:
+					b.modulate = Color(0.3, 0.3, 0.3, 0.5)
+					var btn_node = b.get_child(b.get_child_count() - 1)
+					btn_node.disabled = true
+				c_btn.modulate = Color(1.0, 1.0, 1.0, 1.0)
+				card_title.text = ("Adicionado: " + card.name_pt) if is_pt else ("Added: " + card.name_en)
+				card_title.add_theme_color_override("font_color", HEAL_COLOR)
+			)
+			
+	# Skip/Continue Button
+	var spacer = Control.new()
+	spacer.custom_minimum_size = Vector2(0, 20)
+	vbox.add_child(spacer)
+	
+	var menu_btn = Button.new()
+	menu_btn.text = ("Finalizar Run" if is_pt else "Finish Run") if is_boss else ("Continuar Jornada" if is_pt else "Continue Journey")
+	menu_btn.custom_minimum_size = Vector2(250, 45)
+	menu_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	if font_bold:
+		menu_btn.add_theme_font_override("font", font_bold)
+	menu_btn.add_theme_font_size_override("font_size", 14)
+	
+	var c_sb = StyleBoxFlat.new()
+	c_sb.bg_color = ACCENT_COLOR.darkened(0.4)
+	c_sb.border_width_left = 2
+	c_sb.border_width_top = 2
+	c_sb.border_width_right = 2
+	c_sb.border_width_bottom = 2
+	c_sb.border_color = ACCENT_COLOR
+	c_sb.corner_radius_top_left = 6
+	c_sb.corner_radius_top_right = 6
+	c_sb.corner_radius_bottom_left = 6
+	c_sb.corner_radius_bottom_right = 6
+	menu_btn.add_theme_stylebox_override("normal", c_sb)
+	var c_sb_h = c_sb.duplicate()
+	c_sb_h.bg_color = ACCENT_COLOR.darkened(0.2)
+	menu_btn.add_theme_stylebox_override("hover", c_sb_h)
+	menu_btn.add_theme_color_override("font_color", Color.WHITE)
+	
+	menu_btn.pressed.connect(func():
+		if GameGlobals:
+			GameGlobals.play_click_sound()
+			
+		var transition = get_node_or_null("/root/SceneTransition")
+		if is_boss:
+			if GameGlobals: GameGlobals.thor_run_active = false
+			if transition: transition.fade_to("res://scenes/main_menu.tscn")
+			else: get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+		else:
+			# Salvar estado de volta ao globals
+			if GameGlobals:
+				GameGlobals.thor_hp = player_hp
+				GameGlobals.thor_gold = player_gold
+				GameGlobals.thor_deck = deck.duplicate()
+				
+				# Regista o nó como concluído e avança para a próxima layer
+				if GameGlobals.thor_node_id != "" and not GameGlobals.thor_node_id in GameGlobals.thor_map_path:
+					GameGlobals.thor_map_path.append(GameGlobals.thor_node_id)
+					var layer = int(GameGlobals.thor_node_id.split("_")[0])
+					GameGlobals.thor_current_layer = layer + 1
+			if transition: transition.fade_to("res://scenes/thor_jormungandr/thor_map.tscn")
+			else: get_tree().change_scene_to_file("res://scenes/thor_jormungandr/thor_map.tscn")
+	)
+	vbox.add_child(menu_btn)
+
+func _spawn_next_wave():
+	if combat_waves.is_empty():
+		return
+		
+	var next_enemy_id = combat_waves.pop_front()
+	current_wave += 1
+	
+	# Reset status do inimigo
+	enemy_block = 0
+	enemy_vulnerable = 0
+	enemy_strength = 0
+	
+	# Carregar novo inimigo
+	enemy_data = ThorEnemyDatabase.get_enemy(next_enemy_id)
+	
+	var diff_mult = 1.0
+	if GameGlobals:
+		match GameGlobals.current_difficulty:
+			GameGlobals.Difficulty.EASY: diff_mult = 0.8
+			GameGlobals.Difficulty.HARD: diff_mult = 1.25
+			
+	var hp = int(randi_range(enemy_data.hp_min, enemy_data.hp_max) * diff_mult)
+	enemy_hp = hp
+	enemy_max_hp = hp
+	
+	# Novo intent
+	enemy_intent = ThorEnemyDatabase.get_random_intent(next_enemy_id)
+	
+	# Atualizar fundo dinamicamente
+	if bg_rect:
+		var enemy_bg_map = {
+			"draugr": "draugr_bg",
+			"lobo_fenrir": "loboFenrir_bg",
+			"gigante_gelo": "giganteGelo_bg",
+			"corvos_hel": "corvosHel_bg",
+			"esqueleto_viking": "esqueletoViking_bg",
+			"hel_rainha": "helRainhaBoss_bg",
+			"fenrir_gigante": "fenrirGignateBoss_bg",
+			"jormungandr": "serpenteDoMundo_bg"
+		}
+		var bg_file = enemy_bg_map.get(next_enemy_id, "")
+		var bg_tex = null
+		if bg_file != "":
+			var cenario_path = "res://assets/sprites/Sprites Thor/Cenários/" + bg_file + ".png"
+			if ResourceLoader.exists(cenario_path):
+				bg_tex = load(cenario_path)
+		if bg_tex == null:
+			bg_tex = load("res://assets/sprites/ThorJormungandr_bg.png")
+		bg_rect.texture = bg_tex
+		
+	# Som de spawn
+	_play_sfx("power_up", 0.8, -4.0)
+	_show_info(_get_trans("ONDA %d/%d — REFORÇOS!" % [current_wave, total_waves], "WAVE %d/%d — REINFORCEMENTS!" % [current_wave, total_waves]), DAMAGE_COLOR)
+	
+	_update_all_ui()
+	_rebuild_hand_ui()
+	
+	# Pausa de segurança de 0.6s para o jogador ver a transição da wave antes de poder terminar o turno acidentalmente
+	if end_turn_btn:
+		end_turn_btn.disabled = true
+	var wave_timer = get_tree().create_timer(0.6)
+	wave_timer.timeout.connect(func():
+		state = BattleState.PLAYER_TURN
+		if end_turn_btn:
+			end_turn_btn.disabled = false
+	)
+
+func _generate_card_rewards() -> Array:
+	var possible_cards = ThorCardDatabase.get_reward_pool(-1)
+	possible_cards.shuffle()
+	
+	var rewards = []
+	for i in range(3):
+		if i < possible_cards.size():
+			rewards.append(possible_cards[i])
+	return rewards
+
+func _get_card_icon(card_id: String) -> String:
+	match card_id:
+		"golpe_mjolnir": return "🔨"
+		"escudo_asgard": return "🛡️"
+		"trovao": return "⚡"
+		"muralha_gelo": return "❄️"
+		"rugido_trovao": return "🦁"
+		"golpe_duplo": return "⚔️"
+		"relampago_bifrost": return "🌈"
+		"martelo_giratorio": return "🌀"
+		"bencao_odin": return "🦅"
+		"armadura_divina": return "🛡️"
+		"cadeia_fenrir": return "⛓️"
+		"investida_thor": return "🐏"
+		"cura_runas": return "🌿"
+		"furia_berserker": return "😡"
+		"tempestade_raios": return "⛈️"
+		"sacrificio_valquiria": return "👼"
+		"valhalla": return "🏰"
+		"frenesi_nordico": return "🔥"
+		"escudo_yggdrasil": return "🌳"
+		"mjolnir_desperto": return "🔨⚡"
+		"surto_temporal": return "🌪️"
+		"trovao_estrondeante": return "⚡💥"
+		"egide_asgard": return "🛡️✨"
+		"reflexos_relampago": return "⚡💨"
+		"poder_odin": return "👁️⚡"
+		"golpe_ragnarok": return "🌪️💀"
+		"graca_valhalla": return "✨🏰"
+		_: return "🃏"
+
+func _get_card_img_name(card_id: String) -> String:
+	match card_id:
+		"golpe_mjolnir": return "card_strike"
+		"escudo_asgard": return "card_defend"
+		"trovao": return "card_thunder"
+		"muralha_gelo": return "card_ice_wall"
+		"rugido_trovao": return "card_thunder_roar"
+		"golpe_duplo": return "card_double_strike"
+		"relampago_bifrost": return "card_bifrost_lightning"
+		"martelo_giratorio": return "card_spinning_hammer"
+		"bencao_odin": return "card_odins_blessing"
+		"armadura_divina": return "card_divine_armor"
+		"cadeia_fenrir": return "card_fenrirs_chain"
+		"investida_thor": return "card_thors_charge"
+		"cura_runas": return "card_rune_healing"
+		"furia_berserker": return "card_berserker_fury"
+		"tempestade_raios": return "card_lightning_storm"
+		"sacrificio_valquiria": return "card_valkyrie_sacrifice"
+		"valhalla": return "card_valhalla"
+		"frenesi_nordico": return "card_nordic_frenzy"
+		"escudo_yggdrasil": return "card_yggdrasil_shield"
+		"ira_mjolnir": return "card_mjolnir_wrath"
+		"mjolnir_desperto": return "card_mjolnir_wrath"
+		"surto_temporal": return "card_lightning_storm"
+		"trovao_estrondeante": return "card_thunder"
+		"egide_asgard": return "card_divine_armor"
+		"reflexos_relampago": return "card_odins_blessing"
+		"poder_odin": return "card_odins_blessing"
+		"golpe_ragnarok": return "card_mjolnir_wrath"
+		"graca_valhalla": return "card_valhalla"
+	return ""
+
+func _create_reward_card_button(card: Dictionary) -> Panel:
+	var r_width = CARD_WIDTH * 1.2
+	var r_height = CARD_HEIGHT * 1.2
+	
+	var panel = Panel.new()
+	panel.custom_minimum_size = Vector2(r_width, r_height)
+	panel.clip_contents = false
+	
+	# Determine colors based on type
+	var bg_start: Color
+	var bg_end: Color
+	var border_color: Color
+	
+	match card.type:
+		ThorCardDatabase.CardType.ATTACK:
+			bg_start = Color(0.55, 0.12, 0.12, 1.0)
+			bg_end = Color(0.15, 0.08, 0.08, 1.0)
+			border_color = Color(0.85, 0.3, 0.3, 0.8)
+		ThorCardDatabase.CardType.SKILL:
+			bg_start = Color(0.1, 0.25, 0.5, 1.0)
+			bg_end = Color(0.06, 0.08, 0.15, 1.0)
+			border_color = Color(0.3, 0.6, 0.9, 0.8)
+		ThorCardDatabase.CardType.POWER:
+			bg_start = Color(0.5, 0.35, 0.08, 1.0)
+			bg_end = Color(0.12, 0.1, 0.08, 1.0)
+			border_color = Color(0.95, 0.8, 0.3, 0.8)
+		_:
+			bg_start = Color(0.2, 0.2, 0.2, 1.0)
+			bg_end = Color(0.08, 0.08, 0.08, 1.0)
+			border_color = Color(0.5, 0.5, 0.5, 0.8)
+			
+	if card.rarity == ThorCardDatabase.CardRarity.RARE:
+		border_color = GOLD_COLOR
+		
+	# Outer border style
+	var sb = StyleBoxFlat.new()
+	sb.bg_color = Color(0, 0, 0, 0)
+	sb.border_width_left = 3
+	sb.border_width_top = 3
+	sb.border_width_right = 3
+	sb.border_width_bottom = 3
+	sb.border_color = border_color
+	sb.corner_radius_top_left = 8
+	sb.corner_radius_top_right = 8
+	sb.corner_radius_bottom_left = 8
+	sb.corner_radius_bottom_right = 8
+	sb.shadow_size = 6
+	sb.shadow_color = Color(0, 0, 0, 0.6)
+	panel.add_theme_stylebox_override("panel", sb)
+	
+	# Gradient Background
+	var bg_tex = TextureRect.new()
+	bg_tex.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	
+	var grad = Gradient.new()
+	grad.colors = [bg_start, bg_end]
+	grad.offsets = [0.0, 1.0]
+	
+	var grad_tex = GradientTexture2D.new()
+	grad_tex.gradient = grad
+	grad_tex.fill = GradientTexture2D.FILL_LINEAR
+	grad_tex.fill_from = Vector2(0.2, 0.0)
+	grad_tex.fill_to = Vector2(0.8, 1.0)
+	
+	bg_tex.texture = grad_tex
+	bg_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(bg_tex)
+	
+	# Inner gold/silver frame border
+	var inner_border = Panel.new()
+	inner_border.set_anchors_preset(Control.PRESET_FULL_RECT)
+	inner_border.offset_left = 6
+	inner_border.offset_top = 6
+	inner_border.offset_right = -6
+	inner_border.offset_bottom = -6
+	inner_border.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
+	var inner_sb = StyleBoxFlat.new()
+	inner_sb.bg_color = Color(0, 0, 0, 0)
+	inner_sb.border_width_left = 1
+	inner_sb.border_width_top = 1
+	inner_sb.border_width_right = 1
+	inner_sb.border_width_bottom = 1
+	inner_sb.border_color = Color(GOLD_COLOR.r, GOLD_COLOR.g, GOLD_COLOR.b, 0.3) if card.rarity == ThorCardDatabase.CardRarity.RARE else Color(1, 1, 1, 0.15)
+	inner_sb.corner_radius_top_left = 6
+	inner_sb.corner_radius_top_right = 6
+	inner_sb.corner_radius_bottom_left = 6
+	inner_sb.corner_radius_bottom_right = 6
+	inner_border.add_theme_stylebox_override("panel", inner_sb)
+	panel.add_child(inner_border)
+	
+	# VBox layout
+	var vbox = VBoxContainer.new()
+	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vbox.offset_left = 8
+	vbox.offset_top = 10
+	vbox.offset_right = -8
+	vbox.offset_bottom = -8
+	vbox.add_theme_constant_override("separation", 4)
+	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(vbox)
+	
+	var is_pt = true
+	if GameGlobals:
+		is_pt = GameGlobals.current_language == GameGlobals.Language.PT
+		
+	# Name
+	var name_lbl = Label.new()
+	name_lbl.text = card.name_pt if is_pt else card.name_en
+	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if font_bold:
+		name_lbl.add_theme_font_override("font", font_bold)
+	name_lbl.add_theme_font_size_override("font_size", 10)
+	name_lbl.add_theme_color_override("font_color", GOLD_COLOR if card.rarity == ThorCardDatabase.CardRarity.RARE else Color.WHITE)
+	name_lbl.add_theme_constant_override("outline_size", 3)
+	name_lbl.add_theme_color_override("font_outline_color", Color.BLACK)
+	vbox.add_child(name_lbl)
+	
+	# Illustration Frame
+	var ill_panel = Panel.new()
+	ill_panel.custom_minimum_size = Vector2(0, 60)
+	ill_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ill_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
+	var ill_sb = StyleBoxFlat.new()
+	ill_sb.bg_color = Color(0, 0, 0, 0.45)
+	ill_sb.border_width_left = 1
+	ill_sb.border_width_top = 1
+	ill_sb.border_width_right = 1
+	ill_sb.border_width_bottom = 1
+	ill_sb.border_color = border_color.darkened(0.2)
+	ill_sb.corner_radius_top_left = 4
+	ill_sb.corner_radius_top_right = 4
+	ill_sb.corner_radius_bottom_left = 4
+	ill_sb.corner_radius_bottom_right = 4
+	ill_panel.add_theme_stylebox_override("panel", ill_sb)
+	vbox.add_child(ill_panel)
+	
+	# Tenta carregar imagem da carta, se não existir usa emoji
+	var card_img_name = _get_card_img_name(card.id)
+	var card_img_path = "res://assets/sprites/Sprites Thor/Cartas/" + card_img_name + ".png" if card_img_name != "" else ""
+	var has_illustration = false
+	if card_img_path != "" and ResourceLoader.exists(card_img_path):
+		var card_tex = TextureRect.new()
+		card_tex.texture = load(card_img_path)
+		card_tex.set_anchors_preset(Control.PRESET_FULL_RECT)
+		card_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		card_tex.stretch_mode = TextureRect.STRETCH_SCALE
+		card_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		ill_panel.add_child(card_tex)
+		has_illustration = true
+		
+	# Emoji (fallback se não houver ilustração)
+	var emoji_lbl = Label.new()
+	emoji_lbl.text = _get_card_icon(card.id)
+	emoji_lbl.set_anchors_preset(Control.PRESET_CENTER)
+	emoji_lbl.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	emoji_lbl.grow_vertical = Control.GROW_DIRECTION_BOTH
+	emoji_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	emoji_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	emoji_lbl.add_theme_font_size_override("font_size", 32)
+	emoji_lbl.add_theme_constant_override("outline_size", 2)
+	emoji_lbl.add_theme_color_override("font_outline_color", Color.BLACK)
+	emoji_lbl.visible = not has_illustration
+	ill_panel.add_child(emoji_lbl)
+	
+	# Separator
+	var sep = HSeparator.new()
+	sep.add_theme_color_override("separator_color", border_color.darkened(0.3))
+	vbox.add_child(sep)
+	
+	# Description
+	var desc_lbl = Label.new()
+	desc_lbl.text = card.desc_pt if is_pt else card.desc_en
+	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	desc_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	if font_reg:
+		desc_lbl.add_theme_font_override("font", font_reg)
+	desc_lbl.add_theme_font_size_override("font_size", 9)
+	desc_lbl.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
+	desc_lbl.add_theme_constant_override("outline_size", 2)
+	desc_lbl.add_theme_color_override("font_outline_color", Color.BLACK)
+	desc_lbl.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(desc_lbl)
+	
+	# Type Label
+	var type_lbl = Label.new()
+	match card.type:
+		ThorCardDatabase.CardType.ATTACK:
+			type_lbl.text = "⚔️ Ataque" if is_pt else "⚔️ Attack"
+		ThorCardDatabase.CardType.SKILL:
+			type_lbl.text = "🛡 Habilidade" if is_pt else "🛡 Skill"
+		ThorCardDatabase.CardType.POWER:
+			type_lbl.text = "✨ Poder" if is_pt else "✨ Power"
+	if font_reg:
+		type_lbl.add_theme_font_override("font", font_reg)
+	type_lbl.add_theme_font_size_override("font_size", 8)
+	type_lbl.add_theme_color_override("font_color", Color(0.65, 0.65, 0.65))
+	type_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(type_lbl)
+	
+	# circular energy badge
+	var energy_badge = Panel.new()
+	energy_badge.size = Vector2(26, 26)
+	energy_badge.position = Vector2(-7, -7)
+	energy_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
+	var badge_sb = StyleBoxFlat.new()
+	badge_sb.bg_color = Color(0.08, 0.1, 0.18, 0.95)
+	badge_sb.border_width_left = 2
+	badge_sb.border_width_top = 2
+	badge_sb.border_width_right = 2
+	badge_sb.border_width_bottom = 2
+	badge_sb.border_color = GOLD_COLOR if card.rarity == ThorCardDatabase.CardRarity.RARE else ENERGY_COLOR
+	badge_sb.corner_radius_top_left = 13
+	badge_sb.corner_radius_top_right = 13
+	badge_sb.corner_radius_bottom_left = 13
+	badge_sb.corner_radius_bottom_right = 13
+	badge_sb.shadow_size = 2
+	badge_sb.shadow_color = Color(0, 0, 0, 0.5)
+	energy_badge.add_theme_stylebox_override("panel", badge_sb)
+	panel.add_child(energy_badge)
+	
+	var cost_lbl = Label.new()
+	cost_lbl.text = str(card.cost)
+	cost_lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
+	cost_lbl.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	cost_lbl.grow_vertical = Control.GROW_DIRECTION_BOTH
+	cost_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cost_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	if font_bold:
+		cost_lbl.add_theme_font_override("font", font_bold)
+	cost_lbl.add_theme_font_size_override("font_size", 12)
+	cost_lbl.add_theme_color_override("font_color", ENERGY_COLOR)
+	energy_badge.add_child(cost_lbl)
+	
+	# Invisible click button
+	var click_btn = Button.new()
+	click_btn.set_anchors_preset(Control.PRESET_FULL_RECT)
+	click_btn.flat = true
+	click_btn.modulate.a = 0.0
+	
+	click_btn.mouse_entered.connect(func():
+		panel.pivot_offset = panel.size / 2
+		var tw = create_tween()
+		tw.tween_property(panel, "scale", Vector2(1.05, 1.05), 0.1)
+		if GameGlobals:
+			GameGlobals.play_hover_sound()
+	)
+	click_btn.mouse_exited.connect(func():
+		var tw = create_tween()
+		tw.tween_property(panel, "scale", Vector2(1.0, 1.0), 0.1)
+	)
+	
+	panel.add_child(click_btn)
+	return panel
+
+func _on_player_defeated():
+	state = BattleState.DEFEAT
+	_show_info(_get_trans("DERROTA...", "DEFEAT..."), DAMAGE_COLOR)
+	_update_all_ui()
+	
+	var timer = get_tree().create_timer(1.5)
+	timer.timeout.connect(_show_defeat_screen)
+
+func _show_defeat_screen():
+	# Toca som de derrota temático
+	if GameGlobals:
+		GameGlobals.play_defeat_sound()
+	# Overlay de fundo escuro semitransparente.
+	var overlay = ColorRect.new()
+	overlay.color = Color(0.0, 0.0, 0.0, 0.75)
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(overlay)
+
+	# CenterContainer para centrar tudo perfeitamente
+	var center_container := CenterContainer.new()
+	center_container.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(center_container)
+
+	# Painel decorado premium
+	var panel := Panel.new()
+	panel.custom_minimum_size = Vector2(420.0, 240.0)
+	var ps := StyleBoxFlat.new()
+	ps.bg_color = Color(0.04, 0.06, 0.12, 0.96) # Azul escuro tempestade de Thor
+	ps.border_width_left = 2
+	ps.border_width_top = 2
+	ps.border_width_right = 2
+	ps.border_width_bottom = 2
+	ps.border_color = Color(0.3, 0.6, 1.0, 1.0) # Borda azul relâmpago de Mjölnir
+	ps.corner_radius_top_left = 6
+	ps.corner_radius_top_right = 6
+	ps.corner_radius_bottom_left = 6
+	ps.corner_radius_bottom_right = 6
+	ps.shadow_size = 15
+	ps.shadow_color = Color(0, 0, 0, 0.8)
+	panel.add_theme_stylebox_override("panel", ps)
+	center_container.add_child(panel)
+
+	# Container vertical centrado
+	var vbox := VBoxContainer.new()
+	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_theme_constant_override("separation", 12)
+	panel.add_child(vbox)
+
+	var is_pt = true
+	if GameGlobals:
+		is_pt = GameGlobals.current_language == GameGlobals.Language.PT
+		
+	var title = Label.new()
+	title.text = "⚡ DERROTA ⚡" if is_pt else "⚡ DEFEAT ⚡"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if font_bold:
+		title.add_theme_font_override("font", font_bold)
+	title.add_theme_font_size_override("font_size", 24)
+	title.add_theme_color_override("font_color", Color(0.3, 0.6, 1.0, 1.0))
+	title.add_theme_constant_override("outline_size", 3)
+	title.add_theme_color_override("font_outline_color", Color.BLACK)
+	vbox.add_child(title)
+	
+	# Espaçador.
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0.0, 10.0)
+	vbox.add_child(spacer)
+
+	# Estilos para os botões
+	var sb_normal = StyleBoxFlat.new()
+	sb_normal.bg_color = Color(0.06, 0.10, 0.20, 0.85)
+	sb_normal.border_color = Color(0.3, 0.6, 1.0, 0.6)
+	sb_normal.border_width_left = 1
+	sb_normal.border_width_top = 1
+	sb_normal.border_width_right = 1
+	sb_normal.border_width_bottom = 1
+	sb_normal.corner_radius_top_left = 3
+	sb_normal.corner_radius_top_right = 3
+	sb_normal.corner_radius_bottom_left = 3
+	sb_normal.corner_radius_bottom_right = 3
+
+	var sb_hover = StyleBoxFlat.new()
+	sb_hover.bg_color = Color(0.10, 0.20, 0.40, 0.95)
+	sb_hover.border_color = Color(0.4, 0.7, 1.0, 1.0)
+	sb_hover.border_width_left = 1
+	sb_hover.border_width_top = 1
+	sb_hover.border_width_right = 1
+	sb_hover.border_width_bottom = 1
+	sb_hover.corner_radius_top_left = 3
+	sb_hover.corner_radius_top_right = 3
+	sb_hover.corner_radius_bottom_left = 3
+	sb_hover.corner_radius_bottom_right = 3
+
+	# Botão Tentar Novamente
+	var retry_btn = Button.new()
+	retry_btn.text = "Tentar Novamente" if is_pt else "Try Again"
+	retry_btn.custom_minimum_size = Vector2(300, 36)
+	if font_reg:
+		retry_btn.add_theme_font_override("font", font_reg)
+	retry_btn.add_theme_font_size_override("font_size", 13)
+	retry_btn.add_theme_stylebox_override("normal", sb_normal)
+	retry_btn.add_theme_stylebox_override("hover", sb_hover)
+	retry_btn.add_theme_stylebox_override("focus", sb_hover)
+	retry_btn.add_theme_color_override("font_color", Color(0.9, 0.95, 1.0, 1.0))
+	retry_btn.pressed.connect(func():
+		get_tree().change_scene_to_file("res://scenes/thor_jormungandr/thor_battle.tscn")
+	)
+	vbox.add_child(retry_btn)
+	
+	# Botão Menu
+	var menu_btn = Button.new()
+	menu_btn.text = "Voltar à Biblioteca" if is_pt else "Return to Library"
+	menu_btn.custom_minimum_size = Vector2(300, 36)
+	if font_reg:
+		menu_btn.add_theme_font_override("font", font_reg)
+	menu_btn.add_theme_font_size_override("font_size", 13)
+	menu_btn.add_theme_stylebox_override("normal", sb_normal)
+	menu_btn.add_theme_stylebox_override("hover", sb_hover)
+	menu_btn.add_theme_stylebox_override("focus", sb_hover)
+	menu_btn.add_theme_color_override("font_color", Color(0.9, 0.95, 1.0, 1.0))
+	menu_btn.pressed.connect(func():
+		if GameGlobals:
+			GameGlobals.thor_run_active = false # Reset run
+		var transition = get_node_or_null("/root/SceneTransition")
+		if transition:
+			transition.fade_to("res://scenes/main_menu.tscn")
+		else:
+			get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+	)
+	vbox.add_child(menu_btn)
+	
+	if GameGlobals:
+		retry_btn.mouse_entered.connect(GameGlobals.play_hover_sound)
+		retry_btn.pressed.connect(GameGlobals.play_click_sound)
+		menu_btn.mouse_entered.connect(GameGlobals.play_hover_sound)
+		menu_btn.pressed.connect(GameGlobals.play_click_sound)
+
+# =============================================================================
+# TELA DE DERROTA CINEMÁTICA (para Jörmungandr - dispara despertar)
+# =============================================================================
+
+func _show_defeat_screen_cinematic():
+	# Toca som de derrota temático
+	if GameGlobals:
+		GameGlobals.play_defeat_sound()
+	# Overlay de fundo escuro semitransparente.
+	var overlay = ColorRect.new()
+	overlay.color = Color(0.0, 0.0, 0.0, 0.75)
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(overlay)
+
+	# CenterContainer para centrar tudo perfeitamente
+	var center_container := CenterContainer.new()
+	center_container.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(center_container)
+
+	# Painel decorado premium
+	var panel := Panel.new()
+	panel.custom_minimum_size = Vector2(420.0, 240.0)
+	var ps := StyleBoxFlat.new()
+	ps.bg_color = Color(0.04, 0.06, 0.12, 0.96)
+	ps.border_width_left = 2
+	ps.border_width_top = 2
+	ps.border_width_right = 2
+	ps.border_width_bottom = 2
+	ps.border_color = Color(0.3, 0.6, 1.0, 1.0)
+	ps.corner_radius_top_left = 6
+	ps.corner_radius_top_right = 6
+	ps.corner_radius_bottom_left = 6
+	ps.corner_radius_bottom_right = 6
+	ps.shadow_size = 15
+	ps.shadow_color = Color(0, 0, 0, 0.8)
+	panel.add_theme_stylebox_override("panel", ps)
+	center_container.add_child(panel)
+
+	# Container vertical centrado
+	var vbox := VBoxContainer.new()
+	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_theme_constant_override("separation", 12)
+	panel.add_child(vbox)
+
+	var is_pt = true
+	if GameGlobals:
+		is_pt = GameGlobals.current_language == GameGlobals.Language.PT
+		
+	var title = Label.new()
+	title.text = "⚡ DERROTA ⚡" if is_pt else "⚡ DEFEAT ⚡"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if font_bold:
+		title.add_theme_font_override("font", font_bold)
+	title.add_theme_font_size_override("font_size", 24)
+	title.add_theme_color_override("font_color", Color(0.3, 0.6, 1.0, 1.0))
+	title.add_theme_constant_override("outline_size", 3)
+	title.add_theme_color_override("font_outline_color", Color.BLACK)
+	vbox.add_child(title)
+	
+	# Espaçador.
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0.0, 10.0)
+	vbox.add_child(spacer)
+
+	# Estilos para os botões
+	var sb_normal = StyleBoxFlat.new()
+	sb_normal.bg_color = Color(0.06, 0.10, 0.20, 0.85)
+	sb_normal.border_color = Color(0.3, 0.6, 1.0, 0.6)
+	sb_normal.border_width_left = 1
+	sb_normal.border_width_top = 1
+	sb_normal.border_width_right = 1
+	sb_normal.border_width_bottom = 1
+	sb_normal.corner_radius_top_left = 3
+	sb_normal.corner_radius_top_right = 3
+	sb_normal.corner_radius_bottom_left = 3
+	sb_normal.corner_radius_bottom_right = 3
+
+	var sb_hover = StyleBoxFlat.new()
+	sb_hover.bg_color = Color(0.10, 0.20, 0.40, 0.95)
+	sb_hover.border_color = Color(0.4, 0.7, 1.0, 1.0)
+	sb_hover.border_width_left = 1
+	sb_hover.border_width_top = 1
+	sb_hover.border_width_right = 1
+	sb_hover.border_width_bottom = 1
+	sb_hover.corner_radius_top_left = 3
+	sb_hover.corner_radius_top_right = 3
+	sb_hover.corner_radius_bottom_left = 3
+	sb_hover.corner_radius_bottom_right = 3
+
+	# Botão Tentar Novamente - DISPARA CINEMÁTICA DE DESPERTAR
+	var retry_btn = Button.new()
+	retry_btn.text = "Tentar Novamente" if is_pt else "Try Again"
+	retry_btn.custom_minimum_size = Vector2(300, 36)
+	if font_reg:
+		retry_btn.add_theme_font_override("font", font_reg)
+	retry_btn.add_theme_font_size_override("font_size", 13)
+	retry_btn.add_theme_stylebox_override("normal", sb_normal)
+	retry_btn.add_theme_stylebox_override("hover", sb_hover)
+	retry_btn.add_theme_stylebox_override("focus", sb_hover)
+	retry_btn.add_theme_color_override("font_color", Color(0.9, 0.95, 1.0, 1.0))
+	retry_btn.pressed.connect(func():
+		overlay.queue_free()
+		_start_awakening_cinematic()
+	)
+	vbox.add_child(retry_btn)
+	
+	# Botão Menu - TAMBÉM DISPARA CINEMÁTICA DE DESPERTAR
+	var menu_btn = Button.new()
+	menu_btn.text = "Voltar à Biblioteca" if is_pt else "Return to Library"
+	menu_btn.custom_minimum_size = Vector2(300, 36)
+	if font_reg:
+		menu_btn.add_theme_font_override("font", font_reg)
+	menu_btn.add_theme_font_size_override("font_size", 13)
+	menu_btn.add_theme_stylebox_override("normal", sb_normal)
+	menu_btn.add_theme_stylebox_override("hover", sb_hover)
+	menu_btn.add_theme_stylebox_override("focus", sb_hover)
+	menu_btn.add_theme_color_override("font_color", Color(0.9, 0.95, 1.0, 1.0))
+	menu_btn.pressed.connect(func():
+		overlay.queue_free()
+		_start_awakening_cinematic()
+	)
+	vbox.add_child(menu_btn)
+	
+	if GameGlobals:
+		retry_btn.mouse_entered.connect(GameGlobals.play_hover_sound)
+		retry_btn.pressed.connect(GameGlobals.play_click_sound)
+		menu_btn.mouse_entered.connect(GameGlobals.play_hover_sound)
+		menu_btn.pressed.connect(GameGlobals.play_click_sound)
+
+# =============================================================================
+# CINEMÁTICA DE DESPERTAR
+# =============================================================================
+
+func _start_awakening_cinematic():
+	state = BattleState.CINEMATIC_AWAKENING
+	awakening_cinematic_step = 0
+	
+	# Criar overlay preto total
+	cinematic_overlay = ColorRect.new()
+	cinematic_overlay.color = Color(0, 0, 0, 1.0)
+	cinematic_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	cinematic_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(cinematic_overlay)
+	
+	# Parar música atual
+	if GameGlobals:
+		GameGlobals.stop_music()
+	
+	# Silêncio total por um momento
+	var timer = get_tree().create_timer(1.5)
+	timer.timeout.connect(_awakening_step_1_narrator)
+
+func _awakening_step_1_narrator():
+	# Narrador: "Thor perderia tão facilmente assim?"
+	var d = dialogue_scene.instantiate()
+	d.dialogue_list = [
+		{"name": "char_narrator", "text": "dialogue_awakening_narrator_1"}
+	]
+	d.dialogue_finished.connect(_awakening_step_2_thunder)
+	add_child(d)
+
+func _awakening_step_2_thunder():
+	# Som forte de trovão
+	_play_sfx("explosion", 0.7, -2.0)
+	
+	# Flash branco
+	var flash = ColorRect.new()
+	flash.color = Color(1, 1, 1, 1.0)
+	flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cinematic_overlay.add_child(flash)
+	
+	var tween = create_tween()
+	tween.tween_property(flash, "modulate:a", 0.0, 0.15).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_callback(func(): flash.queue_free())
+	
+	# Pequena pausa e depois próxima fala
+	var timer = get_tree().create_timer(0.8)
+	timer.timeout.connect(_awakening_step_3_thunder_particles)
+
+func _awakening_step_3_thunder_particles():
+	# Raios/partículas elétricas começam a aparecer
+	# Aumentar partículas do Thor
+	if thunder_particles:
+		thunder_particles.amount = 50
+		thunder_particles.lifetime = 1.0
+		thunder_particles.emitting = true
+	
+	# Screen shake contínuo
+	_shake_node(player_node)
+	_shake_node(enemy_panel)
+	
+	# Som de trovão contínuo/estrondo
+	_play_sfx("explosion", 0.5, -6.0)
+	
+	var timer = get_tree().create_timer(1.0)
+	timer.timeout.connect(_awakening_step_4_thor_awakens)
+
+func _awakening_step_4_thor_awakens():
+	# Thor fala: "Não posso cair aqui... Mjölnir... chegou a hora de despertar!"
+	var d = dialogue_scene.instantiate()
+	d.dialogue_list = [
+		{"name": "char_thor", "text": "dialogue_awakening_thor_new"}
+	]
+	d.dialogue_finished.connect(_awakening_step_5_intense_vfx)
+	add_child(d)
+
+func _awakening_step_5_intense_vfx():
+	# Despertar elétrico intenso (VFX fortes)
+	# Thor desperta - flash mais forte
+	var flash = ColorRect.new()
+	flash.color = Color(0.3, 0.7, 1.0, 1.0) # Azul elétrico
+	flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cinematic_overlay.add_child(flash)
+	
+	var tween = create_tween()
+	tween.tween_property(flash, "modulate:a", 0.0, 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_callback(func(): flash.queue_free())
+	
+	# Som muito forte de trovão
+	_play_sfx("explosion", 1.0, 0.0)
+	
+	# Efeitos visuais no sprite do Thor
+	if player_node:
+		var anim_sprite = player_node.get_node_or_null("AnimatedSprite2D")
+		if anim_sprite:
+			# Modulate para brilho elétrico
+			var tween2 = create_tween()
+			tween2.tween_property(anim_sprite, "modulate", Color(1.5, 1.5, 2.0, 1.0), 0.2)
+			tween2.tween_property(anim_sprite, "modulate", Color(1.0, 1.0, 1.0, 1.0), 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		
+		# Partículas intensas
+		if thunder_particles:
+			thunder_particles.amount = 100
+			thunder_particles.scale_amount_min = 3.0
+			thunder_particles.scale_amount_max = 6.0
+			thunder_particles.color = Color(0.3, 0.8, 1.0, 1.0)
+	
+	# Screen shake forte
+	_shake_node(player_node)
+	_shake_node(enemy_panel)
+	
+	var timer = get_tree().create_timer(1.0)
+	timer.timeout.connect(_awakening_step_6_jormungandr_reaction)
+
+func _awakening_step_6_jormungandr_reaction():
+	# Jörmungandr reage: "Impossível... continuas a resistir ao meu veneno?!"
+	var d = dialogue_scene.instantiate()
+	d.dialogue_list = [
+		{"name": "char_jormungandr", "text": "dialogue_awakening_jormungandr_new"}
+	]
+	d.dialogue_finished.connect(_awakening_step_7_transition_to_phase2)
+	add_child(d)
+
+func _awakening_step_7_transition_to_phase2():
+	# Transicionar para a fase 2
+	# Fade out do overlay cinemático
+	var tween = create_tween()
+	tween.tween_property(cinematic_overlay, "modulate:a", 0.0, 1.0).set_trans(Tween.TRANS_SINE)
+	tween.tween_callback(_enter_phase_2)
+
+func _enter_phase_2():
+	# Limpar overlay
+	if cinematic_overlay:
+		cinematic_overlay.queue_free()
+		cinematic_overlay = null
+	
+	# Restaurar música (versão mais intensa ou mesma)
+	if GameGlobals:
+		GameGlobals.play_music("res://assets/music/time_for_adventure.wav", -4.0) # Mais alto
+	
+	# Configurar fase 2
+	jormungandr_phase_2 = true
+	state = BattleState.PHASE_2_START
+	
+	# Substituir deck pelo Awakening Deck
+	_setup_awakening_deck()
+	
+	# Thor recupera HP adequado para fase 2 (ex: 50% do max)
+	player_hp = maxi(1, int(player_max_hp / 2))
+	player_block = 0
+	player_vulnerable = 0
+	player_strength = 0
+	player_block_per_turn = 0
+	player_draw_bonus = 0
+	powers_active.clear()
+	
+	# Reset energia
+	player_energy = player_max_energy
+	
+	# Jörmungandr já está com HP cheio (foi restaurado na derrota)
+	enemy_hp = enemy_max_hp
+	enemy_block = 0
+	enemy_strength = 0
+	enemy_vulnerable = 0
+	enemy_intent = ThorEnemyDatabase.get_random_intent("jormungandr")
+	
+	# Limpar mão e descarte
+	hand.clear()
+	discard_pile.clear()
+	draw_pile = deck.duplicate()
+	draw_pile.shuffle()
+	
+	# Comprar primeira mão garantida (5 cartas com pelo menos 1 ataque e 1 defesa)
+	_draw_guaranteed_opening_hand()
+	
+	# Atualizar UI
+	_update_all_ui()
+	_rebuild_hand_ui()
+	
+	# Mostrar mensagem de início da fase 2
+	_show_info(_get_trans("⚡ FASE 2: THOR DESPERTO ⚡", "⚡ PHASE 2: AWAKENED THOR ⚡"), ACCENT_COLOR)
+	
+	# Iniciar turno do jogador
+	state = BattleState.PLAYER_TURN
+	end_turn_btn.disabled = false
+
+func _setup_awakening_deck():
+	# Deck de despertar - 8 cartas poderosas
+	deck = [
+		"mjolnir_desperto",      # Ataque 2 custo - 35 dmg (+20 se 3+ força)
+		"mjolnir_desperto",
+		"surto_temporal",        # Ataque 1 custo - 18 dmg + 1 energia
+		"surto_temporal",
+		"trovao_estrondeante",   # Ataque 3 custo - 50 dmg + 2 vulnerável
+		"egide_asgard",          # Skill 1 custo - 25 block + draw 1
+		"reflexos_relampago",    # Skill 1 custo - draw 2 + 1 energia
+		"poder_odin",            # Power 2 custo - +5 força, +1 draw/turno
+		"golpe_ragnarok",        # Ataque 3 custo - 30 dmg por vulnerável (max 3)
+		"graca_valhalla",        # Skill 2 custo - cura 15, block 20, remove debuffs
+	]
+	# Não embaralhar ainda - vamos comprar mão garantida primeiro
+
+func _draw_guaranteed_opening_hand():
+	# Garantir pelo menos 1 ataque e 1 skill/defesa na mão inicial
+	var attack_cards = []
+	var skill_cards = []
+	var power_cards = []
+	
+	for card_id in draw_pile:
+		var card = ThorCardDatabase.get_card(card_id)
+		if card.type == ThorCardDatabase.CardType.ATTACK:
+			attack_cards.append(card_id)
+		elif card.type == ThorCardDatabase.CardType.SKILL:
+			skill_cards.append(card_id)
+		elif card.type == ThorCardDatabase.CardType.POWER:
+			power_cards.append(card_id)
+	
+	# Comprar 1 ataque garantido
+	if attack_cards.size() > 0:
+		var idx = draw_pile.find(attack_cards[0])
+		if idx != -1:
+			hand.append(draw_pile[idx])
+			draw_pile.remove_at(idx)
+	
+	# Comprar 1 skill garantida
+	if skill_cards.size() > 0:
+		var idx = draw_pile.find(skill_cards[0])
+		if idx != -1:
+			hand.append(draw_pile[idx])
+			draw_pile.remove_at(idx)
+	
+	# Comprar resto até 5 cartas
+	while hand.size() < 5 and draw_pile.size() > 0:
+		hand.append(draw_pile.pop_back())
+	
+	# Se ainda não tem 5, reciclar descarte (não deve acontecer)
+	while hand.size() < 5:
+		if draw_pile.is_empty() and discard_pile.is_empty():
+			break
+		if draw_pile.is_empty():
+			draw_pile = discard_pile.duplicate()
+			discard_pile.clear()
+			draw_pile.shuffle()
+		if draw_pile.size() > 0:
+			hand.append(draw_pile.pop_back())
+
+# =============================================================================
+# UI DE CARTAS (CONSTRUÇÃO DINÂMICA)
+# =============================================================================
+
+func _rebuild_hand_ui():
+	# Limpar cartas anteriores removendo-as do layout de imediato para evitar glitches de desenho no Godot
+	for child in card_container.get_children():
+		card_container.remove_child(child)
+		child.queue_free()
+	
+	# Criar carta visual para cada carta na mão
+	for i in range(hand.size()):
+		var card_id = hand[i]
+		var card = ThorCardDatabase.get_card(card_id)
+		if card.is_empty():
+			continue
+		
+		var card_btn = _create_card_button(card, i)
+		card_container.add_child(card_btn)
+
+func _create_card_button(card: Dictionary, index: int) -> Panel:
+	var panel = Panel.new()
+	panel.custom_minimum_size = Vector2(CARD_WIDTH, CARD_HEIGHT)
+	panel.clip_contents = false
+	
+	# Determine colors based on type
+	var bg_start: Color
+	var bg_end: Color
+	var border_color: Color
+	
+	match card.type:
+		ThorCardDatabase.CardType.ATTACK:
+			bg_start = Color(0.55, 0.12, 0.12, 1.0)
+			bg_end = Color(0.15, 0.08, 0.08, 1.0)
+			border_color = Color(0.85, 0.3, 0.3, 0.8)
+		ThorCardDatabase.CardType.SKILL:
+			bg_start = Color(0.1, 0.25, 0.5, 1.0)
+			bg_end = Color(0.06, 0.08, 0.15, 1.0)
+			border_color = Color(0.3, 0.6, 0.9, 0.8)
+		ThorCardDatabase.CardType.POWER:
+			bg_start = Color(0.5, 0.35, 0.08, 1.0)
+			bg_end = Color(0.12, 0.1, 0.08, 1.0)
+			border_color = Color(0.95, 0.8, 0.3, 0.8)
+		_:
+			bg_start = Color(0.2, 0.2, 0.2, 1.0)
+			bg_end = Color(0.08, 0.08, 0.08, 1.0)
+			border_color = Color(0.5, 0.5, 0.5, 0.8)
+			
+	if card.rarity == ThorCardDatabase.CardRarity.RARE:
+		border_color = GOLD_COLOR
+		
+	# Outer border style
+	var sb = StyleBoxFlat.new()
+	sb.bg_color = Color(0, 0, 0, 0)
+	sb.border_width_left = 3
+	sb.border_width_top = 3
+	sb.border_width_right = 3
+	sb.border_width_bottom = 3
+	sb.border_color = border_color
+	sb.corner_radius_top_left = 8
+	sb.corner_radius_top_right = 8
+	sb.corner_radius_bottom_left = 8
+	sb.corner_radius_bottom_right = 8
+	sb.shadow_size = 5
+	sb.shadow_color = Color(0, 0, 0, 0.6)
+	panel.add_theme_stylebox_override("panel", sb)
+	
+	# Gradient Background
+	var bg_tex = TextureRect.new()
+	bg_tex.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	
+	var grad = Gradient.new()
+	grad.colors = [bg_start, bg_end]
+	grad.offsets = [0.0, 1.0]
+	
+	var grad_tex = GradientTexture2D.new()
+	grad_tex.gradient = grad
+	grad_tex.fill = GradientTexture2D.FILL_LINEAR
+	grad_tex.fill_from = Vector2(0.2, 0.0)
+	grad_tex.fill_to = Vector2(0.8, 1.0)
+	
+	bg_tex.texture = grad_tex
+	bg_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(bg_tex)
+	
+	# Inner Gold/Silver Frame Border
+	var inner_border = Panel.new()
+	inner_border.set_anchors_preset(Control.PRESET_FULL_RECT)
+	inner_border.offset_left = 5
+	inner_border.offset_top = 5
+	inner_border.offset_right = -5
+	inner_border.offset_bottom = -5
+	inner_border.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
+	var inner_sb = StyleBoxFlat.new()
+	inner_sb.bg_color = Color(0, 0, 0, 0)
+	inner_sb.border_width_left = 1
+	inner_sb.border_width_top = 1
+	inner_sb.border_width_right = 1
+	inner_sb.border_width_bottom = 1
+	inner_sb.border_color = Color(GOLD_COLOR.r, GOLD_COLOR.g, GOLD_COLOR.b, 0.3) if card.rarity == ThorCardDatabase.CardRarity.RARE else Color(1, 1, 1, 0.15)
+	inner_sb.corner_radius_top_left = 5
+	inner_sb.corner_radius_top_right = 5
+	inner_sb.corner_radius_bottom_left = 5
+	inner_sb.corner_radius_bottom_right = 5
+	inner_border.add_theme_stylebox_override("panel", inner_sb)
+	panel.add_child(inner_border)
+	
+	# Content VBox
+	var vbox = VBoxContainer.new()
+	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vbox.offset_left = 8
+	vbox.offset_top = 8
+	vbox.offset_right = -8
+	vbox.offset_bottom = -8
+	vbox.add_theme_constant_override("separation", 3)
+	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(vbox)
+	
+	var top_spacer = Control.new()
+	top_spacer.custom_minimum_size = Vector2(0, 4)
+	vbox.add_child(top_spacer)
+	
+	var is_pt = true
+	if GameGlobals:
+		is_pt = GameGlobals.current_language == GameGlobals.Language.PT
+		
+	# Card Name
+	var name_lbl = Label.new()
+	name_lbl.text = card.name_pt if is_pt else card.name_en
+	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if font_bold:
+		name_lbl.add_theme_font_override("font", font_bold)
+	name_lbl.add_theme_font_size_override("font_size", 9)
+	name_lbl.add_theme_color_override("font_color", GOLD_COLOR if card.rarity == ThorCardDatabase.CardRarity.RARE else Color.WHITE)
+	name_lbl.add_theme_constant_override("outline_size", 3)
+	name_lbl.add_theme_color_override("font_outline_color", Color.BLACK)
+	vbox.add_child(name_lbl)
+	
+	# Illustration Frame
+	var ill_panel = Panel.new()
+	ill_panel.custom_minimum_size = Vector2(0, 52)
+	ill_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ill_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
+	var ill_sb = StyleBoxFlat.new()
+	ill_sb.bg_color = Color(0, 0, 0, 0.45)
+	ill_sb.border_width_left = 1
+	ill_sb.border_width_top = 1
+	ill_sb.border_width_right = 1
+	ill_sb.border_width_bottom = 1
+	ill_sb.border_color = border_color.darkened(0.2)
+	ill_sb.corner_radius_top_left = 4
+	ill_sb.corner_radius_top_right = 4
+	ill_sb.corner_radius_bottom_left = 4
+	ill_sb.corner_radius_bottom_right = 4
+	ill_panel.add_theme_stylebox_override("panel", ill_sb)
+	vbox.add_child(ill_panel)
+	
+	# Tenta carregar imagem da carta, se não existir usa emoji
+	var card_img_name = _get_card_img_name(card.id)
+	var card_img_path = "res://assets/sprites/Sprites Thor/Cartas/" + card_img_name + ".png" if card_img_name != "" else ""
+	var has_illustration = false
+	if card_img_path != "" and ResourceLoader.exists(card_img_path):
+		var card_tex = TextureRect.new()
+		card_tex.texture = load(card_img_path)
+		card_tex.set_anchors_preset(Control.PRESET_FULL_RECT)
+		card_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		card_tex.stretch_mode = TextureRect.STRETCH_SCALE
+		card_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		ill_panel.add_child(card_tex)
+		has_illustration = true
+		
+	# Emoji Inside Frame (fallback se não houver ilustração)
+	var emoji_lbl = Label.new()
+	emoji_lbl.text = _get_card_icon(card.id)
+	emoji_lbl.set_anchors_preset(Control.PRESET_CENTER)
+	emoji_lbl.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	emoji_lbl.grow_vertical = Control.GROW_DIRECTION_BOTH
+	emoji_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	emoji_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	emoji_lbl.add_theme_font_size_override("font_size", 28)
+	emoji_lbl.add_theme_constant_override("outline_size", 2)
+	emoji_lbl.add_theme_color_override("font_outline_color", Color.BLACK)
+	emoji_lbl.visible = not has_illustration
+	ill_panel.add_child(emoji_lbl)
+	
+	var sep = HSeparator.new()
+	sep.add_theme_color_override("separator_color", border_color.darkened(0.3))
+	vbox.add_child(sep)
+	
+	# Description
+	var desc_lbl = Label.new()
+	desc_lbl.text = card.desc_pt if is_pt else card.desc_en
+	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	desc_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	if font_reg:
+		desc_lbl.add_theme_font_override("font", font_reg)
+	desc_lbl.add_theme_font_size_override("font_size", 8)
+	desc_lbl.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
+	desc_lbl.add_theme_constant_override("outline_size", 2)
+	desc_lbl.add_theme_color_override("font_outline_color", Color.BLACK)
+	desc_lbl.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(desc_lbl)
+	
+	# Type Rodapé
+	var type_lbl = Label.new()
+	match card.type:
+		ThorCardDatabase.CardType.ATTACK:
+			type_lbl.text = "⚔️ Ataque" if is_pt else "⚔️ Attack"
+		ThorCardDatabase.CardType.SKILL:
+			type_lbl.text = "🛡 Habilidade" if is_pt else "🛡 Skill"
+		ThorCardDatabase.CardType.POWER:
+			type_lbl.text = "✨ Poder" if is_pt else "✨ Power"
+	if font_reg:
+		type_lbl.add_theme_font_override("font", font_reg)
+	type_lbl.add_theme_font_size_override("font_size", 7)
+	type_lbl.add_theme_color_override("font_color", Color(0.65, 0.65, 0.65))
+	type_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(type_lbl)
+	
+	# circular energy badge (top-left)
+	var energy_badge = Panel.new()
+	energy_badge.size = Vector2(24, 24)
+	energy_badge.position = Vector2(-6, -6)
+	energy_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
+	var badge_sb = StyleBoxFlat.new()
+	badge_sb.bg_color = Color(0.08, 0.1, 0.18, 0.95)
+	badge_sb.border_width_left = 2
+	badge_sb.border_width_top = 2
+	badge_sb.border_width_right = 2
+	badge_sb.border_width_bottom = 2
+	badge_sb.border_color = GOLD_COLOR if card.rarity == ThorCardDatabase.CardRarity.RARE else ENERGY_COLOR
+	badge_sb.corner_radius_top_left = 12
+	badge_sb.corner_radius_top_right = 12
+	badge_sb.corner_radius_bottom_left = 12
+	badge_sb.corner_radius_bottom_right = 12
+	badge_sb.shadow_size = 2
+	badge_sb.shadow_color = Color(0, 0, 0, 0.5)
+	energy_badge.add_theme_stylebox_override("panel", badge_sb)
+	panel.add_child(energy_badge)
+	
+	var cost_lbl = Label.new()
+	cost_lbl.text = str(card.cost)
+	cost_lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
+	cost_lbl.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	cost_lbl.grow_vertical = Control.GROW_DIRECTION_BOTH
+	cost_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cost_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	if font_bold:
+		cost_lbl.add_theme_font_override("font", font_bold)
+	cost_lbl.add_theme_font_size_override("font_size", 11)
+	cost_lbl.add_theme_color_override("font_color", ENERGY_COLOR)
+	energy_badge.add_child(cost_lbl)
+	
+	# Invisible interaction button (MUST BE THE LAST CHILD ADDED!)
+	var click_btn = Button.new()
+	click_btn.set_anchors_preset(Control.PRESET_FULL_RECT)
+	click_btn.anchor_right = 1.0
+	click_btn.anchor_bottom = 1.0
+	click_btn.flat = true
+	click_btn.modulate.a = 0.0
+	click_btn.mouse_filter = Control.MOUSE_FILTER_STOP
+	
+	var card_index = index
+	var can_play = card.cost <= player_energy and state == BattleState.PLAYER_TURN
+	
+	click_btn.pressed.connect(func():
+		_play_card(card_index)
+	)
+	panel.add_child(click_btn)
+	
+	# Hover effects com posição base garantida (evita que as cartas afundem na tela com passagens rápidas do rato)
+	var base_y = panel.position.y
+	var active_tween: Tween = null
+	
+	click_btn.mouse_entered.connect(func():
+		if card.cost <= player_energy and state == BattleState.PLAYER_TURN:
+			panel.pivot_offset = panel.size / 2
+			if active_tween and active_tween.is_valid():
+				active_tween.kill()
+			active_tween = create_tween()
+			active_tween.tween_property(panel, "scale", Vector2(1.12, 1.12), 0.12)
+			active_tween.parallel().tween_property(panel, "position:y", base_y - 12.0, 0.12)
+		if GameGlobals:
+			GameGlobals.play_hover_sound()
+	)
+	click_btn.mouse_exited.connect(func():
+		if active_tween and active_tween.is_valid():
+			active_tween.kill()
+		active_tween = create_tween()
+		active_tween.tween_property(panel, "scale", Vector2(1.0, 1.0), 0.12)
+		active_tween.parallel().tween_property(panel, "position:y", base_y, 0.12)
+	)
+	
+	# Dim unplayable cards
+	if not can_play:
+		panel.modulate = Color(0.55, 0.55, 0.55, 0.75)
+		
+	return panel
+
+# =============================================================================
+# ATUALIZAÇÃO DE UI
+# =============================================================================
+
+func _update_all_ui():
+	# Jogador
+	if player_hp_bar:
+		player_hp_bar.max_value = player_max_hp
+		player_hp_bar.value = player_hp
+	if player_hp_label:
+		player_hp_label.text = "❤️ " + str(player_hp) + " / " + str(player_max_hp)
+	if player_block_label:
+		player_block_label.text = "🛡 " + str(player_block) if player_block > 0 else ""
+	# Inimigo
+	var is_pt = true
+	if GameGlobals:
+		is_pt = GameGlobals.current_language == GameGlobals.Language.PT
+	
+	if wave_label:
+		if total_waves > 1:
+			wave_label.text = "⚔️ Onda %d/%d" % [current_wave, total_waves] if is_pt else "⚔️ Wave %d/%d" % [current_wave, total_waves]
+			wave_label.visible = true
+		else:
+			wave_label.visible = false
+	
+	if enemy_name_label:
+		enemy_name_label.text = enemy_data.get("name_pt", "???") if is_pt else enemy_data.get("name_en", "???")
+	if enemy_hp_bar:
+		enemy_hp_bar.max_value = enemy_max_hp
+		enemy_hp_bar.value = enemy_hp
+	if enemy_hp_label:
+		enemy_hp_label.text = "❤️ " + str(enemy_hp) + " / " + str(enemy_max_hp)
+	if enemy_block_label:
+		enemy_block_label.text = "🛡 " + str(enemy_block) if enemy_block > 0 else ""
+
+	# Intent label — mostra a próxima ação do inimigo de forma clara
+	if enemy_intent_label and not enemy_intent.is_empty():
+		var intent_text = ""
+		var intent_color = DAMAGE_COLOR
+		match enemy_intent.type:
+			ThorEnemyDatabase.IntentType.ATTACK:
+				# Intenção especial da cinemática: 999 DANO + 999 CURA
+				if enemy_intent.get("cinematic_execution", false):
+					intent_text = ("Próxima Ação: ⚔️ %d + ❤️ %d" % [enemy_intent.get("damage", 999), enemy_intent.get("heal", 999)]) if is_pt else ("Next Action: ⚔️ %d + ❤️ %d" % [enemy_intent.get("damage", 999), enemy_intent.get("heal", 999)])
+					intent_color = DAMAGE_COLOR
+					# Destaque visual extra para a revelação do 999/999
+					if enemy_intent.get("cinematic_highlight", false):
+						intent_color = Color(1, 0.1, 0.1, 1)  # Vermelho intenso
+						# Aplicar escala e cor via theme override no label
+						enemy_intent_label.add_theme_font_size_override("font_size", 14)  # Maior
+						enemy_intent_label.add_theme_color_override("font_outline_color", Color(1, 0.8, 0.2))  # Outline dourado
+						# Pulse animation - matar tween anterior se existir
+						if enemy_intent_label.has_meta("pulse_tween"):
+							var prev_tween = enemy_intent_label.get_meta("pulse_tween")
+							if prev_tween and prev_tween.is_valid():
+								prev_tween.kill()
+						var tween = create_tween()
+						tween.set_loops(1)
+						tween.tween_property(enemy_intent_label, "scale", Vector2(1.2, 1.2), 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+						tween.tween_property(enemy_intent_label, "scale", Vector2(1.0, 1.0), 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+						enemy_intent_label.set_meta("pulse_tween", tween)
+					else:
+						# Restaurar valores normais quando highlight acaba
+						enemy_intent_label.add_theme_font_size_override("font_size", 11)
+						enemy_intent_label.add_theme_color_override("font_outline_color", Color.BLACK)
+						# Matar tween de pulse se existir e restaurar escala
+						if enemy_intent_label.has_meta("pulse_tween"):
+							var prev_tween = enemy_intent_label.get_meta("pulse_tween")
+							if prev_tween and prev_tween.is_valid():
+								prev_tween.kill()
+						enemy_intent_label.scale = Vector2(1.0, 1.0)
+						enemy_intent_label.remove_meta("pulse_tween")
+				else:
+					var dmg = enemy_intent.get("damage", 0) + enemy_strength
+					if GameGlobals:
+						match GameGlobals.current_difficulty:
+							GameGlobals.Difficulty.EASY: dmg = int(dmg * 0.8)
+							GameGlobals.Difficulty.HARD: dmg = int(dmg * 1.25)
+					if player_vulnerable > 0:
+						dmg = int(dmg * 2.0)
+					var hits = enemy_intent.get("hits", 1)
+					if hits > 1:
+						intent_text = ("Próxima Ação: ⚔️ %dx%d (%d)" % [hits, dmg, hits * dmg]) if is_pt else ("Next Action: ⚔️ %dx%d (%d)" % [hits, dmg, hits * dmg])
+					else:
+						intent_text = ("Próxima Ação: ⚔️ %d" % dmg) if is_pt else ("Next Action: ⚔️ %d" % dmg)
+					intent_color = DAMAGE_COLOR
+					# Garantir reset visual para intents normais
+					enemy_intent_label.add_theme_font_size_override("font_size", 11)
+					enemy_intent_label.add_theme_color_override("font_outline_color", Color.BLACK)
+					if enemy_intent_label.has_meta("pulse_tween"):
+						var prev_tween = enemy_intent_label.get_meta("pulse_tween")
+						if prev_tween and prev_tween.is_valid():
+							prev_tween.kill()
+						enemy_intent_label.scale = Vector2(1.0, 1.0)
+						enemy_intent_label.remove_meta("pulse_tween")
+			ThorEnemyDatabase.IntentType.DEFEND:
+				intent_text = ("Próxima Ação: 🛡️ %d" % enemy_intent.get("block", 0)) if is_pt else ("Next Action: 🛡️ %d" % enemy_intent.get("block", 0))
+				intent_color = BLOCK_COLOR
+			ThorEnemyDatabase.IntentType.BUFF:
+				if enemy_intent.get("strength", 0) > 0:
+					intent_text = ("Próxima Ação: 💪 Força +%d" % enemy_intent.strength) if is_pt else ("Next Action: 💪 Strength +%d" % enemy_intent.strength)
+				elif enemy_intent.get("heal", 0) > 0:
+					intent_text = ("Próxima Ação: ❤️ Cura %d" % enemy_intent.heal) if is_pt else ("Next Action: ❤️ Heal %d" % enemy_intent.heal)
+				else:
+					intent_text = "Próxima Ação: 💪 Melhoria" if is_pt else "Next Action: 💪 Buff"
+				intent_color = GOLD_COLOR
+			ThorEnemyDatabase.IntentType.ATTACK_DEFEND:
+				var dmg = enemy_intent.get("damage", 0) + enemy_strength
+				if GameGlobals:
+					match GameGlobals.current_difficulty:
+						GameGlobals.Difficulty.EASY: dmg = int(dmg * 0.8)
+						GameGlobals.Difficulty.HARD: dmg = int(dmg * 1.25)
+				if player_vulnerable > 0:
+					dmg = int(dmg * 2.0)
+				var block_val = enemy_intent.get("block", 0)
+				intent_text = ("Próxima Ação: ⚔️ %d + 🛡️ %d" % [dmg, block_val]) if is_pt else ("Next Action: ⚔️ %d + 🛡️ %d" % [dmg, block_val])
+				intent_color = DAMAGE_COLOR
+			ThorEnemyDatabase.IntentType.DEBUFF:
+				if enemy_intent.get("vulnerable", 0) > 0:
+					intent_text = ("Próxima Ação: 💀 Vulnerável %d t." % enemy_intent.vulnerable) if is_pt else ("Next Action: 💀 Vulnerable %d t." % enemy_intent.vulnerable)
+				else:
+					intent_text = "Próxima Ação: 💀 Debuff" if is_pt else "Next Action: 💀 Debuff"
+				intent_color = Color(0.8, 0.4, 0.9)
+			_:
+				intent_text = "Próxima Ação: ❓" if is_pt else "Next Action: ❓"
+				intent_color = GOLD_COLOR
+		enemy_intent_label.text = intent_text
+		enemy_intent_label.add_theme_color_override("font_color", intent_color)
+	
+	# Painel do inimigo (cor, borda e textura)
+	if enemy_panel:
+		var panel_sb = StyleBoxFlat.new()
+		var color_hex = enemy_data.get("color", "#444444")
+		var has_texture = false
+		var tex_path = ""
+		
+		var paths_to_check = [
+			"res://assets/sprites/Sprites Thor/Inimigos/" + enemy_data.id + "_boss.png",
+			"res://assets/sprites/Sprites Thor/Inimigos/" + enemy_data.id + ".png",
+			"res://assets/sprites/" + enemy_data.id + "_boss.png",
+			"res://assets/sprites/" + enemy_data.id + ".png"
+		]
+		
+		for p in paths_to_check:
+			if ResourceLoader.exists(p):
+				tex_path = p
+				has_texture = true
+				break
+				
+		if has_texture:
+			panel_sb.bg_color = Color(0, 0, 0, 0) # Completely transparent
+			panel_sb.border_width_left = 0
+			panel_sb.border_width_top = 0
+			panel_sb.border_width_right = 0
+			panel_sb.border_width_bottom = 0
+			panel_sb.shadow_size = 0
+		else:
+			panel_sb.bg_color = Color.html(color_hex).darkened(0.2)
+			panel_sb.corner_radius_top_left = 8
+			panel_sb.corner_radius_top_right = 8
+			panel_sb.corner_radius_bottom_left = 8
+			panel_sb.corner_radius_bottom_right = 8
+			
+			# Custom borders based on tier (only for emoji fallbacks)
+			var type = enemy_data.get("type", 0)
+			if type == ThorEnemyDatabase.EnemyType.BOSS:
+				panel_sb.border_color = GOLD_COLOR
+				panel_sb.border_width_left = 4
+				panel_sb.border_width_top = 4
+				panel_sb.border_width_right = 4
+				panel_sb.border_width_bottom = 4
+				panel_sb.shadow_size = 12
+				panel_sb.shadow_color = Color(1.0, 0.85, 0.25, 0.4)
+			elif type == ThorEnemyDatabase.EnemyType.ELITE:
+				panel_sb.border_color = Color(0.8, 0.1, 0.8, 1.0)
+				panel_sb.border_width_left = 3
+				panel_sb.border_width_top = 3
+				panel_sb.border_width_right = 3
+				panel_sb.border_width_bottom = 3
+				panel_sb.shadow_size = 8
+				panel_sb.shadow_color = Color(0.8, 0.1, 0.8, 0.3)
+			else:
+				panel_sb.border_color = Color.html(color_hex).lightened(0.3)
+				panel_sb.border_width_left = 2
+				panel_sb.border_width_top = 2
+				panel_sb.border_width_right = 2
+				panel_sb.border_width_bottom = 2
+				panel_sb.shadow_size = 6
+				panel_sb.shadow_color = Color(0, 0, 0, 0.4)
+			
+		enemy_panel.add_theme_stylebox_override("panel", panel_sb)
+		
+		if enemy_texture_rect:
+			if has_texture:
+				var tex = load(tex_path)
+				enemy_texture_rect.texture = tex
+				enemy_texture_rect.visible = true
+				if tex:
+					var tex_w = tex.get_width()
+					var tex_h = tex.get_height()
+					var max_size = 130.0
+					var aspect = float(tex_w) / float(tex_h)
+					var new_w = max_size
+					var new_h = max_size
+					if aspect > 1.0:
+						new_h = max_size / aspect
+					else:
+						new_w = max_size * aspect
+					enemy_texture_rect.custom_minimum_size = Vector2(new_w, new_h)
+					enemy_texture_rect.size = Vector2(new_w, new_h)
+					enemy_texture_rect.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+					# Centralizar horizontalmente e colocar exatamente no fundo do painel (Y=140) para não flutuar
+					enemy_texture_rect.position = Vector2((140 - new_w) / 2, 140 - new_h)
+				if enemy_icon_label:
+					enemy_icon_label.visible = false
+			else:
+				enemy_texture_rect.texture = null
+				enemy_texture_rect.visible = false
+				if enemy_icon_label:
+					enemy_icon_label.visible = true
+					
+	if enemy_icon_label and enemy_icon_label.visible:
+		enemy_icon_label.text = enemy_data.get("icon", "👾")
+	
+	# Energia
+	if energy_label:
+		energy_label.text = str(player_energy) + "/" + str(player_max_energy)
+	
+	# Contadores de deck
+	if deck_count_label:
+		deck_count_label.text = "📚 Deck: " + str(draw_pile.size())
+	
+	# Rebuild cartas se estamos no turno do jogador
+	if state == BattleState.PLAYER_TURN:
+		_rebuild_hand_ui()
+
+# =============================================================================
+# EFEITOS VISUAIS
+# =============================================================================
+
+func _show_info(text: String, color: Color = GOLD_COLOR):
+	if not info_label:
+		return
+	info_label.text = text
+	info_label.add_theme_color_override("font_color", color)
+	info_label.modulate.a = 1.0
+	info_label.scale = Vector2(0.5, 0.5)
+	info_label.pivot_offset = info_label.size / 2
+	
+	var tw = create_tween()
+	tw.tween_property(info_label, "scale", Vector2(1.0, 1.0), 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(info_label, "modulate:a", 0.0, 0.5).set_delay(0.8)
+
+func _shake_node(node: Node):
+	if not node or not is_instance_valid(node):
+		return
+	var original_pos = node.position
+	var tw = create_tween()
+	tw.tween_property(node, "position:x", original_pos.x + 8, 0.05)
+	tw.tween_property(node, "position:x", original_pos.x - 8, 0.05)
+	tw.tween_property(node, "position:x", original_pos.x + 4, 0.05)
+	tw.tween_property(node, "position:x", original_pos.x, 0.05)
+
+# =============================================================================
+# INPUT
+# =============================================================================
+
+func _input(event):
+	if event.is_action_pressed("ui_cancel"):
+		# ESC → Pausa (usa o mesmo pause_menu que as outras fases)
+		var pause_scene = load("res://scenes/pause_menu.tscn")
+		if pause_scene:
+			var pause = pause_scene.instantiate()
+			add_child(pause)
+			get_tree().paused = true
+
+# =============================================================================
+# ANIMAÇÃO DE ENTRADA E HISTÓRIA (Livro III)
+# =============================================================================
+
+func _play_intro_animation():
+	state = BattleState.INTRO
+	
+	# Esconder cartas e botões durante a intro
+	if card_container:
+		card_container.visible = false
+	if end_turn_btn:
+		end_turn_btn.visible = false
+	if energy_label:
+		energy_label.get_parent().visible = false
+		
+	# Colocar Thor no céu para a queda
+	if player_node:
+		player_node.position.y = -100
+		player_node.visible = true
+	
+	# Tornar os HUDs do jogador e inimigo invisíveis inicialmente
+	if player_container:
+		player_container.modulate.a = 0.0
+	if enemy_container:
+		enemy_container.modulate.a = 0.0
+	if enemy_panel:
+		# Posicionar o inimigo completamente fora do ecrã à direita de forma dinâmica e mantê-lo invisível
+		enemy_panel.visible = false
+		enemy_panel.position.x = get_viewport_rect().size.x + 200
+		enemy_panel.modulate.a = 1.0
+		
+	# Iniciar narrativa do Livro III
+	_run_intro_step_1()
+
+func _run_intro_step_1():
+	var d = dialogue_scene.instantiate()
+	d.dialogue_list = [
+		{"name": "char_thor", "text": "dialogue_thor_intro_1"},
+		{"name": "char_thor", "text": "dialogue_thor_intro_2"}
+	]
+	d.dialogue_finished.connect(_run_intro_step_2_thor_fall)
+	add_child(d)
+
+func _run_intro_step_2_thor_fall():
+	# Thor cai do céu!
+	if player_node:
+		var tw = create_tween()
+		tw.tween_property(player_node, "position:y", 328.0, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		tw.tween_callback(func():
+			# Tremor de ecrã e som
+			_shake_node(player_node)
+			if GameGlobals:
+				GameGlobals.play_click_sound() # Som de impacto
+			
+			# Fade-in do HUD do jogador após o impacto
+			var tw_player_hud = create_tween()
+			tw_player_hud.tween_property(player_container, "modulate:a", 1.0, 0.45)
+			
+			# Revelar inimigo deslizando a opacidade do HUD
+			var tw_enemy = create_tween()
+			tw_enemy.tween_property(enemy_container, "modulate:a", 1.0, 0.5)
+			
+			# Revelar o inimigo com animação de entrada: torna-se visível e desliza suavemente da direita para a plataforma!
+			if enemy_panel:
+				enemy_panel.visible = true
+				var tw_panel = create_tween()
+				tw_panel.tween_property(enemy_panel, "position:x", 812.0, 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			
+			tw_enemy.tween_callback(func():
+				_run_intro_step_3_confrontation()
+			)
+		)
+
+func _run_intro_step_3_confrontation():
+	var d = dialogue_scene.instantiate()
+	if enemy_data.id == "jormungandr":
+		d.dialogue_list = [
+			{"name": "char_thor", "text": "dialogue_thor_jormungandr_1"},
+			{"name": "jormungandr", "text": "dialogue_jormungandr_thor_1"},
+			{"name": "char_thor", "text": "dialogue_thor_jormungandr_2"}
+		]
+	else:
+		# Combate genérico contra monstros
+		d.dialogue_list = [
+			{"name": "char_thor", "text": "dialogue_generic_thor_fight_1"},
+			{"name": enemy_data.id, "text": "dialogue_draugr_intro" if enemy_data.id == "draugr" else "dialogue_generic_monster_growl"}
+		]
+	d.dialogue_finished.connect(_on_intro_finished)
+	add_child(d)
+
+func _on_intro_finished():
+	# Restaurar visibilidade dos controlos e cartas
+	if card_container:
+		card_container.visible = true
+	if end_turn_btn:
+		end_turn_btn.visible = true
+	if energy_label:
+		energy_label.get_parent().visible = true
+		
+	# Iniciar combate real
+	_start_battle()
+
+func _play_sfx(sound_name: String, pitch: float = 1.0, volume: float = 0.0):
+	var sfx_player = AudioStreamPlayer.new()
+	var path = "res://assets/sounds/" + sound_name + ".wav"
+	if ResourceLoader.exists(path):
+		sfx_player.stream = load(path)
+	else:
+		return
+	sfx_player.bus = "SFX"
+	sfx_player.pitch_scale = pitch
+	sfx_player.volume_db = volume
+	sfx_player.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(sfx_player)
+	sfx_player.play()
+	sfx_player.finished.connect(sfx_player.queue_free)
+
+func _play_lightning_vfx():
+	var flash = ColorRect.new()
+	flash.color = Color(0.8, 0.95, 1.0, 0.6) # Cyan-white electric flash
+	flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(flash)
+	var tw = create_tween()
+	tw.tween_property(flash, "color:a", 0.0, 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_callback(flash.queue_free)
+
+func _play_spark_vfx(pos: Vector2):
+	for i in range(15):
+		var p = Panel.new()
+		p.size = Vector2(randf_range(6, 12), randf_range(6, 12))
+		p.position = pos - p.size / 2 + Vector2(randf_range(-30, 30), randf_range(-30, 30))
+		
+		var style = StyleBoxFlat.new()
+		style.bg_color = Color(0.3, 0.75, 1.0, 1.0) # Electric cyan sparks
+		style.corner_radius_top_left = 6
+		style.corner_radius_top_right = 6
+		style.corner_radius_bottom_left = 6
+		style.corner_radius_bottom_right = 6
+		p.add_theme_stylebox_override("panel", style)
+		add_child(p)
+		
+		# Animate flying away
+		var angle = randf_range(0, 2 * PI)
+		var speed = randf_range(120, 280)
+		var dest = p.position + Vector2(cos(angle), sin(angle)) * speed * 0.45
+		
+		var tw = create_tween()
+		tw.set_parallel(true)
+		tw.tween_property(p, "position", dest, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tw.tween_property(p, "modulate:a", 0.0, 0.45)
+		tw.chain().tween_callback(p.queue_free)

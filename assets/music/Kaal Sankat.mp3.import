@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://btvijymvg2id8"
+path="res://.godot/imported/Kaal Sankat.mp3-f15560cf8b2e7e36ec3110dc009fe098.mp3str"
+
+[deps]
+
+source_file="res://assets/music/Kaal Sankat.mp3"
+dest_files=["res://.godot/imported/Kaal Sankat.mp3-f15560cf8b2e7e36ec3110dc009fe098.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4
