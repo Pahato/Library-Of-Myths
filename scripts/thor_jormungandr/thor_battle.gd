@@ -2,7 +2,7 @@ extends Control
 class_name ThorBattle
 
 # =============================================================================
-# THOR BATTLE — Motor de Combate RPG por Turnos (Slay the Spire)
+# THOR BATTLE — Motor de Combate RPG por Turnos
 # Livro III: Thor vs Jörmungandr
 # =============================================================================
 
@@ -82,7 +82,7 @@ var wave_label: Label = null
 var energy_label: Label = null
 var end_turn_btn: Button = null
 var card_container: HBoxContainer = null
-var info_label: Label = null        # Feedback de ação (ex: "PERFEITO!", "-12 HP")
+var info_label: Label = null        # Rótulo de feedback de dano e ações de combate
 var deck_count_label: Label = null
 
 # --- Configuração ---
@@ -388,7 +388,7 @@ func _build_ui():
 	add_child(info_label)
 
 func _build_player_area():
-	# Container do jogador (lado esquerdo) - Posicionado de forma absoluta sobre a cabeça (estilo HSR)
+	# Contentor da interface do jogador posicionado acima da personagem
 	player_container = VBoxContainer.new()
 	player_container.position = Vector2(170, 195) # Posicionado 15px mais alto (Y=195) para ficar perfeitamente acima da cabeça sem sobrepor
 	player_container.size = Vector2(200, 100)
@@ -417,7 +417,7 @@ func _build_player_area():
 	player_hp_bar.value = player_hp
 	player_hp_bar.show_percentage = false
 	
-	# Estilo premium da barra de vida com moldura dourada
+	# StyleBox da barra de vida do jogador (fundo escuro com contorno dourado)
 	var hp_sb = StyleBoxFlat.new()
 	hp_sb.bg_color = Color(0.04, 0.04, 0.06, 0.85)
 	hp_sb.border_width_left = 1
@@ -537,7 +537,7 @@ func _build_enemy_area():
 	enemy_icon_label.add_theme_font_size_override("font_size", 48)
 	enemy_panel.add_child(enemy_icon_label)
 	
-	# Container do inimigo (topo da tela - estilo Boss de Honkai Star Rail, perfeitamente centralizado)
+	# Contentor superior centralizado com a informação e barra de vida do inimigo
 	enemy_container = VBoxContainer.new()
 	enemy_container.anchor_left = 0.5
 	enemy_container.anchor_right = 0.5
@@ -576,21 +576,21 @@ func _build_enemy_area():
 	enemy_name_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	enemy_container.add_child(enemy_name_label)
 	
-	# HP Bar do inimigo (estilo boss HSR: larga no topo da tela, preenche os 320px do container)
+	# Barra de vida do inimigo
 	enemy_hp_bar = ProgressBar.new()
 	enemy_hp_bar.custom_minimum_size = Vector2(320, 16)
 	enemy_hp_bar.max_value = enemy_max_hp
 	enemy_hp_bar.value = enemy_hp
 	enemy_hp_bar.show_percentage = false
 	
-	# Estilo premium da barra de vida com moldura vermelha
+	# StyleBox da barra de vida do inimigo (fundo escuro com contorno vermelho)
 	var enemy_hp_sb = StyleBoxFlat.new()
 	enemy_hp_sb.bg_color = Color(0.04, 0.04, 0.06, 0.85)
 	enemy_hp_sb.border_width_left = 1
 	enemy_hp_sb.border_width_top = 1
 	enemy_hp_sb.border_width_right = 1
 	enemy_hp_sb.border_width_bottom = 1
-	enemy_hp_sb.border_color = Color(0.8, 0.2, 0.2, 0.8) # Red border
+	enemy_hp_sb.border_color = Color(0.8, 0.2, 0.2, 0.8)
 	enemy_hp_sb.corner_radius_top_left = 5
 	enemy_hp_sb.corner_radius_top_right = 5
 	enemy_hp_sb.corner_radius_bottom_left = 5
@@ -991,11 +991,11 @@ func _deal_damage_to_enemy(damage: int):
 		if enemy_block >= actual_dmg:
 			enemy_block -= actual_dmg
 			actual_dmg = 0
-			_play_sfx("clink", 0.9, -2.0) # Defendido!
+			_play_sfx("clink", 0.9, -2.0) # Absorção total pelo bloqueio
 		else:
 			actual_dmg -= enemy_block
 			enemy_block = 0
-			_play_sfx("clink", 0.9, -2.0) # Escudo quebra
+			_play_sfx("clink", 0.9, -2.0) # Quebra de bloqueio
 	
 	enemy_hp = maxi(0, enemy_hp - actual_dmg)
 	
@@ -1006,7 +1006,7 @@ func _deal_damage_to_enemy(damage: int):
 	if actual_dmg > 0:
 		_show_info("⚔️ " + str(actual_dmg) + _get_trans(" dano!", " damage!"), DAMAGE_COLOR)
 		_shake_node(enemy_panel)
-		_play_spark_vfx(enemy_panel.global_position + enemy_panel.size / 2) # Partículas!
+		_play_spark_vfx(enemy_panel.global_position + enemy_panel.size / 2) # Efeito visual de faíscas
 		
 	_update_all_ui()
 
@@ -1021,11 +1021,11 @@ func _deal_damage_to_player(damage: int):
 		if player_block >= actual_dmg:
 			player_block -= actual_dmg
 			actual_dmg = 0
-			_play_sfx("clink", 1.1, -2.0) # Defendido!
+			_play_sfx("clink", 1.1, -2.0) # Absorção total pelo bloqueio
 		else:
 			actual_dmg -= player_block
 			player_block = 0
-			_play_sfx("clink", 1.1, -2.0) # Escudo quebra
+			_play_sfx("clink", 1.1, -2.0) # Quebra de bloqueio
 	
 	player_hp = maxi(0, player_hp - actual_dmg)
 	
@@ -1054,8 +1054,7 @@ func _on_end_turn_pressed():
 	
 	end_turn_btn.disabled = true
 	
-	# NÃO descartar a mão! O jogador mantém as cartas que não jogou para o próximo turno.
-	# Apenas atualiza a UI
+	# Mantém na mão as cartas não utilizadas para o turno seguinte
 	_rebuild_hand_ui()
 	
 	# Iniciar turno do inimigo
@@ -1668,7 +1667,7 @@ func _create_reward_card_button(card: Dictionary) -> Panel:
 	panel.custom_minimum_size = Vector2(r_width, r_height)
 	panel.clip_contents = false
 	
-	# Determine colors based on type
+	# Define a paleta de cores de acordo com o tipo de carta
 	var bg_start: Color
 	var bg_end: Color
 	var border_color: Color
@@ -2258,7 +2257,7 @@ func _awakening_step_3_thunder_particles():
 	timer.timeout.connect(_awakening_step_4_thor_awakens)
 
 func _awakening_step_4_thor_awakens():
-	# Thor fala: "Não posso cair aqui... Mjölnir... chegou a hora de despertar!"
+	# Diálogo de despertar de Thor
 	var d = dialogue_scene.instantiate()
 	d.dialogue_list = [
 		{"name": "char_thor", "text": "dialogue_awakening_thor_new"}
@@ -2267,8 +2266,7 @@ func _awakening_step_4_thor_awakens():
 	add_child(d)
 
 func _awakening_step_5_intense_vfx():
-	# Despertar elétrico intenso (VFX fortes)
-	# Thor desperta - flash mais forte
+	# Efeitos visuais e sonoros do despertar de Thor
 	var flash = ColorRect.new()
 	flash.color = Color(0.3, 0.7, 1.0, 1.0) # Azul elétrico
 	flash.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -2279,26 +2277,24 @@ func _awakening_step_5_intense_vfx():
 	tween.tween_property(flash, "modulate:a", 0.0, 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_callback(func(): flash.queue_free())
 	
-	# Som muito forte de trovão
+	# Efeito sonoro de impacto elétrico
 	_play_sfx("explosion", 1.0, 0.0)
 	
-	# Efeitos visuais no sprite do Thor
+	# Emissão de partículas no sprite do jogador
 	if player_node:
 		var anim_sprite = player_node.get_node_or_null("AnimatedSprite2D")
 		if anim_sprite:
-			# Modulate para brilho elétrico
 			var tween2 = create_tween()
 			tween2.tween_property(anim_sprite, "modulate", Color(1.5, 1.5, 2.0, 1.0), 0.2)
 			tween2.tween_property(anim_sprite, "modulate", Color(1.0, 1.0, 1.0, 1.0), 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		
-		# Partículas intensas
 		if thunder_particles:
 			thunder_particles.amount = 100
 			thunder_particles.scale_amount_min = 3.0
 			thunder_particles.scale_amount_max = 6.0
 			thunder_particles.color = Color(0.3, 0.8, 1.0, 1.0)
 	
-	# Screen shake forte
+	# Tremor de ecrã
 	_shake_node(player_node)
 	_shake_node(enemy_panel)
 	
@@ -2306,7 +2302,7 @@ func _awakening_step_5_intense_vfx():
 	timer.timeout.connect(_awakening_step_6_jormungandr_reaction)
 
 func _awakening_step_6_jormungandr_reaction():
-	# Jörmungandr reage: "Impossível... continuas a resistir ao meu veneno?!"
+	# Diálogo de reação de Jörmungandr
 	var d = dialogue_scene.instantiate()
 	d.dialogue_list = [
 		{"name": "char_jormungandr", "text": "dialogue_awakening_jormungandr_new"}
@@ -2327,9 +2323,9 @@ func _enter_phase_2():
 		cinematic_overlay.queue_free()
 		cinematic_overlay = null
 	
-	# Restaurar música (versão mais intensa ou mesma)
+	# Reinicia a música do boss para a fase 2
 	if GameGlobals:
-		GameGlobals.play_music("res://assets/music/time_for_adventure.wav", -4.0) # Mais alto
+		GameGlobals.play_music("res://assets/music/time_for_adventure.wav", -4.0)
 	
 	# Configurar fase 2
 	jormungandr_phase_2 = true
@@ -2391,7 +2387,7 @@ func _setup_awakening_deck():
 		"golpe_ragnarok",        # Ataque 3 custo - 30 dmg por vulnerável (max 3)
 		"graca_valhalla",        # Skill 2 custo - cura 15, block 20, remove debuffs
 	]
-	# Não embaralhar ainda - vamos comprar mão garantida primeiro
+	# Aguarda a compra inicial estruturada antes de embaralhar o restante baralho
 
 func _draw_guaranteed_opening_hand():
 	# Garantir pelo menos 1 ataque e 1 skill/defesa na mão inicial
@@ -2462,7 +2458,7 @@ func _create_card_button(card: Dictionary, index: int) -> Panel:
 	panel.custom_minimum_size = Vector2(CARD_WIDTH, CARD_HEIGHT)
 	panel.clip_contents = false
 	
-	# Determine colors based on type
+	# Define a paleta de cores de acordo com o tipo de carta
 	var bg_start: Color
 	var bg_end: Color
 	var border_color: Color
@@ -2696,7 +2692,7 @@ func _create_card_button(card: Dictionary, index: int) -> Panel:
 	cost_lbl.add_theme_color_override("font_color", ENERGY_COLOR)
 	energy_badge.add_child(cost_lbl)
 	
-	# Invisible interaction button (MUST BE THE LAST CHILD ADDED!)
+	# Botão de interação transparente posicionado sobre a carta (último filho adicionado)
 	var click_btn = Button.new()
 	click_btn.set_anchors_preset(Control.PRESET_FULL_RECT)
 	click_btn.anchor_right = 1.0
@@ -2905,7 +2901,7 @@ func _update_all_ui():
 			panel_sb.corner_radius_bottom_left = 8
 			panel_sb.corner_radius_bottom_right = 8
 			
-			# Custom borders based on tier (only for emoji fallbacks)
+			# Contorno personalizado conforme o tier do inimigo (somente para fallback emoji)
 			var type = enemy_data.get("type", 0)
 			if type == ThorEnemyDatabase.EnemyType.BOSS:
 				panel_sb.border_color = GOLD_COLOR
@@ -3062,7 +3058,7 @@ func _run_intro_step_1():
 	add_child(d)
 
 func _run_intro_step_2_thor_fall():
-	# Thor cai do céu!
+	# Animação de descida do nó do jogador
 	if player_node:
 		var tw = create_tween()
 		tw.tween_property(player_node, "position:y", 328.0, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
@@ -3080,7 +3076,7 @@ func _run_intro_step_2_thor_fall():
 			var tw_enemy = create_tween()
 			tw_enemy.tween_property(enemy_container, "modulate:a", 1.0, 0.5)
 			
-			# Revelar o inimigo com animação de entrada: torna-se visível e desliza suavemente da direita para a plataforma!
+			# Animação de entrada do painel do inimigo a partir da lateral direita
 			if enemy_panel:
 				enemy_panel.visible = true
 				var tw_panel = create_tween()

@@ -134,15 +134,15 @@ func _run_boss_entrance():
 	var boss_tween = create_tween()
 	boss_tween.tween_interval(0.6)
 	
-	# 2. A cobra (Píton) cai estrondosamente do céu!
+	# 2. Entrada vertical do boss na arena
 	boss_tween.tween_callback(func():
 		var fall_tween = create_tween()
 		fall_tween.tween_property(boss, "global_position:y", 0.0, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 		fall_tween.tween_callback(func():
-			# Impacto forte da queda e tremor
+			# Impacto de aterragem e abalo sísmico
 			player.shake_camera(8.5)
 			
-			# Salto de impacto (o pato voa levemente devido ao tremor de terra)
+			# Reação física do jogador ao impacto
 			if is_instance_valid(player):
 				if player.sprite and player.sprite.sprite_frames.has_animation("Jump"):
 					player.sprite.play("Jump")
@@ -154,9 +154,9 @@ func _run_boss_entrance():
 						player.sprite.play("Idle")
 				)
 			
-			# ZOOM OUT e PAN PARA A PÍTON!
-			player.camera_zoom_target = 2.2 # Diminui o zoom para ver a arena
-			player.camera_offset_target = Vector2(105.0, -10.0) # Move a câmara para focar na Píton
+			# Enquadramento de câmara na arena e foco no boss
+			player.camera_zoom_target = 2.2
+			player.camera_offset_target = Vector2(105.0, -10.0)
 			
 			# Pisca a cobra a vermelho para dar impacto visual de queda
 			if boss.sprite:
@@ -252,21 +252,20 @@ func _setup_background():
 	print("[BG] Fundo de Delfos em CanvasLayer carregado com sucesso!")
 
 
-# Carrega um PNG diretamente dos bytes do disco — não precisa de ser importado pelo Godot
+# Carregamento direto de ficheiro de imagem a partir do sistema de ficheiros
 func _load_png_from_path(res_path: String) -> Image:
-	# Converte res:// → caminho absoluto com barras corretas para Windows
 	var abs_path = ProjectSettings.globalize_path(res_path).replace("\\", "/")
 	
 	if not FileAccess.file_exists(abs_path):
 		printerr("[BG] Ficheiro não existe no disco: ", abs_path)
 		return null
 	
-	# Método 1: Image.load_from_file com caminho absoluto
+	# Tentativa primária via Image.load_from_file
 	var img = Image.load_from_file(abs_path)
 	if img and img.get_width() > 0 and img.get_height() > 0:
 		return img
 	
-	# Método 2: Lê os bytes do ficheiro manualmente (funciona sem importação do Godot)
+	# Tentativa secundária via leitura direta de buffer de memória
 	var fa = FileAccess.open(abs_path, FileAccess.READ)
 	if fa:
 		var bytes = fa.get_buffer(fa.get_length())

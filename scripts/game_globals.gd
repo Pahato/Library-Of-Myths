@@ -63,21 +63,21 @@ func apply_resolution(index: int):
 	current_resolution_index = index
 	var option = resolution_options[index]
 	
-	# Detect current screen index to avoid jumping to the primary monitor
+	# Deteta o monitor atual para evitar saltar para o monitor primário
 	var current_screen = DisplayServer.window_get_current_screen()
 	
 	if option["fullscreen"]:
-		# Ensure we keep the screen index when going fullscreen
+		# Preserva o monitor atual ao mudar para ecrã inteiro
 		DisplayServer.window_set_current_screen(current_screen)
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN)
 		print("[RESOLUTION] Aplicado: Ecrã Inteiro no ecrã ", current_screen)
 	else:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
-		# Crucial: set screen first to ensure size/position are calculated relative to this screen
+		# Define o monitor antes de calcular o tamanho e posição da janela
 		DisplayServer.window_set_current_screen(current_screen)
 		DisplayServer.window_set_size(Vector2i(option["width"], option["height"]))
 		
-		# Center the window on the CURRENT screen
+		# Centraliza a janela no monitor atual
 		var screen_pos = DisplayServer.screen_get_position(current_screen)
 		var screen_size = DisplayServer.screen_get_size(current_screen)
 		var window_size = DisplayServer.window_get_size()
@@ -1059,7 +1059,7 @@ func _ensure_action(action_name: String, bindings: Array):
 func play_music(stream_path: String, volume: float = -10.0):
 	if not music_player:
 		return
-	# Don't restart if same track is already playing
+	# Evita reiniciar caso a mesma faixa já esteja em reprodução
 	if music_player.stream != null and music_player.stream.resource_path == stream_path and music_player.playing:
 		return
 	var stream = load(stream_path)
@@ -1070,7 +1070,7 @@ func play_music(stream_path: String, volume: float = -10.0):
 	music_player.volume_db = volume
 	music_player.bus = "Music"
 	music_player.play()
-	# Reconnect loop signal
+	# Reconecta sinal de repetição automática em loop
 	if music_player.finished.is_connected(music_player.play):
 		music_player.finished.disconnect(music_player.play)
 	music_player.finished.connect(music_player.play)

@@ -97,7 +97,7 @@ func _process(delta):
 		if not boss_hud_container:
 			_setup_boss_hud()
 			
-		# Atualiza valores do HUD da Píton estilo Elden Ring
+		# Atualiza valores da barra de vida e efeito de atraso visual (lag bar) do chefe
 		if boss_hud_container and is_instance_valid(boss):
 			boss_hud_container.show()
 			
@@ -391,12 +391,12 @@ func _setup_boss_hud():
 	boss_health_lag_bar.max_value = boss.max_health
 	boss_health_lag_bar.value = boss.current_health
 	
-	# Estilo fill da lag bar (amarelo/laranja na fase 1)
+	# StyleBox de preenchimento da barra de atraso visual (amarelo/laranja)
 	sb_lag_fill = StyleBoxFlat.new()
 	sb_lag_fill.bg_color = Color(0.85, 0.55, 0.1, 0.9)
 	boss_health_lag_bar.add_theme_stylebox_override("fill", sb_lag_fill)
 	
-	# Estilo background da lag bar (contorno dourado e fundo escuro)
+	# StyleBox de fundo da barra de atraso visual (contorno dourado, fundo escuro semitransparente)
 	var sb_bg = StyleBoxFlat.new()
 	sb_bg.bg_color = Color(0.08, 0.08, 0.08, 0.75)
 	sb_bg.border_width_left = 1
@@ -417,7 +417,7 @@ func _setup_boss_hud():
 	boss_health_bar.max_value = boss.max_health
 	boss_health_bar.value = boss.current_health
 	
-	# Estilo fill da barra vermelha
+	# StyleBox de preenchimento da barra de vida principal (vermelho)
 	sb_fill = StyleBoxFlat.new()
 	sb_fill.bg_color = Color(0.68, 0.08, 0.08, 0.95)
 	boss_health_bar.add_theme_stylebox_override("fill", sb_fill)
@@ -512,7 +512,7 @@ func _setup_keystroke_hud():
 		panel.position = pos
 		panel.size = size
 		
-		# Estilo padrão da tecla (escuro translúcido com contorno fino)
+		# StyleBox da tecla no estado inativo (fundo escuro semitransparente com contorno fino)
 		var sb = StyleBoxFlat.new()
 		sb.bg_color = Color(0.06, 0.06, 0.06, 0.55)
 		sb.border_width_left = 1
@@ -588,7 +588,7 @@ func _update_keystroke_hud():
 				sb.border_color = Color(1.0, 1.0, 1.0, 1.0)
 				label.add_theme_color_override("font_color", Color.BLACK)
 		else:
-			# Estilo normal inativo
+			# Restaura a aparência da tecla no estado não premido
 			sb.bg_color = Color(0.06, 0.06, 0.06, 0.55)
 			sb.border_color = Color(0.4, 0.4, 0.4, 0.45)
 			label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 1.0))

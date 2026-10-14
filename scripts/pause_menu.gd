@@ -27,7 +27,7 @@ var rebinding_button: Button = null
 var rebinding_just_started: bool = false
 var keybind_info_label: Label = null
 
-# Temp vars for unapplied settings
+# Variáveis temporárias para configurações pendentes
 var temp_keystroke_enabled: bool = true
 var temp_language: int = 0
 var temp_resolution_index: int = 3
@@ -50,7 +50,7 @@ func _ready():
 	# Adicionar botão de Opções ao VBoxContainer
 	_add_options_button()
 	
-	# ── Estilo Visual Premium (RPG / Mitologia) ──────────────────────────────
+	# Configuração de estilo visual da interface
 	_apply_premium_style()
 	
 	# Foca o botão de continuar automaticamente
@@ -102,7 +102,7 @@ func _apply_premium_style():
 		title_label.add_theme_constant_override("outline_size", 2)
 		title_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1.0))
 	
-	# Estilo premium para os botões
+	# Aplica o StyleBox padronizado aos botões do menu
 	var cinzel_reg = _load_font(false)
 	for btn in [resume_button, menu_button]:
 		if not btn:
@@ -193,7 +193,7 @@ func _add_options_button():
 	vbox.add_child(opt_btn)
 	vbox.move_child(opt_btn, 1) # Posição 1 = entre Resume (0) e Menu (2)
 	opt_btn.pressed.connect(_on_options_pressed)
-	# Aplicar estilo RPG premium
+	# Aplica o estilo visual padronizado ao botão
 	_style_menu_button(opt_btn, _load_font(false))
 
 func _get_current_book() -> int:
@@ -1200,7 +1200,7 @@ func _show_confirmation_popup():
 	# Textura de pedra
 	_add_stone_texture(c_panel)
 	
-	# VBox único para TODO o conteúdo (título + mensagem + botões)
+	# Container vertical estruturado para o conteúdo do popup de confirmação
 	var content_vbox = VBoxContainer.new()
 	content_vbox.name = "ContentVBox"
 	content_vbox.set_anchors_preset(Control.PRESET_FULL_RECT)

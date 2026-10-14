@@ -1,5 +1,4 @@
-## Base de dados estática de todos os inimigos do jogo.
-## Tema: Mitologia Nórdica — RPG tático estilo Slay the Spire.
+## Base de dados estática de atributos e comportamentos dos inimigos do Livro III (Thor vs Jörmungandr).
 ## Classe puramente de dados — sem @onready, sem _ready().
 extends Node
 class_name ThorEnemyDatabase
@@ -423,6 +422,10 @@ static func get_random_intent(enemy_id: String, player_vulnerable: int = 0, last
 				skip = true
 		
 		if not skip:
+			# No modo Difícil, Jörmungandr usa menos ataques defensivos (ATTACK_DEFEND)
+			if enemy_id == "jormungandr" and GameGlobals and GameGlobals.current_difficulty == GameGlobals.Difficulty.HARD:
+				if intent_copy.get("type") == IntentType.ATTACK_DEFEND:
+					intent_copy["weight"] = maxi(1, int(intent_copy.get("weight", 2) * 0.5))
 			valid_intents.append(intent_copy)
 	
 	# Fallback: se todas foram filtradas, usar todas

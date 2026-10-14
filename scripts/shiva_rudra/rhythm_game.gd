@@ -367,7 +367,7 @@ func _setup_hud():
 	combo_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	stats_panel.add_child(combo_label)
 	
-	# Rating Text (PERFECT!, MISS!)
+	# Rótulo de classificação de precisão do ritmo
 	rating_label = Label.new()
 	rating_label.text = ""
 	rating_label.position = Vector2(0, 260)
@@ -528,7 +528,7 @@ func _run_intro_step_2_shiva_reflect():
 	add_child(d)
 
 func _run_intro_step_3_shiva_fall():
-	# Shiva cai do céu!
+	# Animação de descida vertical de Shiva
 	shiva_duck.position.y = -250.0
 	shiva_duck.visible = true
 	shiva_duck.play("Idle")
@@ -536,7 +536,7 @@ func _run_intro_step_3_shiva_fall():
 	var shiva_fall = create_tween()
 	shiva_fall.tween_property(shiva_duck, "position:y", 388.0, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	shiva_fall.tween_callback(func():
-		# Shiva aterra! Tremor, flash e som de impacto
+		# Impacto na plataforma: tremor, clarão e áudio de colisão
 		_shake_screen(10.0)
 		_trigger_lightning_flash()
 		sound_tap.play() # Som de aterragem
@@ -590,8 +590,8 @@ func _run_intro_step_6_rudra_strike():
 	flash_tween.tween_property(lightning_beam, "modulate:a", 1.0, 0.04)
 	flash_tween.tween_property(lightning_beam, "modulate:a", 0.0, 0.25) # Desvanecimento final
 	
-	# Revelar Rudra surgindo/materializando-se no meio do raio!
-	# Para isso, pomos Rudra como visível mas com opacidade zero, e fazemo-lo aparecer gradualmente
+	# Transição e revelação gradual de Rudra
+	# Torna o nó visível com opacidade inicial zero, interpolando até à opacidade total
 	rudra_duck.visible = true
 	rudra_duck.modulate.a = 0.0
 	
@@ -1125,12 +1125,11 @@ func _on_pause_menu_exited():
 	pause_menu_instance = null
 	if is_instance_valid(audio_player):
 		audio_player.stream_paused = false
-	# Get tree before it might become unavailable
+	# Obtém a SceneTree para despausar a execução
 	var tree = get_tree()
 	if tree:
 		tree.paused = false
-	# get_playback_position() already accounts for pause time, so NO offset compensation needed
-	# The playback position naturally pauses during stream_paused = true
+	# get_playback_position() já contabiliza a pausa, não necessitando de compensação de desvio manual
 
 func _end_game(victory: bool):
 	is_playing = false

@@ -3,7 +3,7 @@ class_name Credits
 
 @onready var back_button = $VBoxContainer/BackButton
 
-# Lista de linhas de créditos (podes editar à vontade)
+# Definição estruturada dos dados de créditos e formatação visual
 var credits_lines: Array = [
 	{"label": "credits_title", "size": 22, "color": Color(0.96, 0.87, 0.7, 1.0)},
 	{"label": "", "size": 14, "color": Color(1,1,1,1)},

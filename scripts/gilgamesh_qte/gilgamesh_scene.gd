@@ -74,7 +74,7 @@ func _ready() -> void:
 	# Instanciar e desenhar os componentes visuais
 	_setup_visual_hierarchy()
 	
-	# Inicia música tema do Gilgamesh (Orbital Colossus!)
+	# Inicia a reprodução da música tema do Livro V
 	if GameGlobals:
 		GameGlobals.current_book = 5
 		GameGlobals.play_music("res://assets/music/gilgamesh_theme.wav", -10.0)
@@ -328,14 +328,14 @@ func _setup_visual_hierarchy():
 	qte_bar.add_theme_stylebox_override("fill", sb_qbar_fill)
 	qte_container.add_child(qte_bar)
 	
-	# Container de Círculos de Precisão (Clicker estilo Osu!)
+	# Contentor dos círculos de precisão para eventos QTE
 	precision_container = Control.new()
 	precision_container.name = "PrecisionContainer"
 	precision_container.set_anchors_preset(Control.PRESET_FULL_RECT)
 	precision_container.mouse_filter = Control.MOUSE_FILTER_PASS
 	hud_layer.add_child(precision_container)
 	
-	# Feedback Label (PERFEITO!, BOM!, FALHA!)
+	# Rótulo de avaliação de resultado (Perfeito, Bom, Falha)
 	feedback_label = Label.new()
 	feedback_label.name = "FeedbackLabel"
 	feedback_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -755,7 +755,7 @@ func _input(event: InputEvent) -> void:
 		else:
 			_on_qte_failed("TECLA INCORRETA!" if GameGlobals.current_language == GameGlobals.Language.PT else "WRONG KEY!")
 
-# --- QTE de Precisão (Estilo Osu!) ---
+# --- Mecânica de Precisão (QTE) ---
 func _spawn_precision_click():
 	var target = Control.new()
 	target.name = "PrecisionTarget"
@@ -1194,8 +1194,8 @@ func _trigger_game_over():
 	# Mostrar painel de Game Over sob um CanvasLayer dedicado para que receba cliques sem bloqueio
 	var go_layer = CanvasLayer.new()
 	go_layer.name = "GameOverLayer"
-	go_layer.layer = 100 # Camada muito alta
-	go_layer.process_mode = Node.PROCESS_MODE_ALWAYS # Crucial: corre enquanto o jogo está pausado!
+	go_layer.layer = 100 # Camada superior
+	go_layer.process_mode = Node.PROCESS_MODE_ALWAYS # Processa com o jogo pausado
 	add_child(go_layer)
 	
 	var overlay = ColorRect.new()

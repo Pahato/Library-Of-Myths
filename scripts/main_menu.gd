@@ -117,7 +117,7 @@ func _ready():
 	if credits_btn: credits_btn.modulate.a = 0.0
 	if status_label: status_label.modulate.a = 0.0
 	
-	# Aplicar fonte Cinzel ao título principal (estilo mitológico épico)
+	# Aplica a fonte Cinzel ao título principal
 	if title_label:
 		var cinzel = _load_font(true)
 		if cinzel:
@@ -504,28 +504,26 @@ func _run_intro_animation():
 	# 1. Caminha pelo chão até à posição anterior à cadeira (X = 220)
 	tween.tween_property(player_instance, "global_position:x", 220.0, 1.8).set_trans(Tween.TRANS_SINE)
 	
-	# 2. Salta para cima da cadeira!
+	# 2. Transição de salto parabólico em direção à cadeira
 	tween.tween_callback(func():
-		player_instance.sprite.play("Idle") # Prepara o salto
+		player_instance.sprite.play("Idle")
 	)
 	tween.tween_interval(0.2)
 	tween.tween_callback(func():
-		# Salto (arco parabólico usando tweens paralelos)
 		var jump_tween = create_tween().set_parallel(true)
-		# Move horizontalmente para a cadeira (X = 300, mais atrás)
 		jump_tween.tween_property(player_instance, "global_position:x", 300.0, 0.45)
 		
-		# Arco de altura (Y sobe para 315 e desce para o assento em 395, mais acima)
+		# Curva vertical do arco de salto
 		var y_tween = create_tween()
 		y_tween.tween_property(player_instance, "global_position:y", 315.0, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		y_tween.tween_property(player_instance, "global_position:y", 395.0, 0.23).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 		
 		y_tween.tween_callback(func():
-			# Aterrou na cadeira! Fica sentado em Idle
+			# Conclusão do salto no assento da cadeira
 			player_instance.sprite.play("Idle")
 		)
 	)
-	tween.tween_interval(0.8) # Espera sentado um pouco
+	tween.tween_interval(0.8)
 	
 	# 3. Revela a Biblioteca e os Livros
 	tween.tween_callback(func():
@@ -762,7 +760,7 @@ func _add_stone_texture(panel: Panel) -> void:
 	# Mover para o primeiro filho (atras de tudo)
 	panel.move_child(tex_rect, 0)
 
-# --- Carrega a fonte Cinzel (estilo épico/mitológico) ---
+# --- Carregamento da fonte Cinzel ---
 func _load_font(bold: bool = false) -> FontFile:
 	var path = "res://assets/fonts/Cinzel-Bold.ttf" if bold else "res://assets/fonts/Cinzel-Regular.ttf"
 	return load(path) as FontFile
@@ -1614,7 +1612,7 @@ func _show_confirmation_popup():
 	# Textura de pedra no fundo do painel
 	_add_stone_texture(c_panel)
 	
-	# VBox único para TODO o conteúdo (evita o bug de PRESET_BOTTOM_WIDE)
+	# Container vertical unificado para elementos do diálogo de confirmação
 	var content_vbox = VBoxContainer.new()
 	content_vbox.name = "ContentVBox"
 	content_vbox.set_anchors_preset(Control.PRESET_FULL_RECT)

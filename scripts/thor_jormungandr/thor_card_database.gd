@@ -1,5 +1,4 @@
-## Base de dados estática de todas as cartas do jogo.
-## Tema: Mitologia Nórdica (Thor) — RPG tático estilo Slay the Spire.
+## Base de dados estática de cartas de combate do Livro III (Thor vs Jörmungandr).
 ## Uso: referenciado como classe (ThorCardDatabase.get_card("id")).
 extends Node
 class_name ThorCardDatabase

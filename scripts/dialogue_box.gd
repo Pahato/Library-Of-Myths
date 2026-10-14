@@ -102,7 +102,7 @@ func _on_timer_timeout():
 		return
 	if text_label.visible_characters < total:
 		text_label.visible_characters += 1
-		# Play typing sound (avoid playing on spaces to sound more natural, play every 2nd letter)
+		# Reproduz o som de digitação a cada dois carateres (ignora espaços)
 		if text_label.visible_characters % 2 == 0 and text_label.text[text_label.visible_characters - 1] != " ":
 			if sound_type:
 				sound_type.play()

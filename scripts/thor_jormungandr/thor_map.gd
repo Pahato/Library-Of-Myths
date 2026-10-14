@@ -169,7 +169,7 @@ func _generate_map():
 		else:
 			num_nodes = rng.randi_range(2, 4)
 			
-		# Determine if this layer should have an elite node
+		# Determina se esta camada contém um nó elite
 		var has_elite_slot = layer_idx in elite_layer_indices
 		var elite_id_for_layer = elite_assignments.get(layer_idx, "")
 		var elite_data_for_layer = null
@@ -179,7 +179,7 @@ func _generate_map():
 					elite_data_for_layer = et
 					break
 		
-		# For bottleneck layer, we need at least one elite node that all paths must cross
+		# Na camada bottleneck, todos os caminhos devem cruzar pelo menos um nó elite
 		var is_bottleneck_layer = (layer_idx == mandatory_elite_layer)
 		
 		for i in range(num_nodes):
@@ -191,16 +191,16 @@ func _generate_map():
 			elif layer_idx == total_layers:
 				node_type = NodeType.BOSS
 			elif has_elite_slot and i == 0:
-				# First node in an elite layer gets the elite type
+				# O primeiro nó numa camada elite recebe o tipo ELITE
 				node_type = NodeType.ELITE
 				elite_data = elite_data_for_layer
 			elif is_bottleneck_layer and i == 1 and num_nodes > 1:
-				# For bottleneck layer, make second node also elite to ensure all paths cross an elite
-				# (only if layer has >1 node)
+				# Na camada bottleneck com múltiplos nós, o segundo também é ELITE
+				# para garantir que todos os caminhos passam por um elite
 				node_type = NodeType.ELITE
 				elite_data = elite_data_for_layer
 			else:
-				# Regular node - combat, rest, or shop (NO random elites)
+				# Nó normal — combate, descanso ou loja (sem elites aleatórios)
 				var roll = rng.randf()
 				if roll < 0.55:
 					node_type = NodeType.COMBAT
@@ -269,14 +269,11 @@ func _generate_map():
 				if not bottleneck_node.id in n_node.connections:
 					n_node.connections.append(bottleneck_node.id)
 	
-	# NORMAL: Garantir que todos os nós conectados ao boss sejam REST
+	# NORMAL: Garantir 100% que todas as casas imediatamente anteriores ao boss sejam acampamento (REST)
 	if GameGlobals and GameGlobals.current_difficulty == GameGlobals.Difficulty.NORMAL:
-		var boss_layer = layers[total_layers]
 		var prev_layer = layers[total_layers - 1]
-		for boss_node in boss_layer:
-			for prev_node in prev_layer:
-				if boss_node.id in prev_node.connections:
-					prev_node.type = NodeType.REST
+		for prev_node in prev_layer:
+			prev_node.type = NodeType.REST
 	
 	GameGlobals.thor_map_data = layers
 
@@ -294,9 +291,10 @@ func _build_ui():
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	add_child(scroll)
 	
-	var map_container = Control.new()
+	var layers = GameGlobals.thor_map_data
+	var total_map_layers = layers.size() if not layers.is_empty() else 15
 	var layer_height = 130
-	var map_height = 15 * layer_height + 200
+	var map_height = total_map_layers * layer_height + 200
 	map_container.custom_minimum_size = Vector2(1152, map_height)
 	map_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(map_container)
@@ -438,7 +436,7 @@ func _build_ui():
 				btn.mouse_default_cursor_shape = Control.CURSOR_ARROW
 			elif is_reachable:
 				style.bg_color = Color(0.1, 0.12, 0.18, 0.95)
-				style.border_color = Color(0.85, 0.65, 0.25) # Gold border for reachable!
+				style.border_color = Color(0.85, 0.65, 0.25) # Contorno dourado para nós acessíveis
 				style.shadow_color = Color(0.85, 0.65, 0.25, 0.3)
 				style.shadow_size = 6
 				btn.modulate = base_color.lightened(0.15)
@@ -475,7 +473,7 @@ func _build_ui():
 			
 	# Scroll automático para a layer atual
 	await get_tree().process_frame
-	var target_layer = min(15, GameGlobals.thor_current_layer)
+	var target_layer = min(total_map_layers, GameGlobals.thor_current_layer)
 	var target_y = map_height - (target_layer * layer_height) - (scroll.size.y / 2.0)
 	scroll.scroll_vertical = int(max(0, target_y))
 	
@@ -593,7 +591,7 @@ func _build_ui():
 		var item_hbox = HBoxContainer.new()
 		item_hbox.add_theme_constant_override("separation", 10)
 		
-		# A Panel container to hold the icon to create a nice round golden circular border!
+		# Painel de suporte do ícone com contorno circular dourado
 		var icon_panel = Panel.new()
 		icon_panel.custom_minimum_size = Vector2(28, 28)
 		
@@ -603,7 +601,7 @@ func _build_ui():
 		icon_style.border_width_top = 1
 		icon_style.border_width_right = 1
 		icon_style.border_width_bottom = 1
-		icon_style.border_color = Color(0.85, 0.65, 0.25, 0.8) # Gold border!
+		icon_style.border_color = Color(0.85, 0.65, 0.25, 0.8)
 		icon_style.corner_radius_top_left = 14
 		icon_style.corner_radius_top_right = 14
 		icon_style.corner_radius_bottom_left = 14
@@ -618,7 +616,7 @@ func _build_ui():
 		icon_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		
-		# Add margins so the icon doesn't touch borders
+		# Margem interior para que o ícone não toque nas bordas do painel
 		icon_tex.offset_left = 4
 		icon_tex.offset_top = 4
 		icon_tex.offset_right = -4

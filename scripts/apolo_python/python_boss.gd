@@ -102,7 +102,7 @@ func _ready():
 	ai_cooldown = GameGlobals.get_boss_ai_cooldown()
 	
 	current_health = max_health
-	# Initialize boss name from translation (respects saved language)
+	# Inicializa o nome do chefe a partir da localização de idioma
 	boss_name = GameGlobals.get_text("boss_name_phase_1")
 	if health_bar:
 		health_bar.max_value = max_health
@@ -458,7 +458,7 @@ func _behavior_bite(delta):
 		bite_windup_timer -= delta
 		if bite_windup_timer <= 0.0:
 			is_biting_windup = false
-			# Agora executa a investida/dash real!
+			# Executa a investida na direção do alvo
 			velocity = bite_dir * 320.0
 			if sound_bite:
 				sound_bite.play()
@@ -643,8 +643,7 @@ func _activate_phase_2():
 	base_sprite_scale = Vector2(0.18, 0.18)
 	base_sprite_pos = Vector2(0, -66) # Grounding perfeito para o sprite maior
 
-	# Reutilizar o sprite transparente original da Píton, mas com escala aumentada
-	# e modulate roxo escuro/neon para caracterizar a Fase 2 (evita imagem de carta bugada)
+	# Renderiza a forma de Fase 2 através de escala ampliada e tonalidade espectral
 	var tex = load("res://assets/sprites/Python.png")
 	if tex:
 		sprite.texture = tex
