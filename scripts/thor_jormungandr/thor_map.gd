@@ -295,12 +295,12 @@ func _build_ui():
 	var total_map_layers = layers.size() if not layers.is_empty() else 15
 	var layer_height = 130
 	var map_height = total_map_layers * layer_height + 200
+	var map_container = Control.new()
 	map_container.custom_minimum_size = Vector2(1152, map_height)
 	map_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(map_container)
 	
 	var node_positions = {}
-	var layers = GameGlobals.thor_map_data
 	
 	# Assumimos uma largura base para centralizar os nós
 	var screen_w = 1152.0
